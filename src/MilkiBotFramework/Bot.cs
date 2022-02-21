@@ -1,0 +1,93 @@
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using MilkiBotFramework.Connecting;
+using MilkiBotFramework.Dispatching;
+using MilkiBotFramework.Tasking;
+
+namespace MilkiBotFramework
+{
+    public class Bot
+    {
+        private readonly ILogger<Bot> _logger;
+        private TaskCompletionSource? _connectionTcs;
+
+        public Bot(BotTaskScheduler botTaskScheduler, IConnector connector, IDispatcher dispatcher, BotOptions options, ILogger<Bot> logger)
+        {
+            BotTaskScheduler = botTaskScheduler;
+            Connector = connector;
+            Dispatcher = dispatcher;
+            Options = options;
+            _logger = logger;
+            Current = this;
+        }
+
+        public static Bot? Current { get; private set; }
+
+        public BotOptions Options { get; }
+        public IServiceProvider? SingletonServiceProvider { get; internal set; }
+        public BotTaskScheduler BotTaskScheduler { get; }
+        public IConnector Connector { get; }
+        public IDispatcher Dispatcher { get; }
+
+        public static Bot Create(Action<BotBuilder>? configureBot = null)
+        {
+            var builder = new BotBuilder();
+            configureBot?.Invoke(builder);
+            return builder.GetBotInstance();
+        }
+
+        public void Run()
+        {
+            if (_connectionTcs != null) throw new InvalidOperationException();
+            _connectionTcs = new TaskCompletionSource();
+            try
+            {
+                Connector.ConnectAsync().Wait();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Error occurs while running");
+            }
+
+            _connectionTcs.Task.Wait();
+        }
+
+        public async Task RunAsync()
+        {
+            if (_connectionTcs != null) throw new InvalidOperationException();
+            _connectionTcs = new TaskCompletionSource();
+            try
+            {
+                await Connector.ConnectAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Error occurs while running.");
+            }
+
+            await _connectionTcs.Task;
+        }
+
+        public void Stop()
+        {
+            Connector.DisconnectAsync().Wait();
+            _connectionTcs?.SetResult();
+            _connectionTcs = null;
+        }
+
+        public async Task StopAsync()
+        {
+            await Connector.DisconnectAsync();
+            _connectionTcs?.SetResult();
+            _connectionTcs = null;
+        }
+    }
+
+    public sealed class BotOptions
+    {
+        public string CacheImageDir { get; set; }
+        public string GifSiclePath { get; set; }
+        public string FfMpegPath { get; set; }
+    }
+}
