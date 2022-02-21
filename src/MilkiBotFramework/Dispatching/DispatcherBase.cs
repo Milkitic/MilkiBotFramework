@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
@@ -64,7 +61,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                 if (PrivateMessageReceived != null) await PrivateMessageReceived.Invoke(messageContext);
                 break;
             case MessageType.Public:
-                _contractsManager.TryGetChannelInfo(messageIdentity, out var channelInfo);
+                _contractsManager.TryGetChannelInfoByMessageContext(messageIdentity, out var channelInfo, out var memberInfo);
                 if (PublicMessageReceived != null) await PublicMessageReceived.Invoke(messageContext);
                 break;
             case MessageType.System:
