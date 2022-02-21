@@ -7,8 +7,8 @@ public sealed class MemberInfo
         UserId = userId;
     }
 
-    public string UserId { get; internal set; }
-    public string? Card { get; internal set; }
-    public string? Nickname { get; internal set; }
-    public MemberRole MemberRole { get; internal set; }
+    public string UserId { get; }
+    public string? Card { get; set; }
+    public string? Nickname { get; set; }
+    public MemberRole MemberRole { get; set; }
 }

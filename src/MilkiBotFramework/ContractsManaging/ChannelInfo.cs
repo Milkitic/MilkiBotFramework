@@ -9,11 +9,11 @@ public sealed class ChannelInfo
         ChannelId = channelId;
     }
 
-    public string ChannelId { get; internal set; }
-    public string? SubChannelId { get; internal set; }
-    public string? Name { get; internal set; }
-    public Dictionary<string, MemberInfo> Members { get; } = new();
-    public Avatar? Avatar { get; internal set; }
+    public string ChannelId { get; }
+    public string? SubChannelId { get; set; }
+    public string? Name { get; set; }
+    public Avatar? Avatar { get; set; }
 
+    public Dictionary<string, MemberInfo> Members { get; } = new();
     public bool IsRootChannel => SubChannelId == null;
 }

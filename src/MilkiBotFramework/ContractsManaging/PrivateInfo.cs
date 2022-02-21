@@ -7,8 +7,8 @@ public sealed class PrivateInfo
         UserId = userId;
     }
 
-    public string UserId { get; internal set; }
-    public string? Remark { get; internal set; }
-    public string? Nickname { get; internal set; }
-    public Avatar? Avatar { get; internal set; }
+    public string UserId { get; }
+    public string? Remark { get; set; }
+    public string? Nickname { get; set; }
+    public Avatar? Avatar { get; set; }
 }
