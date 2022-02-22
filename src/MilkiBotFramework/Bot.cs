@@ -2,22 +2,28 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
+using MilkiBotFramework.ContractsManaging;
 using MilkiBotFramework.Dispatching;
+using MilkiBotFramework.Plugins;
 using MilkiBotFramework.Tasking;
 
 namespace MilkiBotFramework
 {
     public class Bot
     {
+        private readonly PluginManager _pluginManager;
+        private readonly IContractsManager _contractsManager;
         private readonly ILogger<Bot> _logger;
         private TaskCompletionSource? _connectionTcs;
 
-        public Bot(BotTaskScheduler botTaskScheduler, IConnector connector, IDispatcher dispatcher, BotOptions options, ILogger<Bot> logger)
+        public Bot(BotTaskScheduler botTaskScheduler, PluginManager pluginManager, IContractsManager contractsManager, IConnector connector, IDispatcher dispatcher, BotOptions options, ILogger<Bot> logger)
         {
             BotTaskScheduler = botTaskScheduler;
             Connector = connector;
             Dispatcher = dispatcher;
             Options = options;
+            _pluginManager = pluginManager;
+            _contractsManager = contractsManager;
             _logger = logger;
             Current = this;
         }
@@ -43,6 +49,8 @@ namespace MilkiBotFramework
             _connectionTcs = new TaskCompletionSource();
             try
             {
+                _pluginManager.InitializeAllPlugins().Wait();
+                _contractsManager.Initialize();
                 Connector.ConnectAsync().Wait();
             }
             catch (Exception ex)
@@ -59,6 +67,8 @@ namespace MilkiBotFramework
             _connectionTcs = new TaskCompletionSource();
             try
             {
+                await _pluginManager.InitializeAllPlugins();
+                _contractsManager.Initialize();
                 await Connector.ConnectAsync();
             }
             catch (Exception ex)

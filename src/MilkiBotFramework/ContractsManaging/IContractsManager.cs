@@ -7,6 +7,7 @@ namespace MilkiBotFramework.ContractsManaging;
 
 public interface IContractsManager
 {
+    void Initialize();
     Task<ChannelInfoResult> TryGetChannelInfoByMessageContext(MessageIdentity messageIdentity, string userId);
     Task<PrivateInfoResult> TryGetPrivateInfoByMessageContext(MessageIdentity messageIdentity);
 }

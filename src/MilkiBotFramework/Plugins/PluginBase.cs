@@ -7,10 +7,7 @@ namespace MilkiBotFramework.Plugins;
 
 public abstract class PluginBase
 {
-    public virtual PluginType PluginType => PluginType.Unspecified;
-    public virtual PluginLifetime PluginLifetime => PluginLifetime.Scoped;
-
-    public abstract PluginMetadata Metadata { get; }
+    public Func<PluginMetadata> GetMetadata { get; internal set; }
 
     public bool IsInitialized { get; protected set; }
 

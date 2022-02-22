@@ -105,7 +105,7 @@ public sealed class BotBuilder
         // PluginManager
         var pluginManager = serviceProvider.GetService<PluginManager>()!;
         pluginManager.PluginBaseDirectory = _pluginBaseDir;
-        pluginManager.InitializeAllPlugins();
+
         // Connector
         var connector = (IConnector)serviceProvider.GetService(typeof(IConnector));
         _configureConnector?.Invoke(connector);

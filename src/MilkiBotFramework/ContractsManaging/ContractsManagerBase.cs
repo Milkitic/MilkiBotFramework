@@ -29,6 +29,10 @@ public abstract class ContractsManagerBase : IContractsManager
     {
         _botTaskScheduler = botTaskScheduler;
         _logger = logger;
+    }
+
+    public void Initialize()
+    {
         _botTaskScheduler.AddTask("RefreshContractsTask", builder => builder
             .ByInterval(TimeSpan.FromMinutes(5))
             .AtStartup()
