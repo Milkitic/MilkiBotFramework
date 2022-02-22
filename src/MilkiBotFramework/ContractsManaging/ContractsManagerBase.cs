@@ -4,6 +4,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using MilkiBotFramework.ContractsManaging.Models;
+using MilkiBotFramework.ContractsManaging.Results;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Tasking;
@@ -163,20 +165,4 @@ public abstract class ContractsManagerBase : IContractsManager
 
     public abstract Task<ChannelInfoResult> TryGetChannelInfoByMessageContext(MessageIdentity messageIdentity, string userId);
     public abstract Task<PrivateInfoResult> TryGetPrivateInfoByMessageContext(MessageIdentity messageIdentity);
-}
-
-public sealed class ChannelInfoResult : ResultInfoBase
-{
-    public ChannelInfo? ChannelInfo { get; init; }
-    public MemberInfo? MemberInfo { get; init; }
-}
-
-public sealed class PrivateInfoResult : ResultInfoBase
-{
-    public PrivateInfo? PrivateInfo { get; init; }
-}
-
-public abstract class ResultInfoBase
-{
-    public bool IsSuccess { get; init; }
 }

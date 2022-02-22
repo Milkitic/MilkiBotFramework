@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using MilkiBotFramework.ContractsManaging.Results;
 using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.ContractsManaging;

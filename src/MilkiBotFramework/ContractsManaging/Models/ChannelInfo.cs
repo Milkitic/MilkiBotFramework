@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MilkiBotFramework.ContractsManaging;
+namespace MilkiBotFramework.ContractsManaging.Models;
 
 public sealed class ChannelInfo
 {

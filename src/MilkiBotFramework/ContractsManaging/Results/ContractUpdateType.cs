@@ -1,4 +1,4 @@
-﻿namespace MilkiBotFramework.ContractsManaging;
+﻿namespace MilkiBotFramework.ContractsManaging.Results;
 
 public enum ContractUpdateType
 {

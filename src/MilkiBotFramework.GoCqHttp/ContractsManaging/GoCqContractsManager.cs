@@ -2,6 +2,8 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContractsManaging;
+using MilkiBotFramework.ContractsManaging.Models;
+using MilkiBotFramework.ContractsManaging.Results;
 using MilkiBotFramework.GoCqHttp.Connecting;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Tasking;

@@ -1,6 +1,6 @@
-﻿namespace MilkiBotFramework.ContractsManaging;
+﻿namespace MilkiBotFramework.ContractsManaging.Results;
 
-public sealed class ContractUpdateResult
+public sealed class ContractUpdateResult : ResultInfoBase
 {
     public ContractUpdateResult(bool isSuccess, string? id, ContractUpdateType contractUpdateType)
     {
@@ -9,7 +9,6 @@ public sealed class ContractUpdateResult
         ContractUpdateType = contractUpdateType;
     }
 
-    public bool IsSuccess { get; }
     public string? Id { get; }
     public ContractUpdateType ContractUpdateType { get; }
 }
