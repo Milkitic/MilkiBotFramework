@@ -5,6 +5,7 @@ using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContractsManaging;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.GoCqHttp.Connecting;
+using MilkiBotFramework.GoCqHttp.Messaging;
 using MilkiBotFramework.GoCqHttp.Messaging.Events;
 using MilkiBotFramework.Messaging;
 
@@ -94,15 +95,5 @@ namespace MilkiBotFramework.GoCqHttp.Dispatching
             strIdentity = postType;
             return false;
         }
-    }
-
-    public record GoCqMessageContext : MessageContext
-    {
-        public GoCqMessageContext(string rawTextMessage) : base(rawTextMessage)
-        {
-        }
-
-        public JsonDocument RawJsonDocument { get; internal set; }
-        public MessageBase RawMessage { get; internal set; }
     }
 }

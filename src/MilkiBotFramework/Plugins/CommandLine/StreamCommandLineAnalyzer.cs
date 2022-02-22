@@ -7,6 +7,7 @@ using System.Text;
 
 namespace MilkiBotFramework.Plugins.CommandLine;
 
+[Obsolete]
 public class StreamCommandLineAnalyzer : ICommandLineAnalyzer
 {
     private static readonly char[] Keywords = { '/', '-' };

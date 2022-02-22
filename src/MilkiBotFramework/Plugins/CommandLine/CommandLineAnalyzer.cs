@@ -117,11 +117,3 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
         }
     }
 }
-
-public class CommandLineException : Exception
-{
-    public CommandLineException(string? message) : base(message)
-    {
-
-    }
-}
