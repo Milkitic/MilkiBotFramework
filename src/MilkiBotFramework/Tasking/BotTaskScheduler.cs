@@ -70,7 +70,7 @@ namespace MilkiBotFramework.Tasking
             // loop implementation
             var taskOption = taskInstance.Option;
             var loggerFactory = SingletonServiceProvider.GetService<ILoggerFactory>();
-            var logger = loggerFactory?.CreateLogger("EamTaskScheduler." + taskOption.Name);
+            var logger = loggerFactory!.CreateLogger("EamTaskScheduler." + taskOption.Name);
             var cts = taskInstance.CancellationTokenSource;
             if (taskOption.TriggerOnStartup) Execute(null, DateTime.Now);
             while (!cts.IsCancellationRequested)
@@ -87,7 +87,7 @@ namespace MilkiBotFramework.Tasking
                 var (trigger, nextTime) = list
                    .First(); // 获取最近的下次执行时间
 
-                logger.LogInformation("Next time for task {0}: {1}", taskOption.Name, nextTime);
+                logger.LogDebug("Next time for task {0}: {1}", taskOption.Name, nextTime);
                 if (!Sleep(nextTime - now, cts)) break;
 
                 Task.Run(() => Execute(trigger, nextTime), cts.Token);
@@ -97,7 +97,7 @@ namespace MilkiBotFramework.Tasking
             {
                 try
                 {
-                    logger.LogInformation("Executing task {0} at {1}", taskOption.Name, triggerTime);
+                    logger.LogDebug("Executing task {0} at {1}", taskOption.Name, triggerTime);
                     taskOption.Handler?.Invoke(new TaskContext
                     {
                         TaskId = taskOption.Id,

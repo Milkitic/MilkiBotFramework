@@ -30,7 +30,7 @@ public abstract class ContractsManagerBase : IContractsManager
         _botTaskScheduler = botTaskScheduler;
         _logger = logger;
         _botTaskScheduler.AddTask("RefreshContractsTask", builder => builder
-            .ByInterval(TimeSpan.FromSeconds(15))
+            .ByInterval(TimeSpan.FromMinutes(5))
             .AtStartup()
             .Do(RefreshContracts));
     }
@@ -94,6 +94,10 @@ public abstract class ContractsManagerBase : IContractsManager
 
     public void AddMember(string channelId, MemberInfo member)
     {
+        if (ChannelMapping.TryGetValue(channelId, out var channelInfo))
+        {
+            channelInfo.Members.AddOrUpdate(member.UserId, member, (id, instance) => member);
+        }
     }
 
     public void RemoveMember(string channelId, string userId)

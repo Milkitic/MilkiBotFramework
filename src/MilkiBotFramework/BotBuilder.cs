@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
@@ -60,9 +61,9 @@ public sealed class BotBuilder
         return this;
     }
 
-    public BotBuilder UseSingleton<T>() where T : class
+    public BotBuilder ConfigureServices(Action<IServiceCollection> configureServices)
     {
-        _services.AddSingleton<T>();
+        configureServices?.Invoke(_services);
         return this;
     }
 
@@ -70,7 +71,13 @@ public sealed class BotBuilder
     {
         _configureLogger ??= CreateDefaultLoggerConfiguration();
         _services
-            .AddLogging(_configureLogger)
+            .AddLogging(k =>
+            {
+#if DEBUG
+                k.AddFilter(o => true);
+#endif
+                _configureLogger(k);
+            })
             .AddSingleton(_botOptions)
             .AddSingleton<ImageProcessor>()
             .AddSingleton<BotTaskScheduler>()
@@ -107,6 +114,11 @@ public sealed class BotBuilder
 
     private static Action<ILoggingBuilder> CreateDefaultLoggerConfiguration()
     {
-        return k => k.AddConsole();
+        return k => k.AddSimpleConsole(options =>
+        {
+            options.IncludeScopes = true;
+            //options.SingleLine = true;
+            options.TimestampFormat = "hh:mm:ss.ffzz ";
+        });
     }
 }

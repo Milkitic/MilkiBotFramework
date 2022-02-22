@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContractsManaging;
+using MilkiBotFramework.ContractsManaging.Models;
 using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.Dispatching;
@@ -11,8 +12,8 @@ namespace MilkiBotFramework.Dispatching;
 public abstract class DispatcherBase<TMessageContext> : IDispatcher
     where TMessageContext : MessageContext
 {
-    public event Func<TMessageContext, Task>? PublicMessageReceived;
-    public event Func<TMessageContext, Task>? PrivateMessageReceived;
+    public event Func<TMessageContext, ChannelInfo, MemberInfo, Task>? ChannelMessageReceived;
+    public event Func<TMessageContext, PrivateInfo, Task>? PrivateMessageReceived;
     public event Func<TMessageContext, Task>? NoticeMessageReceived;
     public event Func<TMessageContext, Task>? MetaMessageReceived;
 
@@ -59,12 +60,18 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         {
             case MessageType.Private:
                 var privateResult = await _contractsManager.TryGetPrivateInfoByMessageContext(messageIdentity);
-                if (PrivateMessageReceived != null) await PrivateMessageReceived.Invoke(messageContext);
+                if (privateResult.IsSuccess && PrivateMessageReceived != null)
+                {
+                    await PrivateMessageReceived.Invoke(messageContext, privateResult.PrivateInfo);
+                }
                 break;
             case MessageType.Public:
                 var channelResult =
                     await _contractsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.UserId);
-                if (PublicMessageReceived != null) await PublicMessageReceived.Invoke(messageContext);
+                if (channelResult.IsSuccess && ChannelMessageReceived != null)
+                {
+                    await ChannelMessageReceived.Invoke(messageContext, channelResult.ChannelInfo, channelResult.MemberInfo);
+                }
                 break;
             case MessageType.Notice:
                 if (NoticeMessageReceived != null) await NoticeMessageReceived.Invoke(messageContext);
@@ -76,7 +83,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                 throw new ArgumentOutOfRangeException();
         }
 
-        _logger.LogInformation($"Received data: \r\n{messageContext}");
+        _logger.LogDebug($"Received data: \r\n{messageContext}");
     }
 
     protected abstract TMessageContext CreateMessageContext(string rawMessage);
@@ -85,13 +92,13 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         [NotNullWhen(true)] out MessageIdentity? messageIdentity,
         out string? strIdentity);
 
-    event Func<MessageContext, Task>? IDispatcher.PublicMessageReceived
+    event Func<MessageContext, ChannelInfo, MemberInfo, Task>? IDispatcher.ChannelMessageReceived
     {
-        add => PublicMessageReceived += value;
-        remove => PublicMessageReceived -= value;
+        add => ChannelMessageReceived += value;
+        remove => ChannelMessageReceived -= value;
     }
 
-    event Func<MessageContext, Task>? IDispatcher.PrivateMessageReceived
+    event Func<MessageContext, PrivateInfo, Task>? IDispatcher.PrivateMessageReceived
     {
         add => PrivateMessageReceived += value;
         remove => PrivateMessageReceived -= value;
