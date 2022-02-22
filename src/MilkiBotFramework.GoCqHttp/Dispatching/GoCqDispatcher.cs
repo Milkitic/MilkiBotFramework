@@ -11,7 +11,7 @@ using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.GoCqHttp.Dispatching
 {
-    public class GoCqDispatcher : DispatcherBase<GoCqMessageContext>
+    public class GoCqDispatcher : DispatcherBase<GoCqMessageRequestContext>
     {
         private readonly GoCqApi _goCqApi;
 
@@ -21,16 +21,16 @@ namespace MilkiBotFramework.GoCqHttp.Dispatching
             _goCqApi = goCqApi;
         }
 
-        protected override GoCqMessageContext CreateMessageContext(string rawMessage)
+        protected override GoCqMessageRequestContext CreateMessageContext(string rawMessage)
         {
-            return new GoCqMessageContext(rawMessage);
+            return new GoCqMessageRequestContext(rawMessage);
         }
 
-        protected override bool TryGetIdentityByRawMessage(GoCqMessageContext messageContext,
+        protected override bool TryGetIdentityByRawMessage(GoCqMessageRequestContext messageRequestContext,
             [NotNullWhen(true)] out MessageIdentity? messageIdentity,
             out string? strIdentity)
         {
-            var rawJson = messageContext.RawTextMessage;
+            var rawJson = messageRequestContext.RawTextMessage;
             strIdentity = null;
 
             var jDoc = JsonDocument.Parse(rawJson);
@@ -41,7 +41,7 @@ namespace MilkiBotFramework.GoCqHttp.Dispatching
                 return false;
             }
 
-            messageContext.RawJsonDocument = jDoc;
+            messageRequestContext.RawJsonDocument = jDoc;
             var postType = postTypeElement.GetString();
 
             if (postType == "meta_event")
@@ -63,8 +63,8 @@ namespace MilkiBotFramework.GoCqHttp.Dispatching
                 {
                     var parsedObj = JsonSerializer.Deserialize<PrivateMessage>(rawJson)!;
                     messageIdentity = new MessageIdentity(parsedObj.UserId, MessageType.Private);
-                    messageContext.RawMessage = parsedObj;
-                    messageContext.UserId = parsedObj.UserId;
+                    messageRequestContext.RawMessage = parsedObj;
+                    messageRequestContext.UserId = parsedObj.UserId;
                     return true;
                 }
 
@@ -72,8 +72,8 @@ namespace MilkiBotFramework.GoCqHttp.Dispatching
                 {
                     var parsedObj = JsonSerializer.Deserialize<GroupMessage>(rawJson)!;
                     messageIdentity = new MessageIdentity(parsedObj.GroupId, MessageType.Public);
-                    messageContext.RawMessage = parsedObj;
-                    messageContext.UserId = parsedObj.UserId;
+                    messageRequestContext.RawMessage = parsedObj;
+                    messageRequestContext.UserId = parsedObj.UserId;
                     return true;
                 }
 
@@ -81,8 +81,8 @@ namespace MilkiBotFramework.GoCqHttp.Dispatching
                 {
                     var parsedObj = JsonSerializer.Deserialize<GuildMessage>(rawJson)!;
                     messageIdentity = new MessageIdentity(parsedObj.GuildId, parsedObj.ChannelId, MessageType.Public);
-                    messageContext.RawMessage = parsedObj;
-                    messageContext.UserId = parsedObj.UserId;
+                    messageRequestContext.RawMessage = parsedObj;
+                    messageRequestContext.UserId = parsedObj.UserId;
                     return true;
                 }
 

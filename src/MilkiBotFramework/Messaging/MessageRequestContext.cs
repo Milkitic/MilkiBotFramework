@@ -4,7 +4,11 @@ using MilkiBotFramework.Plugins.CommandLine;
 
 namespace MilkiBotFramework.Messaging;
 
-public record MessageContext
+public class MessageResponseContext
+{
+
+}
+public class MessageRequestContext
 {
     public string RawTextMessage { get; }
 
@@ -20,11 +24,17 @@ public record MessageContext
 
     public MessageIdentity? Identity { get; set; }
     public MessageAuthority Authority { get; set; }
+    public MessageAuthority MinimumAuthority { get; set; }
 
     public DateTimeOffset ReceivedTime { get; set; }
 
-    public MessageContext(string rawTextMessage)
+    public MessageRequestContext(string rawTextMessage)
     {
         RawTextMessage = rawTextMessage;
+    }
+
+    public bool ValidateAuthority(MessageAuthority authority)
+    {
+        return authority >= MinimumAuthority;
     }
 }

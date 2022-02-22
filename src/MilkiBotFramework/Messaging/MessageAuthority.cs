@@ -2,5 +2,5 @@
 
 public enum MessageAuthority
 {
-    Public, Admin, Root
+    Unspecified, Public, SubAdmin, Admin, Root
 }

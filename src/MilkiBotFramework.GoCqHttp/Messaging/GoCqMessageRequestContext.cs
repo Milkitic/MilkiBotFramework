@@ -4,9 +4,9 @@ using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.GoCqHttp.Messaging;
 
-public record GoCqMessageContext : MessageContext
+public class GoCqMessageRequestContext : MessageRequestContext
 {
-    public GoCqMessageContext(string rawTextMessage) : base(rawTextMessage)
+    public GoCqMessageRequestContext(string rawTextMessage) : base(rawTextMessage)
     {
     }
 

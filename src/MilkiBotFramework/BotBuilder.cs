@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContractsManaging;
 using MilkiBotFramework.Dispatching;
+using MilkiBotFramework.Plugins;
 using MilkiBotFramework.Tasking;
 using MilkiBotFramework.Utils;
 
@@ -24,6 +25,7 @@ public sealed class BotBuilder
     private Type? _dispatcherType;
     private Type? _contractsManagerType;
     private readonly ServiceCollection _services;
+    private string _pluginBaseDir = "./plugins";
 
     public BotBuilder ConfigureOptions(Action<BotOptions> configureBot)
     {
@@ -34,6 +36,12 @@ public sealed class BotBuilder
     public BotBuilder ConfigureLogger(Action<ILoggingBuilder> configureLogger)
     {
         _configureLogger = configureLogger;
+        return this;
+    }
+
+    public BotBuilder SetPluginBaseDirectory(string directory)
+    {
+        _pluginBaseDir = directory;
         return this;
     }
 
@@ -81,6 +89,7 @@ public sealed class BotBuilder
             .AddSingleton(_botOptions)
             .AddSingleton<ImageProcessor>()
             .AddSingleton<BotTaskScheduler>()
+            .AddSingleton<PluginManager>()
             .AddSingleton(typeof(IConnector),
                 _connectorType ?? throw new ArgumentNullException(nameof(IConnector),
                     "The IConnector implementation is not specified."))
@@ -93,6 +102,10 @@ public sealed class BotBuilder
             .AddSingleton<Bot>();
         var serviceProvider = _services.BuildServiceProvider();
 
+        // PluginManager
+        var pluginManager = serviceProvider.GetService<PluginManager>()!;
+        pluginManager.PluginBaseDirectory = _pluginBaseDir;
+        pluginManager.InitializeAllPlugins();
         // Connector
         var connector = (IConnector)serviceProvider.GetService(typeof(IConnector));
         _configureConnector?.Invoke(connector);

@@ -10,7 +10,7 @@ using MilkiBotFramework.Messaging;
 namespace MilkiBotFramework.Dispatching;
 
 public abstract class DispatcherBase<TMessageContext> : IDispatcher
-    where TMessageContext : MessageContext
+    where TMessageContext : MessageRequestContext
 {
     public event Func<TMessageContext, ChannelInfo, MemberInfo, Task>? ChannelMessageReceived;
     public event Func<TMessageContext, PrivateInfo, Task>? PrivateMessageReceived;
@@ -83,7 +83,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                 throw new ArgumentOutOfRangeException();
         }
 
-        _logger.LogDebug($"Received data: \r\n{messageContext}");
+        //_logger.LogDebug($"Received data: \r\n{messageContext}");
     }
 
     protected abstract TMessageContext CreateMessageContext(string rawMessage);
@@ -92,25 +92,25 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         [NotNullWhen(true)] out MessageIdentity? messageIdentity,
         out string? strIdentity);
 
-    event Func<MessageContext, ChannelInfo, MemberInfo, Task>? IDispatcher.ChannelMessageReceived
+    event Func<MessageRequestContext, ChannelInfo, MemberInfo, Task>? IDispatcher.ChannelMessageReceived
     {
         add => ChannelMessageReceived += value;
         remove => ChannelMessageReceived -= value;
     }
 
-    event Func<MessageContext, PrivateInfo, Task>? IDispatcher.PrivateMessageReceived
+    event Func<MessageRequestContext, PrivateInfo, Task>? IDispatcher.PrivateMessageReceived
     {
         add => PrivateMessageReceived += value;
         remove => PrivateMessageReceived -= value;
     }
 
-    event Func<MessageContext, Task>? IDispatcher.SystemMessageReceived
+    event Func<MessageRequestContext, Task>? IDispatcher.SystemMessageReceived
     {
         add => NoticeMessageReceived += value;
         remove => NoticeMessageReceived -= value;
     }
 
-    event Func<MessageContext, Task>? IDispatcher.MetaMessageReceived
+    event Func<MessageRequestContext, Task>? IDispatcher.MetaMessageReceived
     {
         add => MetaMessageReceived += value;
         remove => MetaMessageReceived -= value;

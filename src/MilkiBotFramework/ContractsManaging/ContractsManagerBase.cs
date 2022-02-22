@@ -129,38 +129,38 @@ public abstract class ContractsManagerBase : IContractsManager
     {
     }
 
-    protected virtual Task<ContractUpdateResult> UpdateMemberIfPossible(MessageContext messageContext)
+    protected virtual Task<ContractUpdateResult> UpdateMemberIfPossible(MessageRequestContext messageRequestContext)
     {
         return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
     }
 
-    protected virtual Task<ContractUpdateResult> UpdateChannelsIfPossible(MessageContext messageContext)
+    protected virtual Task<ContractUpdateResult> UpdateChannelsIfPossible(MessageRequestContext messageRequestContext)
     {
         return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
     }
 
-    protected virtual Task<ContractUpdateResult> UpdatePrivatesIfPossible(MessageContext messageContext)
+    protected virtual Task<ContractUpdateResult> UpdatePrivatesIfPossible(MessageRequestContext messageRequestContext)
     {
         return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
     }
 
-    private async Task Dispatcher_NoticeMessageReceived(MessageContext messageContext)
+    private async Task Dispatcher_NoticeMessageReceived(MessageRequestContext messageRequestContext)
     {
-        var updateResult = await UpdateMemberIfPossible(messageContext);
+        var updateResult = await UpdateMemberIfPossible(messageRequestContext);
         if (updateResult.IsSuccess)
         {
             _logger.LogInformation("Member " + updateResult.ContractUpdateType + ": " + updateResult.Id);
             return;
         }
 
-        updateResult = await UpdateChannelsIfPossible(messageContext);
+        updateResult = await UpdateChannelsIfPossible(messageRequestContext);
         if (updateResult.IsSuccess)
         {
             _logger.LogInformation("Channel " + updateResult.ContractUpdateType + ": " + updateResult.Id);
             return;
         }
 
-        updateResult = await UpdatePrivatesIfPossible(messageContext);
+        updateResult = await UpdatePrivatesIfPossible(messageRequestContext);
         if (updateResult.IsSuccess)
         {
             _logger.LogInformation("Private " + updateResult.ContractUpdateType + ": " + updateResult.Id);
