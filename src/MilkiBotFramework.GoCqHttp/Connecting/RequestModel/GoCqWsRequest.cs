@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace MilkiBotFramework.GoCqHttp.Connecting;
+namespace MilkiBotFramework.GoCqHttp.Connecting.RequestModel;
 
 public sealed class GoCqWsRequest
 {

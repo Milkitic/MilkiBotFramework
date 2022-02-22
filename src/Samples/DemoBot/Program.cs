@@ -21,6 +21,7 @@ namespace DemoBot
                         //options.SingleLine = true;
                         options.TimestampFormat = "hh:mm:ss.ffzz ";
                     }))
+                .UseSingleton<GoCqApi>()
                 .UseConnector<GoCqWsClient>("ws://127.0.0.1:6700")
                 .UseDispatcher<GoCqDispatcher>()
                 .UseContractsManager<GoCqContractsManager>()

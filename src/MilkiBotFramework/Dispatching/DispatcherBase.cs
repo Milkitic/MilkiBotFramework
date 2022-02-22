@@ -13,7 +13,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
 {
     public event Func<TMessageContext, Task>? PublicMessageReceived;
     public event Func<TMessageContext, Task>? PrivateMessageReceived;
-    public event Func<TMessageContext, Task>? SystemMessageReceived;
+    public event Func<TMessageContext, Task>? NoticeMessageReceived;
     public event Func<TMessageContext, Task>? MetaMessageReceived;
 
     private readonly IConnector _connector;
@@ -58,14 +58,16 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         switch (messageIdentity!.MessageType)
         {
             case MessageType.Private:
+                var privateResult = await _contractsManager.TryGetPrivateInfoByMessageContext(messageIdentity);
                 if (PrivateMessageReceived != null) await PrivateMessageReceived.Invoke(messageContext);
                 break;
             case MessageType.Public:
-                _contractsManager.TryGetChannelInfoByMessageContext(messageIdentity, out var channelInfo, out var memberInfo);
+                var channelResult =
+                    await _contractsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.UserId);
                 if (PublicMessageReceived != null) await PublicMessageReceived.Invoke(messageContext);
                 break;
-            case MessageType.System:
-                if (SystemMessageReceived != null) await SystemMessageReceived.Invoke(messageContext);
+            case MessageType.Notice:
+                if (NoticeMessageReceived != null) await NoticeMessageReceived.Invoke(messageContext);
                 break;
             case MessageType.Meta:
                 if (MetaMessageReceived != null) await MetaMessageReceived.Invoke(messageContext);
@@ -97,8 +99,8 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
 
     event Func<MessageContext, Task>? IDispatcher.SystemMessageReceived
     {
-        add => SystemMessageReceived += value;
-        remove => SystemMessageReceived -= value;
+        add => NoticeMessageReceived += value;
+        remove => NoticeMessageReceived -= value;
     }
 
     event Func<MessageContext, Task>? IDispatcher.MetaMessageReceived

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContractsManaging;
 using MilkiBotFramework.Dispatching;
+using MilkiBotFramework.GoCqHttp.Connecting;
 using MilkiBotFramework.GoCqHttp.Messaging.Events;
 using MilkiBotFramework.Messaging;
 
@@ -11,9 +12,12 @@ namespace MilkiBotFramework.GoCqHttp.Dispatching
 {
     public class GoCqDispatcher : DispatcherBase<GoCqMessageContext>
     {
-        public GoCqDispatcher(IConnector connector, IContractsManager contractsManager, ILogger<GoCqDispatcher> logger)
-            : base(connector, contractsManager, logger)
+        private readonly GoCqApi _goCqApi;
+
+        public GoCqDispatcher(GoCqApi goCqApi, IContractsManager contractsManager, ILogger<GoCqDispatcher> logger)
+            : base(goCqApi.Connector, contractsManager, logger)
         {
+            _goCqApi = goCqApi;
         }
 
         protected override GoCqMessageContext CreateMessageContext(string rawMessage)
@@ -42,6 +46,12 @@ namespace MilkiBotFramework.GoCqHttp.Dispatching
             if (postType == "meta_event")
             {
                 messageIdentity = MessageIdentity.MetaMessage;
+                return true;
+            }
+
+            if (postType == "notice")
+            {
+                messageIdentity = MessageIdentity.NoticeMessage;
                 return true;
             }
 

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging.ResponseModel
+namespace MilkiBotFramework.GoCqHttp.Connecting.ResponseModel
 {
     public class StrangerInfo
     {

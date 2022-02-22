@@ -2,5 +2,5 @@
 
 public enum MessageType
 {
-    Private, Public, System, Meta
+    Private, Public, Notice, Meta
 }

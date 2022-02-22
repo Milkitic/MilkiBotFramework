@@ -1,10 +1,11 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.ContractsManaging;
 
 public interface IContractsManager
 {
-    bool TryGetChannelInfoByMessageContext(MessageIdentity messageIdentity, out ChannelInfo channelInfo, out MemberInfo memberInfo);
-    bool TryGetPrivateInfoByMessageContext(MessageIdentity messageIdentity, out PrivateInfo channelInfo);
+    Task<ChannelInfoResult> TryGetChannelInfoByMessageContext(MessageIdentity messageIdentity, string userId);
+    Task<PrivateInfoResult> TryGetPrivateInfoByMessageContext(MessageIdentity messageIdentity);
 }

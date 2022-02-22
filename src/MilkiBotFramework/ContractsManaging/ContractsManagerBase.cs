@@ -43,9 +43,9 @@ public abstract class ContractsManagerBase : IContractsManager
         get => _dispatcher;
         internal set
         {
-            if (_dispatcher != null) _dispatcher.SystemMessageReceived -= Dispatcher_SystemMessageReceived;
+            if (_dispatcher != null) _dispatcher.SystemMessageReceived -= Dispatcher_NoticeMessageReceived;
             _dispatcher = value;
-            if (_dispatcher != null) _dispatcher.SystemMessageReceived += Dispatcher_SystemMessageReceived;
+            if (_dispatcher != null) _dispatcher.SystemMessageReceived += Dispatcher_NoticeMessageReceived;
         }
     }
 
@@ -73,9 +73,16 @@ public abstract class ContractsManagerBase : IContractsManager
         return false;
     }
 
-    public bool TryGetChannelInfo(string channelId, out ChannelInfo channelInfo, string? subChannelId = null)
+    public bool TryGetChannelInfo(string channelId,
+        [NotNullWhen(true)] out ChannelInfo? channelInfo,
+        string? subChannelId = null)
     {
-        throw new NotImplementedException();
+        if (subChannelId == null)
+            return _channelMapping.TryGetValue(channelId, out channelInfo);
+
+        channelInfo = null;
+        return _subChannelMapping.TryGetValue(channelId, out var dict) &&
+               dict.TryGetValue(subChannelId, out channelInfo);
     }
 
     public bool TryGetPrivateInfo(string userId, out PrivateInfo privateInfo)
@@ -93,6 +100,7 @@ public abstract class ContractsManagerBase : IContractsManager
 
     public void AddChannel(ChannelInfo channelInfo)
     {
+        _channelMapping.AddOrUpdate(channelInfo.ChannelId, channelInfo, (id, instance) => channelInfo);
     }
 
     public void RemoveChannel(string channelId)
@@ -130,7 +138,7 @@ public abstract class ContractsManagerBase : IContractsManager
         return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
     }
 
-    private async Task Dispatcher_SystemMessageReceived(MessageContext messageContext)
+    private async Task Dispatcher_NoticeMessageReceived(MessageContext messageContext)
     {
         var updateResult = await UpdateMemberIfPossible(messageContext);
         if (updateResult.IsSuccess)
@@ -153,9 +161,22 @@ public abstract class ContractsManagerBase : IContractsManager
         }
     }
 
-    public abstract bool TryGetChannelInfoByMessageContext(MessageIdentity messageIdentity,
-        out ChannelInfo channelInfo,
-        out MemberInfo memberInfo);
-    public abstract bool TryGetPrivateInfoByMessageContext(MessageIdentity messageIdentity,
-        out PrivateInfo channelInfo);
+    public abstract Task<ChannelInfoResult> TryGetChannelInfoByMessageContext(MessageIdentity messageIdentity, string userId);
+    public abstract Task<PrivateInfoResult> TryGetPrivateInfoByMessageContext(MessageIdentity messageIdentity);
+}
+
+public sealed class ChannelInfoResult : ResultInfoBase
+{
+    public ChannelInfo? ChannelInfo { get; init; }
+    public MemberInfo? MemberInfo { get; init; }
+}
+
+public sealed class PrivateInfoResult : ResultInfoBase
+{
+    public PrivateInfo? PrivateInfo { get; init; }
+}
+
+public abstract class ResultInfoBase
+{
+    public bool IsSuccess { get; init; }
 }

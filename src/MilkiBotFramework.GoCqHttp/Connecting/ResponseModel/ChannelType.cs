@@ -1,4 +1,4 @@
-﻿namespace MilkiBotFramework.GoCqHttp.Messaging.ResponseModel;
+﻿namespace MilkiBotFramework.GoCqHttp.Connecting.ResponseModel;
 
 public enum ChannelType
 {

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace MilkiBotFramework.GoCqHttp.Connecting;
+namespace MilkiBotFramework.GoCqHttp.Connecting.ResponseModel;
 
 public sealed class GoCqWsResponse<T>
 {

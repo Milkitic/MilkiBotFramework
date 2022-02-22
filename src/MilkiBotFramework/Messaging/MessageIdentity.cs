@@ -27,6 +27,7 @@ public sealed class MessageIdentity
     }
 
     public static MessageIdentity MetaMessage { get; } = new(MessageType.Meta);
+    public static MessageIdentity NoticeMessage { get; } = new(MessageType.Notice);
 
     public override string ToString()
     {

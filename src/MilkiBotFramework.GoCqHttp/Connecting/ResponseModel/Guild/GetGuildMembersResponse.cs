@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging.ResponseModel.Guild;
+namespace MilkiBotFramework.GoCqHttp.Connecting.ResponseModel.Guild;
 
 public class GetGuildMembersResponse
 {

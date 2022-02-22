@@ -11,7 +11,10 @@ namespace MilkiBotFramework;
 
 public sealed class BotBuilder
 {
-    internal BotBuilder() { }
+    internal BotBuilder()
+    {
+        _services = new ServiceCollection();
+    }
 
     private readonly BotOptions _botOptions = new();
     private Action<ILoggingBuilder>? _configureLogger;
@@ -19,6 +22,7 @@ public sealed class BotBuilder
     private Type? _connectorType;
     private Type? _dispatcherType;
     private Type? _contractsManagerType;
+    private readonly ServiceCollection _services;
 
     public BotBuilder ConfigureOptions(Action<BotOptions> configureBot)
     {
@@ -56,10 +60,16 @@ public sealed class BotBuilder
         return this;
     }
 
+    public BotBuilder UseSingleton<T>() where T : class
+    {
+        _services.AddSingleton<T>();
+        return this;
+    }
+
     internal Bot GetBotInstance()
     {
         _configureLogger ??= CreateDefaultLoggerConfiguration();
-        var services = new ServiceCollection()
+        _services
             .AddLogging(_configureLogger)
             .AddSingleton(_botOptions)
             .AddSingleton<ImageProcessor>()
@@ -74,7 +84,7 @@ public sealed class BotBuilder
                 _contractsManagerType ?? throw new ArgumentNullException(nameof(IContractsManager),
                     "The IContractsManager implementation is not specified."))
             .AddSingleton<Bot>();
-        var serviceProvider = services.BuildServiceProvider();
+        var serviceProvider = _services.BuildServiceProvider();
 
         // Connector
         var connector = (IConnector)serviceProvider.GetService(typeof(IConnector));

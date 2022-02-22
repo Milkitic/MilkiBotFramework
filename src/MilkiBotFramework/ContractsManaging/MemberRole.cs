@@ -2,5 +2,5 @@
 
 public enum MemberRole
 {
-    Role, Admin, Member
+    Owner, Admin, Member
 }

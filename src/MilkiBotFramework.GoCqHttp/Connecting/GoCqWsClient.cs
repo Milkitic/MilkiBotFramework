@@ -5,21 +5,24 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
+using MilkiBotFramework.GoCqHttp.Connecting.RequestModel;
+using MilkiBotFramework.GoCqHttp.Connecting.ResponseModel;
 
 namespace MilkiBotFramework.GoCqHttp.Connecting;
 
-public sealed class GoCqWsClient : WebSocketClientConnector
+public sealed class GoCqWsClient : WebSocketClientConnector, IGoCqConnector
 {
+
     public GoCqWsClient(ILogger<GoCqWsClient> logger) : base(logger)
     {
     }
 
-    public Task<GoCqWsResponse<object>> SendAndGetAsync(string action, IDictionary<string, object>? @params)
+    public Task<GoCqWsResponse<object>> SendMessageAsync(string action, IDictionary<string, object>? @params)
     {
-        return SendAndGetAsync<object>(action, @params);
+        return SendMessageAsync<object>(action, @params);
     }
 
-    public async Task<GoCqWsResponse<T>> SendAndGetAsync<T>(string action, IDictionary<string, object>? @params)
+    public async Task<GoCqWsResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params)
     {
         var state = Guid.NewGuid().ToString("B");
         var req = new GoCqWsRequest

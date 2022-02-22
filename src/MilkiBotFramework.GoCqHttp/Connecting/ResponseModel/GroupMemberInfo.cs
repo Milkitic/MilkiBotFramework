@@ -2,15 +2,17 @@
 using System.Text.Json.Serialization;
 using MilkiBotFramework.GoCqHttp.Internal;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging.ResponseModel
+namespace MilkiBotFramework.GoCqHttp.Connecting.ResponseModel
 {
     public class GroupMember
     {
         [JsonPropertyName("group_id")]
-        public long GroupId { get; set; }
+        [JsonConverter(typeof(Int64ToStringConverter))]
+        public string GroupId { get; set; }
 
         [JsonPropertyName("user_id")]
-        public long UserId { get; set; }
+        [JsonConverter(typeof(Int64ToStringConverter))]
+        public string UserId { get; set; }
 
         [JsonPropertyName("nickname")]
         public string? Nickname { get; set; }
