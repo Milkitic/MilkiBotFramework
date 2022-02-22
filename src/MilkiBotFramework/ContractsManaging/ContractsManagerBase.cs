@@ -18,12 +18,12 @@ public abstract class ContractsManagerBase : IContractsManager
     private readonly ILogger _logger;
     private IDispatcher? _dispatcher;
 
-    protected ConcurrentDictionary<string, ConcurrentDictionary<string, ChannelInfo>> _subChannelMapping = new();
-    protected ConcurrentDictionary<string, ChannelInfo> _channelMapping = new();
-    protected ConcurrentDictionary<string, PrivateInfo> _privateMapping = new();
+    protected readonly ConcurrentDictionary<string, ConcurrentDictionary<string, ChannelInfo>> SubChannelMapping = new();
+    protected readonly ConcurrentDictionary<string, ChannelInfo> ChannelMapping = new();
+    protected readonly ConcurrentDictionary<string, PrivateInfo> PrivateMapping = new();
 
-    protected ConcurrentDictionary<string, Avatar> _userAvatarMapping = new();
-    protected ConcurrentDictionary<string, Avatar> _channelAvatarMapping = new();
+    protected readonly ConcurrentDictionary<string, Avatar> UserAvatarMapping = new();
+    protected readonly ConcurrentDictionary<string, Avatar> ChannelAvatarMapping = new();
 
     public ContractsManagerBase(BotTaskScheduler botTaskScheduler, ILogger logger)
     {
@@ -55,7 +55,7 @@ public abstract class ContractsManagerBase : IContractsManager
     {
         if (subChannelId == null)
         {
-            if (_channelMapping.TryGetValue(channelId, out var channelInfo) &&
+            if (ChannelMapping.TryGetValue(channelId, out var channelInfo) &&
                 channelInfo.Members.TryGetValue(userId, out memberInfo))
             {
                 return true;
@@ -63,7 +63,7 @@ public abstract class ContractsManagerBase : IContractsManager
         }
         else
         {
-            if (_subChannelMapping.TryGetValue(channelId, out var subChannels) &&
+            if (SubChannelMapping.TryGetValue(channelId, out var subChannels) &&
                 subChannels.TryGetValue(channelId, out var channelInfo) &&
                 channelInfo.Members.TryGetValue(userId, out memberInfo))
             {
@@ -80,10 +80,10 @@ public abstract class ContractsManagerBase : IContractsManager
         string? subChannelId = null)
     {
         if (subChannelId == null)
-            return _channelMapping.TryGetValue(channelId, out channelInfo);
+            return ChannelMapping.TryGetValue(channelId, out channelInfo);
 
         channelInfo = null;
-        return _subChannelMapping.TryGetValue(channelId, out var dict) &&
+        return SubChannelMapping.TryGetValue(channelId, out var dict) &&
                dict.TryGetValue(subChannelId, out channelInfo);
     }
 
@@ -102,7 +102,7 @@ public abstract class ContractsManagerBase : IContractsManager
 
     public void AddChannel(ChannelInfo channelInfo)
     {
-        _channelMapping.AddOrUpdate(channelInfo.ChannelId, channelInfo, (id, instance) => channelInfo);
+        ChannelMapping.AddOrUpdate(channelInfo.ChannelId, channelInfo, (id, instance) => channelInfo);
     }
 
     public void RemoveChannel(string channelId)
