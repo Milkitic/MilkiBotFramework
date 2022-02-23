@@ -29,6 +29,7 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
         int? argStartIndex = null;
         int count = 0;
 
+        CommandLineAuthority authority = CommandLineAuthority.Public;
         ReadOnlyMemory<char>? command = null;
         char? currentQuote = null;
 
@@ -90,13 +91,14 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
 
         result = new CommandLineResult
         {
+            Authority = authority,
             Command = command,
             Arguments = arguments,
             Options = options,
             SimpleArgument = argStartIndex != null ? memory[argStartIndex.Value..].Trim() : string.Empty.AsMemory()
         };
         exception = null;
-        return true;
+        return command != null;
 
         void AddOperation(ReadOnlyMemory<char> currentWord, bool isEnd = false)
         {
@@ -115,8 +117,15 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
             }
             else if (command == null)
             {
-                command = currentWord;
-                argStartIndex = currentWord.Length;
+                if (currentWord.Span.SequenceEqual("root"))
+                    authority = CommandLineAuthority.Root;
+                else if (currentWord.Span.SequenceEqual("sudo"))
+                    authority = CommandLineAuthority.Admin;
+                else
+                {
+                    command = currentWord;
+                    argStartIndex = currentWord.Length;
+                }
             }
             else if (currentOption != null) // Option value
             {

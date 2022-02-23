@@ -18,21 +18,21 @@ public class DemoPlugin2 : BasicPlugin<GoCqMessageContext>
 
     protected override async Task OnInitialized()
     {
-        _logger.LogWarning(nameof(OnInitialized));
+        _logger.LogDebug(nameof(OnInitialized));
     }
 
     protected override async Task OnUninitialized()
     {
-        _logger.LogWarning(nameof(OnUninitialized));
+        _logger.LogDebug(nameof(OnUninitialized));
     }
 
     protected override async Task OnExecuting()
     {
-        _logger.LogWarning(nameof(OnExecuting));
+        _logger.LogDebug(nameof(OnExecuting));
     }
 
     protected override async Task OnExecuted()
     {
-        _logger.LogWarning(nameof(OnExecuted));
+        _logger.LogDebug(nameof(OnExecuted));
     }
 }

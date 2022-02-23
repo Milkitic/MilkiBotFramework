@@ -7,6 +7,7 @@ namespace MilkiBotFramework.Plugining.CommandLine;
 
 public sealed class CommandLineResult
 {
+    public CommandLineAuthority Authority { get; init; }
     public ReadOnlyMemory<char>? Command { get; init; }
     public Dictionary<ReadOnlyMemory<char>, ReadOnlyMemory<char>?>? Options { get; init; }
     public List<ReadOnlyMemory<char>>? Arguments { get; init; }
