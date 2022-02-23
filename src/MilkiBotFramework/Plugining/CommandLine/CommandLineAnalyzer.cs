@@ -16,6 +16,7 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
     {
         var memory = input.AsMemory().Trim();
         int index = 0;
+        int? argStartIndex = null;
         int count = 0;
 
         ReadOnlyMemory<char>? command = null;
@@ -81,7 +82,8 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
         {
             Command = command,
             Arguments = arguments,
-            Options = options
+            Options = options,
+            SimpleArgument = argStartIndex != null ? memory[argStartIndex.Value..].Trim() : string.Empty.AsMemory()
         };
         exception = null;
         return true;
@@ -104,6 +106,7 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
             else if (command == null)
             {
                 command = currentWord;
+                argStartIndex = currentWord.Length;
             }
             else if (currentOption != null) // Option value
             {

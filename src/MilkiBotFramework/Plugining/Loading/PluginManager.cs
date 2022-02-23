@@ -39,14 +39,15 @@ namespace MilkiBotFramework.Plugining.Loading
         public ServiceCollection BaseServiceCollection { get; internal set; }
         public IServiceProvider BaseServiceProvider { get; internal set; }
 
-        private async Task Dispatcher_ChannelMessageReceived(MessageRequestContext context, ChannelInfo channelInfo, MemberInfo memberInfo)
+        private async Task Dispatcher_ChannelMessageReceived(MessageContext context, ChannelInfo channelInfo, MemberInfo memberInfo)
         {
         }
 
-        private async Task Dispatcher_PrivateMessageReceived(MessageRequestContext requestContext, PrivateInfo privateInfo)
+        private async Task Dispatcher_PrivateMessageReceived(MessageContext requestContext, PrivateInfo privateInfo)
         {
         }
 
+        //todo: Same command; same guid
         public async Task InitializeAllPlugins()
         {
             if (!Directory.Exists(PluginBaseDirectory)) Directory.CreateDirectory(PluginBaseDirectory);
@@ -67,10 +68,18 @@ namespace MilkiBotFramework.Plugining.Loading
 
                 foreach (var assemblyContext in loaderContext.AssemblyContexts.Values)
                 {
-                    foreach (var pluginDefinition in assemblyContext.PluginDefinitions.Where(o => o.Lifetime == PluginLifetime.Singleton))
+                    foreach (var pluginDefinition in assemblyContext.PluginDefinitions
+                                 .Where(o => o.Lifetime == PluginLifetime.Singleton))
                     {
-                        var instance = (PluginBase)serviceProvider.GetService(pluginDefinition.Type);
-                        InitializePlugin(instance, pluginDefinition);
+                        try
+                        {
+                            var instance = (PluginBase)serviceProvider.GetService(pluginDefinition.Type);
+                            InitializePlugin(instance, pluginDefinition);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error while initializing plugin " + pluginDefinition.Metadata.Name);
+                        }
                     }
                 }
             }
@@ -170,7 +179,7 @@ namespace MilkiBotFramework.Plugining.Loading
                                         throw new ArgumentOutOfRangeException();
                                 }
 
-                                _logger.LogInformation($"Added plugin \"{metadata.Name}\": " +
+                                _logger.LogInformation($"Add plugin \"{metadata.Name}\": " +
                                                        $"Author={string.Join(",", metadata.Authors)}; " +
                                                        $"Version={metadata.Version}; " +
                                                        $"Lifetime={definition.Lifetime} " +
@@ -266,13 +275,82 @@ namespace MilkiBotFramework.Plugining.Loading
 
             var metadata = new PluginMetadata(Guid.Parse(guid), name, description, version, authors);
 
+            var methodSets = new HashSet<string>();
+            var commands = new List<PluginCommandDefinition>();
+            foreach (var methodInfo in type.GetMethods())
+            {
+                if (methodSets.Contains(methodInfo.Name))
+                    throw new ArgumentException(
+                        "Duplicate method name with CommandHandler definition is not supported.", methodInfo.Name);
+
+                methodSets.Add(methodInfo.Name);
+                var commandHandlerAttribute = methodInfo.GetCustomAttribute<CommandHandlerAttribute>();
+                if (commandHandlerAttribute == null) continue;
+
+                var command = commandHandlerAttribute.Command ?? methodInfo.Name.ToLower();
+                var methodDescription = methodInfo.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
+
+                var parameterDefinitions = new List<ParameterDefinition>();
+                var parameters = methodInfo.GetParameters();
+                foreach (var parameter in parameters)
+                {
+                    var targetType = parameter.ParameterType;
+                    var attrs = parameter.GetCustomAttributes(false);
+                    var parameterDefinition = GetParameterDefinition(attrs, targetType, parameter.Name);
+                    parameterDefinitions.Add(parameterDefinition);
+                }
+
+                commands.Add(new PluginCommandDefinition(command, methodDescription, methodInfo.Name, parameterDefinitions));
+            }
+
             return new PluginDefinition
             {
                 Metadata = metadata,
                 BaseType = baseType,
                 Type = type,
-                Lifetime = lifetime
+                Lifetime = lifetime,
+                Commands = commands
             };
+        }
+
+        private static ParameterDefinition GetParameterDefinition(object[] attrs, Type targetType, string parameterName)
+        {
+            var parameterDefinition = new ParameterDefinition { ParameterName = parameterName };
+
+            bool isReady = false;
+            foreach (var attr in attrs)
+            {
+                if (attr is OptionAttribute option)
+                {
+                    parameterDefinition.Abbr = option.Abbreviate;
+                    parameterDefinition.DefaultValue = option.DefaultValue;
+                    parameterDefinition.Name = option.Name;
+                    parameterDefinition.ParameterType = targetType;
+                    parameterDefinition.ValueConverter = DefaultConverter.Instance;
+                    isReady = true;
+                }
+                else if (attr is ArgumentAttribute argument)
+                {
+                    parameterDefinition.DefaultValue = argument.DefaultValue;
+                    parameterDefinition.ParameterType = targetType;
+                    parameterDefinition.IsArgument = true;
+                    parameterDefinition.ValueConverter = DefaultConverter.Instance;
+                    isReady = true;
+                }
+                else if (attr is DescriptionAttribute description)
+                {
+                    parameterDefinition.Description = description.Description;
+                    //parameterDefinition.HelpAuthority = help.Authority;
+                }
+            }
+
+            if (!isReady)
+            {
+                parameterDefinition.IsServiceArgument = true;
+                parameterDefinition.IsArgument = true;
+            }
+
+            return parameterDefinition;
         }
     }
 

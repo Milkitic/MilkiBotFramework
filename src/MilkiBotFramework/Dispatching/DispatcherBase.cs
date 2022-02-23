@@ -10,7 +10,7 @@ using MilkiBotFramework.Messaging;
 namespace MilkiBotFramework.Dispatching;
 
 public abstract class DispatcherBase<TMessageContext> : IDispatcher
-    where TMessageContext : MessageRequestContext
+    where TMessageContext : MessageContext
 {
     public event Func<TMessageContext, ChannelInfo, MemberInfo, Task>? ChannelMessageReceived;
     public event Func<TMessageContext, PrivateInfo, Task>? PrivateMessageReceived;
@@ -54,7 +54,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
             return;
         }
 
-        messageContext.Identity = messageIdentity;
+        messageContext.Request.Identity = messageIdentity;
 
         switch (messageIdentity!.MessageType)
         {
@@ -67,7 +67,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                 break;
             case MessageType.Public:
                 var channelResult =
-                    await _contractsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.UserId);
+                    await _contractsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.Request.UserId);
                 if (channelResult.IsSuccess && ChannelMessageReceived != null)
                 {
                     await ChannelMessageReceived.Invoke(messageContext, channelResult.ChannelInfo, channelResult.MemberInfo);
@@ -92,25 +92,25 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         [NotNullWhen(true)] out MessageIdentity? messageIdentity,
         out string? strIdentity);
 
-    event Func<MessageRequestContext, ChannelInfo, MemberInfo, Task>? IDispatcher.ChannelMessageReceived
+    event Func<MessageContext, ChannelInfo, MemberInfo, Task>? IDispatcher.ChannelMessageReceived
     {
         add => ChannelMessageReceived += value;
         remove => ChannelMessageReceived -= value;
     }
 
-    event Func<MessageRequestContext, PrivateInfo, Task>? IDispatcher.PrivateMessageReceived
+    event Func<MessageContext, PrivateInfo, Task>? IDispatcher.PrivateMessageReceived
     {
         add => PrivateMessageReceived += value;
         remove => PrivateMessageReceived -= value;
     }
 
-    event Func<MessageRequestContext, Task>? IDispatcher.SystemMessageReceived
+    event Func<MessageContext, Task>? IDispatcher.SystemMessageReceived
     {
         add => NoticeMessageReceived += value;
         remove => NoticeMessageReceived -= value;
     }
 
-    event Func<MessageRequestContext, Task>? IDispatcher.MetaMessageReceived
+    event Func<MessageContext, Task>? IDispatcher.MetaMessageReceived
     {
         add => MetaMessageReceived += value;
         remove => MetaMessageReceived -= value;

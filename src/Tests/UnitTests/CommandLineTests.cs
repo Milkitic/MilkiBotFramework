@@ -17,6 +17,7 @@ namespace UnitTests
 
         [Theory]
         [InlineData("test")]
+        [InlineData("test asdf asffghd")]
         [InlineData("test asdf")]
         [InlineData("test -o  -a asdf")]
         [InlineData("test  -a asdf")]

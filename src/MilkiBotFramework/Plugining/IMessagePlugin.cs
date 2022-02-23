@@ -5,5 +5,5 @@ namespace MilkiBotFramework.Plugining;
 
 public interface IMessagePlugin
 {
-    Task OnMessageReceived(MessageRequestContext request, MessageResponseContext response);
+    Task OnMessageReceived(MessageContext context);
 }

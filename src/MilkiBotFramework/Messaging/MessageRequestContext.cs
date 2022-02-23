@@ -4,10 +4,6 @@ using MilkiBotFramework.Plugining.CommandLine;
 
 namespace MilkiBotFramework.Messaging;
 
-public class MessageResponseContext
-{
-
-}
 public class MessageRequestContext
 {
     public string RawTextMessage { get; }

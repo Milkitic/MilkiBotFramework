@@ -10,6 +10,7 @@ public sealed class CommandLineResult
     public ReadOnlyMemory<char>? Command { get; init; }
     public Dictionary<ReadOnlyMemory<char>, ReadOnlyMemory<char>?>? Options { get; init; }
     public List<ReadOnlyMemory<char>>? Arguments { get; init; }
+    public ReadOnlyMemory<char>? SimpleArgument { get; init; }
 
     public override string ToString()
     {

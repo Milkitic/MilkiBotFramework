@@ -133,22 +133,22 @@ public abstract class ContractsManagerBase : IContractsManager
     {
     }
 
-    protected virtual Task<ContractUpdateResult> UpdateMemberIfPossible(MessageRequestContext messageRequestContext)
+    protected virtual Task<ContractUpdateResult> UpdateMemberIfPossible(MessageContext messageRequestContext)
     {
         return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
     }
 
-    protected virtual Task<ContractUpdateResult> UpdateChannelsIfPossible(MessageRequestContext messageRequestContext)
+    protected virtual Task<ContractUpdateResult> UpdateChannelsIfPossible(MessageContext messageRequestContext)
     {
         return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
     }
 
-    protected virtual Task<ContractUpdateResult> UpdatePrivatesIfPossible(MessageRequestContext messageRequestContext)
+    protected virtual Task<ContractUpdateResult> UpdatePrivatesIfPossible(MessageContext messageContext)
     {
         return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
     }
 
-    private async Task Dispatcher_NoticeMessageReceived(MessageRequestContext messageRequestContext)
+    private async Task Dispatcher_NoticeMessageReceived(MessageContext messageRequestContext)
     {
         var updateResult = await UpdateMemberIfPossible(messageRequestContext);
         if (updateResult.IsSuccess)

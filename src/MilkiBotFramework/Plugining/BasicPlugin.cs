@@ -8,17 +8,17 @@ namespace MilkiBotFramework.Plugining;
 public abstract class BasicPlugin : PluginBase, IMessagePlugin
 {
     public sealed override PluginType PluginType => PluginType.Basic;
-    public Task OnMessageReceived(MessageRequestContext request, MessageResponseContext response) =>
+    public Task OnMessageReceived(MessageContext context) =>
         Task.CompletedTask;
 }
 
 [PluginLifetime(PluginLifetime.Scoped)]
-public abstract class BasicPlugin<TRequestContext> : PluginBase, IMessagePlugin
-    where TRequestContext : MessageRequestContext
+public abstract class BasicPlugin<TContext> : PluginBase, IMessagePlugin
+    where TContext : MessageContext
 {
     public sealed override PluginType PluginType => PluginType.Basic;
-    public virtual Task OnMessageReceived(TRequestContext request, MessageResponseContext response) =>
+    public virtual Task OnMessageReceived(TContext request) =>
         Task.CompletedTask;
-    Task IMessagePlugin.OnMessageReceived(MessageRequestContext request, MessageResponseContext response) =>
-        OnMessageReceived((TRequestContext)request, response);
+    Task IMessagePlugin.OnMessageReceived(MessageContext context) =>
+        OnMessageReceived((TContext)context);
 }

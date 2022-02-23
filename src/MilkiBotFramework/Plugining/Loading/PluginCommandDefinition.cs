@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace MilkiBotFramework.Plugining.Loading
 {
@@ -7,45 +8,39 @@ namespace MilkiBotFramework.Plugining.Loading
         public PluginCommandDefinition(string command,
             string description,
             string sourceMethodName,
-            ParameterDefinition[] argumentDefinitions)
+            IReadOnlyList<ParameterDefinition> parameterDefinitions)
         {
             Command = command;
             Description = description;
             SourceMethodName = sourceMethodName;
-            ArgumentDefinitions = argumentDefinitions;
+            ParameterDefinitions = parameterDefinitions;
         }
 
         public string Command { get; }
         public string Description { get; }
         public string SourceMethodName { get; }
-        public ParameterDefinition[] ArgumentDefinitions { get; }
+        public IReadOnlyList<ParameterDefinition> ParameterDefinitions { get; }
     }
 
     public sealed class ParameterDefinition
     {
         private IValueConverter? _valueConverter = DefaultConverter.Instance;
 
-        public ParameterDefinition(string name, string parameterName, Type parameterType)
-        {
-            Name = name;
-            ParameterName = parameterName;
-            ParameterType = parameterType;
-        }
+        public string Name { get; internal set; }
+        public string ParameterName { get; internal set; }
+        public Type ParameterType { get; internal set; }
 
-        public string Name { get; }
-        public string ParameterName { get; }
-        public Type ParameterType { get; }
-
-        public char? Abbr { get; init; }
-        public bool IsArgument { get; init; }
+        public char? Abbr { get; internal set; }
+        public bool IsArgument { get; internal set; }
 
         public IValueConverter? ValueConverter
         {
             get => _valueConverter;
-            set => _valueConverter = value ?? DefaultConverter.Instance;
+            internal set => _valueConverter = value ?? DefaultConverter.Instance;
         }
 
-        public object? DefaultValue { get; init; }
-        public string? HelpText { get; init; }
+        public object? DefaultValue { get; internal set; }
+        public string? Description { get; internal set; }
+        public bool IsServiceArgument { get; set; }
     }
 }
