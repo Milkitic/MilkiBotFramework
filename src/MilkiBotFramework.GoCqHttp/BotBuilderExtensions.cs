@@ -13,10 +13,7 @@ namespace MilkiBotFramework.GoCqHttp
                 .UseConnector<GoCqWsClient>(uri)
                 .UseDispatcher<GoCqDispatcher>()
                 .UseContractsManager<GoCqContractsManager>()
-                .ConfigureServices(k =>
-                {
-                    k.AddSingleton<GoCqApi>();
-                });
+                .UseMessageApi<GoCqApi>();
         }
     }
 }

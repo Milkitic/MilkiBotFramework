@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using MilkiBotFramework.Connecting;
 using MilkiBotFramework.GoCqHttp.Connecting;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Attributes;
@@ -15,14 +16,17 @@ namespace DemoPlugin;
 public class AnotherServicePlugin : ServicePlugin
 {
     private readonly ILogger<AnotherServicePlugin> _logger;
+    private readonly IMessageApi _messageApi;
     private readonly GoCqApi _goCqApi;
     private readonly PluginManager _pluginManager;
 
     public AnotherServicePlugin(ILogger<AnotherServicePlugin> logger,
+        IMessageApi messageApi,
         GoCqApi goCqApi,
         PluginManager pluginManager)
     {
         _logger = logger;
+        _messageApi = messageApi;
         _goCqApi = goCqApi;
         _pluginManager = pluginManager;
     }

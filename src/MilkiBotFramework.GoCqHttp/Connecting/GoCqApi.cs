@@ -10,7 +10,7 @@ using MilkiBotFramework.GoCqHttp.Connecting.ResponseModel.Guild;
 
 namespace MilkiBotFramework.GoCqHttp.Connecting;
 
-public class GoCqApi
+public class GoCqApi : IMessageApi
 {
     private readonly IGoCqConnector _goCqConnector;
 
@@ -306,5 +306,16 @@ public class GoCqApi
         }
 
         return response.Data;
+    }
+
+    Task<string> IMessageApi.SendPrivateMessageAsync(string userId, string message)
+    {
+        return SendPrivateMessageAsync(long.Parse(userId), message);
+    }
+
+    Task<string> IMessageApi.SendChannelMessageAsync(string channelId, string message, string? subChannelId)
+    {
+        if (subChannelId == null) return SendGroupMessageAsync(long.Parse(channelId), message);
+        return SendGuildChannelMessageAsync(long.Parse(channelId), long.Parse(subChannelId), message);
     }
 }

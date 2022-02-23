@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using MilkiBotFramework.GoCqHttp.Connecting;
+using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Attributes;
 using MilkiBotFramework.Plugining.Loading;
@@ -16,17 +16,17 @@ namespace DemoBot;
 public class DemoServicePlugin : ServicePlugin
 {
     private readonly ILogger<DemoServicePlugin> _logger;
-    private readonly GoCqApi _goCqApi;
+    private readonly IMessageApi _messageApi;
     private readonly DemoPlugin _demoPlugin;
     private readonly PluginManager _pluginManager;
 
-    public DemoServicePlugin(ILogger<DemoServicePlugin> logger, 
-        GoCqApi goCqApi, 
+    public DemoServicePlugin(ILogger<DemoServicePlugin> logger,
+        IMessageApi messageApi,
         DemoPlugin demoPlugin,
         PluginManager pluginManager)
     {
         _logger = logger;
-        _goCqApi = goCqApi;
+        _messageApi = messageApi;
         _demoPlugin = demoPlugin;
         _pluginManager = pluginManager;
     }

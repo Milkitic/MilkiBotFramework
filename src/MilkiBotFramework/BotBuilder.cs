@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -23,6 +24,7 @@ public sealed class BotBuilder
     private Action<IConnectorConfigurable>? _configureConnector;
     private Type? _connectorType;
     private Type? _dispatcherType;
+    private Type? _messageApiType;
     private Type? _contractsManagerType;
     private readonly ServiceCollection _services;
     private string _pluginBaseDir = "./plugins";
@@ -69,6 +71,12 @@ public sealed class BotBuilder
         return this;
     }
 
+    public BotBuilder UseMessageApi<T>() where T : IMessageApi
+    {
+        _messageApiType = typeof(T);
+        return this;
+    }
+
     public BotBuilder ConfigureServices(Action<IServiceCollection> configureServices)
     {
         configureServices?.Invoke(_services);
@@ -100,6 +108,12 @@ public sealed class BotBuilder
                 _contractsManagerType ?? throw new ArgumentNullException(nameof(IContractsManager),
                     "The IContractsManager implementation is not specified."))
             .AddSingleton<Bot>();
+        if (_messageApiType != null)
+        {
+            _services.AddSingleton(_messageApiType);
+            _services.AddSingleton(typeof(IMessageApi), provider => provider.GetService(_messageApiType));
+        }
+
         _services.AddSingleton(_services);
         var serviceProvider = _services.BuildServiceProvider();
 
