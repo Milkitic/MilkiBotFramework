@@ -112,12 +112,7 @@ public class StreamCommandLineAnalyzer : ICommandLineAnalyzer
             args.Add(@switch, null);
         }
 
-        result = new CommandLineResult
-        {
-            Command = commandName.AsMemory(),
-            Options = args,
-            Arguments = freeArgs,
-        };
+        result = new CommandLineResult(CommandLineAuthority.Public, commandName.AsMemory(), args, freeArgs, "".AsMemory());
         exception = null;
         return true;
     }

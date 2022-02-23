@@ -7,11 +7,24 @@ namespace MilkiBotFramework.Plugining.CommandLine;
 
 public sealed class CommandLineResult
 {
-    public CommandLineAuthority Authority { get; init; }
-    public ReadOnlyMemory<char>? Command { get; init; }
-    public Dictionary<ReadOnlyMemory<char>, ReadOnlyMemory<char>?>? Options { get; init; }
-    public List<ReadOnlyMemory<char>>? Arguments { get; init; }
-    public ReadOnlyMemory<char>? SimpleArgument { get; init; }
+    public CommandLineResult(CommandLineAuthority authority,
+        ReadOnlyMemory<char>? command,
+        Dictionary<ReadOnlyMemory<char>, ReadOnlyMemory<char>?> options,
+        List<ReadOnlyMemory<char>> arguments,
+        ReadOnlyMemory<char> simpleArgument)
+    {
+        Authority = authority;
+        Command = command;
+        Options = options;
+        Arguments = arguments;
+        SimpleArgument = simpleArgument;
+    }
+
+    public CommandLineAuthority Authority { get; }
+    public ReadOnlyMemory<char>? Command { get;  }
+    public Dictionary<ReadOnlyMemory<char>, ReadOnlyMemory<char>?> Options { get; }
+    public List<ReadOnlyMemory<char>> Arguments { get;  }
+    public ReadOnlyMemory<char> SimpleArgument { get; }
 
     public override string ToString()
     {

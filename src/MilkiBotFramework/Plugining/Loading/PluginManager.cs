@@ -25,6 +25,7 @@ namespace MilkiBotFramework.Plugining.Loading
         private readonly IDispatcher _dispatcher;
         private readonly ILogger<PluginManager> _logger;
         private readonly ICommandLineAnalyzer _commandLineAnalyzer;
+        private readonly CommandLineInjector _commandLineInjector;
 
         // sub directory per loader
         private readonly Dictionary<string, LoaderContext> _loaderContexts = new();
@@ -35,6 +36,7 @@ namespace MilkiBotFramework.Plugining.Loading
             _dispatcher = dispatcher;
             _logger = logger;
             _commandLineAnalyzer = commandLineAnalyzer;
+            _commandLineInjector = new CommandLineInjector(commandLineAnalyzer);
             dispatcher.PrivateMessageReceived += Dispatcher_PrivateMessageReceived;
             dispatcher.ChannelMessageReceived += Dispatcher_ChannelMessageReceived;
         }
@@ -84,8 +86,9 @@ namespace MilkiBotFramework.Plugining.Loading
                     var plugin = (PluginBase)pluginInstance;
                     await plugin.OnExecuting();
                     if (commandName != null &&
-                        pluginDefinition.Commands.TryGetValue(commandName?.ToString(), out var commandDefinition))
+                        pluginDefinition.Commands.TryGetValue(commandName.Value.ToString(), out var commandDefinition))
                     {
+                        await _commandLineInjector.InjectParametersAndRunAsync(commandLineResult!, commandDefinition, plugin);
                     }
                     else
                     {

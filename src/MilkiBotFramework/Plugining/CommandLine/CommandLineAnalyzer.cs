@@ -89,14 +89,11 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
             }
         }
 
-        result = new CommandLineResult
-        {
-            Authority = authority,
-            Command = command,
-            Arguments = arguments,
-            Options = options,
-            SimpleArgument = argStartIndex != null ? memory[argStartIndex.Value..].Trim() : string.Empty.AsMemory()
-        };
+        result = new CommandLineResult(authority,
+            command,
+            options,
+            arguments,
+            argStartIndex != null ? memory[argStartIndex.Value..].Trim() : string.Empty.AsMemory());
         exception = null;
         return command != null;
 
