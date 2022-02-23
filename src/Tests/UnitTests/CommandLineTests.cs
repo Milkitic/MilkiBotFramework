@@ -1,6 +1,6 @@
 using System;
 using System.Text.Json;
-using MilkiBotFramework.Plugins.CommandLine;
+using MilkiBotFramework.Plugining.CommandLine;
 using Xunit;
 using Xunit.Abstractions;
 

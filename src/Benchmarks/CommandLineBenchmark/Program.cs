@@ -4,7 +4,7 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Order;
 using BenchmarkDotNet.Running;
-using MilkiBotFramework.Plugins.CommandLine;
+using MilkiBotFramework.Plugining.CommandLine;
 
 namespace CommandLineBenchmark
 {

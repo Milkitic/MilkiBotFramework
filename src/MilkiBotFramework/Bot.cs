@@ -4,8 +4,7 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContractsManaging;
 using MilkiBotFramework.Dispatching;
-using MilkiBotFramework.Plugins;
-using MilkiBotFramework.Plugins.Loading;
+using MilkiBotFramework.Plugining.Loading;
 using MilkiBotFramework.Tasking;
 
 namespace MilkiBotFramework

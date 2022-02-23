@@ -1,6 +1,6 @@
 ﻿using System;
 using MilkiBotFramework.ContractsManaging.Models;
-using MilkiBotFramework.Plugins.CommandLine;
+using MilkiBotFramework.Plugining.CommandLine;
 
 namespace MilkiBotFramework.Messaging;
 
