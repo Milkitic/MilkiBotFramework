@@ -60,16 +60,30 @@ namespace MilkiBotFramework.Plugining.Loading
             }
 
             CreateContextAndAddPlugins(null, Assembly.GetEntryAssembly().Location);
+
+            foreach (var loaderContext in _loaderContexts.Values)
+            {
+                var serviceProvider = loaderContext.ServiceProvider;
+
+                foreach (var assemblyContext in loaderContext.AssemblyContexts.Values)
+                {
+                    foreach (var pluginDefinition in assemblyContext.PluginDefinitions.Where(o => o.Lifetime == PluginLifetime.Singleton))
+                    {
+                        var instance = (PluginBase)serviceProvider.GetService(pluginDefinition.Type);
+                        InitializePlugin(instance, pluginDefinition);
+                    }
+                }
+            }
         }
 
         private void CreateContextAndAddPlugins(string? contextName, params string[] files)
         {
-            var availableDictionary = AssemblyHelper.AnalyzePluginsInAssemblyFilesByDnlib(_logger, files);
-            if (availableDictionary.Count <= 0) return;
+            var assemblyResults = AssemblyHelper.AnalyzePluginsInAssemblyFilesByDnlib(_logger, files);
+            if (assemblyResults.Count <= 0 || assemblyResults.All(k => k.TypeResults.Length == 0)) return;
 
             var isRuntimeContext = contextName == null;
 
-            var ctx = isRuntimeContext
+            var ctx = !isRuntimeContext
                 ? new AssemblyLoadContext(contextName, true)
                 : AssemblyLoadContext.Default;
             var loaderContext = new LoaderContext()
@@ -80,20 +94,33 @@ namespace MilkiBotFramework.Plugining.Loading
                 IsRuntimeContext = isRuntimeContext
             };
 
-            foreach (var (asmPath, typeDefs) in availableDictionary)
+            foreach (var assemblyResult in assemblyResults)
             {
-                var asmFilename = Path.GetFileName(asmPath);
+                var assemblyPath = assemblyResult.AssemblyPath;
+                var assemblyFullName = assemblyResult.AssemblyFullName;
+                var assemblyFilename = Path.GetFileName(assemblyPath);
+                var typeResults = assemblyResult.TypeResults;
 
-                if (typeDefs.Length == 0 && !isRuntimeContext)
+                if (typeResults.Length == 0 && !isRuntimeContext)
                 {
                     try
                     {
-                        ctx.LoadFromAssemblyPath(asmPath);
-                        _logger.LogInformation($"Dependency loaded {asmFilename}");
+                        var inEntryAssembly =
+                            AssemblyLoadContext.Default.Assemblies.FirstOrDefault(k => k.FullName == assemblyFullName);
+                        if (inEntryAssembly != null)
+                        {
+                            ctx.LoadFromAssemblyName(inEntryAssembly.GetName());
+                            _logger.LogDebug($"Dependency loaded {assemblyFilename} (Host)");
+                        }
+                        else
+                        {
+                            ctx.LoadFromAssemblyPath(assemblyPath);
+                            _logger.LogDebug($"Dependency loaded {assemblyFilename} (Plugin)");
+                        }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning($"Failed to load dependency {asmFilename}: {ex.Message}");
+                        _logger.LogWarning($"Failed to load dependency {assemblyFilename}: {ex.Message}");
                     } // add dependencies
 
                     continue;
@@ -104,7 +131,7 @@ namespace MilkiBotFramework.Plugining.Loading
                 {
                     Assembly? asm = isRuntimeContext
                         ? Assembly.GetEntryAssembly()
-                        : ctx.LoadFromAssemblyPath(asmPath);
+                        : ctx.LoadFromAssemblyPath(assemblyPath);
                     if (asm != null)
                     {
                         var asmContext = new AssemblyContext
@@ -112,17 +139,19 @@ namespace MilkiBotFramework.Plugining.Loading
                             Assembly = asm
                         };
 
-                        foreach (var (typeDef, pluginType) in typeDefs)
+                        foreach (var typeResult in typeResults)
                         {
+                            var typeFullName = typeResult.TypeFullName;
+                            var baseType = typeResult.BaseType;
                             string typeName = "";
                             PluginDefinition? definition = null;
                             try
                             {
-                                var type = asm.GetType(typeDef.FullName);
-                                if (type == null) throw new Exception("Can't resolve type: " + typeDef.FullName);
+                                var type = asm.GetType(typeFullName);
+                                if (type == null) throw new Exception("Can't resolve type: " + typeFullName);
 
                                 typeName = type.Name;
-                                definition = GetPluginDefinition(type, pluginType);
+                                definition = GetPluginDefinition(type, baseType);
                                 var metadata = definition.Metadata;
 
                                 switch (definition.Lifetime)
@@ -140,7 +169,7 @@ namespace MilkiBotFramework.Plugining.Loading
                                         throw new ArgumentOutOfRangeException();
                                 }
 
-                                _logger.LogInformation($"Added \"{metadata.Name}\": " +
+                                _logger.LogInformation($"Added plugin \"{metadata.Name}\": " +
                                                        $"Author={string.Join(",", metadata.Authors)}; " +
                                                        $"Version={metadata.Version}; " +
                                                        $"Lifetime={definition.Lifetime} " +
@@ -160,7 +189,7 @@ namespace MilkiBotFramework.Plugining.Loading
 
                         if (isValid)
                         {
-                            loaderContext.AssemblyContexts.Add(asmFilename, asmContext);
+                            loaderContext.AssemblyContexts.Add(assemblyFilename, asmContext);
                         }
                     }
                 }
@@ -172,17 +201,28 @@ namespace MilkiBotFramework.Plugining.Loading
                 if (!isValid)
                 {
                     if (!isRuntimeContext)
-                        _logger.LogWarning($"\"{asmFilename}\" 不是合法的插件扩展。");
-                }
-                else
-                {
-                    InitializeLoaderContext(loaderContext);
+                        _logger.LogWarning($"\"{assemblyFilename}\" 不是合法的插件扩展。");
                 }
             }
+
+            InitializeLoaderContext(loaderContext);
         }
 
         private void InitializeLoaderContext(LoaderContext loaderContext)
         {
+            if (loaderContext.AssemblyLoadContext != AssemblyLoadContext.Default)
+            {
+                var existAssemblies = loaderContext.AssemblyLoadContext.Assemblies.Select(k => k.FullName).ToHashSet();
+
+                foreach (var assembly in AssemblyLoadContext.Default.Assemblies)
+                {
+                    if (!existAssemblies.Contains(assembly.FullName))
+                    {
+                        loaderContext.AssemblyLoadContext.LoadFromAssemblyName(assembly.GetName());
+                    }
+                }
+            }
+
             var allTypes = BaseServiceCollection
                 .Where(o => o.Lifetime == ServiceLifetime.Singleton);
             foreach (var serviceDescriptor in allTypes)
@@ -200,15 +240,6 @@ namespace MilkiBotFramework.Plugining.Loading
 
             var serviceProvider = loaderContext.BuildServiceProvider();
             _loaderContexts.Add(loaderContext.Name, loaderContext);
-
-            foreach (var assemblyContext in loaderContext.AssemblyContexts.Values)
-            {
-                foreach (var pluginDefinition in assemblyContext.PluginDefinitions.Where(o => o.Lifetime == PluginLifetime.Singleton))
-                {
-                    var instance = (PluginBase)serviceProvider.GetService(pluginDefinition.Type);
-                    InitializePlugin(instance, pluginDefinition);
-                }
-            }
         }
 
         private static void InitializePlugin(PluginBase instance, PluginDefinition pluginDefinition)
@@ -218,7 +249,7 @@ namespace MilkiBotFramework.Plugining.Loading
             instance.OnInitialized();
         }
 
-        private static PluginDefinition GetPluginDefinition(Type type, Type pluginType)
+        private static PluginDefinition GetPluginDefinition(Type type, Type baseType)
         {
             var lifetime = type.GetCustomAttribute<PluginLifetimeAttribute>()?.Lifetime ??
                            throw new ArgumentNullException(nameof(PluginLifetimeAttribute.Lifetime),
@@ -237,7 +268,7 @@ namespace MilkiBotFramework.Plugining.Loading
             return new PluginDefinition
             {
                 Metadata = metadata,
-                BaseType = pluginType,
+                BaseType = baseType,
                 Type = type,
                 Lifetime = lifetime
             };

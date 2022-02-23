@@ -11,6 +11,19 @@ namespace MilkiBotFramework.Utils;
 
 internal static class AssemblyHelper
 {
+    public class AssemblyResult
+    {
+        public string AssemblyFullName { get; init; }
+        public string AssemblyPath { get; init; }
+        public TypeResult[] TypeResults { get; init; }
+    }
+
+    public class TypeResult
+    {
+        public string TypeFullName { get; init; }
+        public Type BaseType { get; init; }
+    }
+
     public static readonly Dictionary<string, Type> PluginTypes = new()
     {
         ["BasicPlugin`1"] = typeof(BasicPlugin<>),
@@ -18,11 +31,11 @@ internal static class AssemblyHelper
         [nameof(ServicePlugin)] = typeof(ServicePlugin)
     };
 
-    public static Dictionary<string, (TypeDef, Type)[]> AnalyzePluginsInAssemblyFilesByDnlib(
+    public static List<AssemblyResult> AnalyzePluginsInAssemblyFilesByDnlib(
         ILogger logger,
         params string[] assemblyFiles)
     {
-        var availableDictionary = new Dictionary<string, (TypeDef, Type)[]>();
+        var availableDictionary = new List<AssemblyResult>();
 
         foreach (var asmPath in assemblyFiles)
         {
@@ -32,15 +45,16 @@ internal static class AssemblyHelper
         return availableDictionary;
     }
 
-    private static void AnalyzeSingle(ILogger logger, string asmPath, IDictionary<string, (TypeDef, Type)[]> availableDictionary)
+    private static void AnalyzeSingle(ILogger logger, string asmPath, ICollection<AssemblyResult> availableDictionary)
     {
         var asmName = Path.GetFileName(asmPath);
+        var folder = Path.GetFileName(Path.GetDirectoryName(asmPath));
         var modCtx = ModuleDef.CreateModuleContext();
         try
         {
-            logger.LogInformation("Find " + asmName);
-            var module = ModuleDefMD.Load(asmPath, modCtx);
-            var types = module.HasTypes
+            logger.LogDebug("Find " + asmName + " in ./" + folder);
+            using var module = ModuleDefMD.Load(asmPath, modCtx);
+            var typeResults = module.HasTypes
                 ? module.Types.Select(k =>
                 {
                     ITypeDefOrRef? baseType = k;
@@ -72,12 +86,21 @@ internal static class AssemblyHelper
                                 k.IsPublic &&
                                 PluginTypes.ContainsKey(baseType.Name);
                     var result = valid ? k : null;
-                    return (result, type: pluginType);
-                }).Where(k => k.result != null).ToArray()
-                : Array.Empty<(TypeDef, Type)>();
-            if (types.Length == 0)
-                logger.LogWarning($"\"{asmName}\" has no valid classes.");
-            availableDictionary.Add(module.Location, types);
+                    return new TypeResult
+                    {
+                        BaseType = pluginType,
+                        TypeFullName = result?.FullName
+                    };
+                }).Where(k => k.TypeFullName != null).ToArray()
+                : Array.Empty<TypeResult>();
+            if (typeResults.Length == 0)
+                logger.LogDebug($"\"{folder}/{asmName}\" has no valid classes.");
+            availableDictionary.Add(new AssemblyResult
+            {
+                TypeResults = typeResults,
+                AssemblyPath = module.Location,
+                AssemblyFullName = module.Assembly.FullName
+            });
         }
         catch (Exception ex)
         {
