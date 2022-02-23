@@ -12,6 +12,7 @@ using MilkiBotFramework.ContractsManaging.Models;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining.Attributes;
+using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Utils;
 using MemberInfo = MilkiBotFramework.ContractsManaging.Models.MemberInfo;
 
@@ -23,14 +24,17 @@ namespace MilkiBotFramework.Plugining.Loading
 
         private readonly IDispatcher _dispatcher;
         private readonly ILogger<PluginManager> _logger;
+        private readonly ICommandLineAnalyzer _commandLineAnalyzer;
 
         // sub directory per loader
-        private Dictionary<string, LoaderContext> _loaderContexts = new();
+        private readonly Dictionary<string, LoaderContext> _loaderContexts = new();
+        private readonly HashSet<PluginDefinition> _plugins = new();
 
-        public PluginManager(IDispatcher dispatcher, ILogger<PluginManager> logger)
+        public PluginManager(IDispatcher dispatcher, ILogger<PluginManager> logger, ICommandLineAnalyzer commandLineAnalyzer)
         {
             _dispatcher = dispatcher;
             _logger = logger;
+            _commandLineAnalyzer = commandLineAnalyzer;
             dispatcher.PrivateMessageReceived += Dispatcher_PrivateMessageReceived;
             dispatcher.ChannelMessageReceived += Dispatcher_ChannelMessageReceived;
         }
@@ -43,11 +47,63 @@ namespace MilkiBotFramework.Plugining.Loading
         {
         }
 
-        private async Task Dispatcher_PrivateMessageReceived(MessageContext requestContext, PrivateInfo privateInfo)
+        private async Task Dispatcher_PrivateMessageReceived(MessageContext context, PrivateInfo privateInfo)
         {
+            var message = context.Request.TextMessage;
+            var success = _commandLineAnalyzer.TryAnalyze(message, out var commandLineResult, out var exception);
+            if (!success && exception != null) throw exception;
+            ReadOnlyMemory<char>? commandName = null;
+            if (success) commandName = commandLineResult.Command;
+
+            foreach (var loaderContext in _loaderContexts.Values)
+            {
+                using var serviceProvider = loaderContext.BuildServiceProvider().CreateScope();
+                Dictionary<IMessagePlugin, (bool, PluginDefinition)> plugins = new();
+                foreach (var assemblyContext in loaderContext.AssemblyContexts.Values)
+                {
+                    foreach (var pluginDefinition in assemblyContext.PluginDefinitions)
+                    {
+                        if (pluginDefinition.BaseType != typeof(BasicPlugin) &&
+                            pluginDefinition.BaseType != typeof(BasicPlugin<>)) continue;
+
+                        var pluginInstance = (IMessagePlugin)serviceProvider.ServiceProvider.GetService(pluginDefinition.Type)!;
+                        if (pluginDefinition.Lifetime != PluginLifetime.Singleton)
+                        {
+                            InitializePlugin((PluginBase)pluginInstance, pluginDefinition);
+                            plugins.Add(pluginInstance, (true, pluginDefinition));
+                        }
+                        else
+                        {
+                            plugins.Add(pluginInstance, (false, pluginDefinition));
+                        }
+                    }
+                }
+
+                foreach (var (pluginInstance, (dispose, pluginDefinition)) in plugins)
+                {
+                    var plugin = (PluginBase)pluginInstance;
+                    await plugin.OnExecuting();
+                    if (commandName != null &&
+                        pluginDefinition.Commands.TryGetValue(commandName?.ToString(), out var commandDefinition))
+                    {
+                    }
+                    else
+                    {
+                        await pluginInstance.OnMessageReceived(context);
+                    }
+
+                    await plugin.OnExecuted();
+                }
+
+                foreach (var (pluginInstance, (dispose, pluginDefinition)) in plugins)
+                {
+                    var plugin = (PluginBase)pluginInstance;
+                    if (dispose) await plugin.OnUninitialized();
+                }
+            }
         }
 
-        //todo: Same command; same guid
+        //todo: Same command; Same guid
         public async Task InitializeAllPlugins()
         {
             if (!Directory.Exists(PluginBaseDirectory)) Directory.CreateDirectory(PluginBaseDirectory);
@@ -194,6 +250,7 @@ namespace MilkiBotFramework.Plugining.Loading
                             if (definition != null)
                             {
                                 asmContext.PluginDefinitions.Add(definition);
+                                _plugins.Add(definition);
                             }
                         }
 
@@ -276,7 +333,7 @@ namespace MilkiBotFramework.Plugining.Loading
             var metadata = new PluginMetadata(Guid.Parse(guid), name, description, version, authors);
 
             var methodSets = new HashSet<string>();
-            var commands = new List<PluginCommandDefinition>();
+            var commands = new Dictionary<string, PluginCommandDefinition>();
             foreach (var methodInfo in type.GetMethods())
             {
                 if (methodSets.Contains(methodInfo.Name))
@@ -300,7 +357,7 @@ namespace MilkiBotFramework.Plugining.Loading
                     parameterDefinitions.Add(parameterDefinition);
                 }
 
-                commands.Add(new PluginCommandDefinition(command, methodDescription, methodInfo.Name, parameterDefinitions));
+                commands.Add(command, new PluginCommandDefinition(command, methodDescription, methodInfo.Name, parameterDefinitions));
             }
 
             return new PluginDefinition

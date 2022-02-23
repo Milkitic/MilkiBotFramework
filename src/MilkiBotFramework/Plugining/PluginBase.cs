@@ -6,7 +6,7 @@ namespace MilkiBotFramework.Plugining;
 
 public abstract class PluginBase
 {
-    public PluginMetadata Metadata { get; internal set; }
+    protected internal PluginMetadata Metadata { get; internal set; }
     public bool IsInitialized { get; internal set; }
     public abstract PluginType PluginType { get; }
 

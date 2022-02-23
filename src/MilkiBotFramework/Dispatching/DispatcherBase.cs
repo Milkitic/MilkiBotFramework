@@ -55,7 +55,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         }
 
         messageContext.Request.Identity = messageIdentity;
-
+        TrySetTextMessage(messageContext);
         switch (messageIdentity!.MessageType)
         {
             case MessageType.Private:
@@ -87,6 +87,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
     }
 
     protected abstract TMessageContext CreateMessageContext(string rawMessage);
+    protected abstract bool TrySetTextMessage(TMessageContext messageContext);
 
     protected abstract bool TryGetIdentityByRawMessage(TMessageContext messageContext,
         [NotNullWhen(true)] out MessageIdentity? messageIdentity,

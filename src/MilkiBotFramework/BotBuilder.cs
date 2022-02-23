@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContractsManaging;
 using MilkiBotFramework.Dispatching;
+using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Plugining.Loading;
 using MilkiBotFramework.Tasking;
 using MilkiBotFramework.Utils;
@@ -28,6 +29,7 @@ public sealed class BotBuilder
     private Type? _contractsManagerType;
     private readonly ServiceCollection _services;
     private string _pluginBaseDir = "./plugins";
+    private Type? _commandAnalyzerType;
 
     public BotBuilder ConfigureOptions(Action<BotOptions> configureBot)
     {
@@ -65,6 +67,12 @@ public sealed class BotBuilder
         return this;
     }
 
+    public BotBuilder UseCommandLineAnalyzer<T>() where T : ICommandLineAnalyzer
+    {
+        _commandAnalyzerType = typeof(T);
+        return this;
+    }
+
     public BotBuilder UseDispatcher<T>() where T : IDispatcher
     {
         _dispatcherType = typeof(T);
@@ -98,6 +106,8 @@ public sealed class BotBuilder
             .AddSingleton<ImageProcessor>()
             .AddSingleton<BotTaskScheduler>()
             .AddSingleton<PluginManager>()
+            .AddSingleton(typeof(ICommandLineAnalyzer),
+                _commandAnalyzerType ?? typeof(CommandLineAnalyzer))
             .AddSingleton(typeof(IConnector),
                 _connectorType ?? throw new ArgumentNullException(nameof(IConnector),
                     "The IConnector implementation is not specified."))

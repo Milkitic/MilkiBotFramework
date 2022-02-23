@@ -81,6 +81,27 @@ public sealed class GoCqContractsManager : ContractsManagerBase
 
     public override async Task<PrivateInfoResult> TryGetPrivateInfoByMessageContext(MessageIdentity messageIdentity)
     {
-        throw new NotImplementedException();
+        if (messageIdentity.Id == null) throw new ArgumentNullException(nameof(messageIdentity.Id));
+
+        var userId = messageIdentity.Id;
+        if (!TryGetPrivateInfo(userId, out var privateInfo))
+        {
+            try
+            {
+                var stranger = await _goCqApi.GetStrangerInfo(long.Parse(userId));
+                privateInfo = new PrivateInfo(userId)
+                {
+                    Nickname = stranger.Nickname,
+                };
+                AddPrivate(privateInfo);
+            }
+            catch (GoCqApiException ex)
+            {
+                _logger.LogWarning("获取私聊用户信息时API返回错误：" + ex.Message);
+                return new PrivateInfoResult { PrivateInfo = privateInfo };
+            }
+        }
+
+        return new PrivateInfoResult { PrivateInfo = privateInfo, IsSuccess = true };
     }
 }

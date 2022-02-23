@@ -11,6 +11,6 @@ namespace MilkiBotFramework.GoCqHttp.Connecting.ResponseModel
         [JsonPropertyName("sex")]
         public string Sex { get; set; }
         [JsonPropertyName("age")]
-        public string Age { get; set; }
+        public int Age { get; set; }
     }
 }

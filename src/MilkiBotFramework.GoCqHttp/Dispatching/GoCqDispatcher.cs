@@ -14,20 +14,34 @@ namespace MilkiBotFramework.GoCqHttp.Dispatching
     public class GoCqDispatcher : DispatcherBase<GoCqMessageContext>
     {
         private readonly GoCqApi _goCqApi;
+        private readonly ILogger<MessageResponseContext> _logger2;
 
-        public GoCqDispatcher(GoCqApi goCqApi, IContractsManager contractsManager, ILogger<GoCqDispatcher> logger)
+        public GoCqDispatcher(GoCqApi goCqApi,
+            IContractsManager contractsManager,
+            ILogger<GoCqDispatcher> logger,
+            ILogger<MessageResponseContext> logger2)
             : base(goCqApi.Connector, contractsManager, logger)
         {
             _goCqApi = goCqApi;
+            _logger2 = logger2;
         }
 
         protected override GoCqMessageContext CreateMessageContext(string rawMessage)
         {
-            return new GoCqMessageContext()
+            var goCqMessageContext = new GoCqMessageContext
             {
                 Request = new GoCqMessageRequestContext(rawMessage),
-                Response = new MessageResponseContext()
             };
+            goCqMessageContext.Response = new MessageResponseContext(goCqMessageContext, _goCqApi, _logger2);
+            return goCqMessageContext;
+        }
+
+        protected override bool TrySetTextMessage(GoCqMessageContext messageContext)
+        {
+            if (messageContext.Request.Identity == MessageIdentity.MetaMessage ||
+                messageContext.Request.Identity == MessageIdentity.NoticeMessage) return false;
+            messageContext.GoCqRequest.TextMessage = messageContext.GoCqRequest.RawMessage.Message;
+            return true;
         }
 
         protected override bool TryGetIdentityByRawMessage(GoCqMessageContext messageContext,

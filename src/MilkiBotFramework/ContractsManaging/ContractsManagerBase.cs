@@ -91,9 +91,9 @@ public abstract class ContractsManagerBase : IContractsManager
                dict.TryGetValue(subChannelId, out channelInfo);
     }
 
-    public bool TryGetPrivateInfo(string userId, out PrivateInfo privateInfo)
+    public bool TryGetPrivateInfo(string userId, [NotNullWhen(true)] out PrivateInfo? privateInfo)
     {
-        throw new NotImplementedException();
+        return PrivateMapping.TryGetValue(userId, out privateInfo);
     }
 
     public void AddMember(string channelId, MemberInfo member)
@@ -125,20 +125,21 @@ public abstract class ContractsManagerBase : IContractsManager
     {
     }
 
-    public void AddPrivate(PrivateInfo channelInfo)
+    public void AddPrivate(PrivateInfo privateInfo)
     {
+        PrivateMapping.AddOrUpdate(privateInfo.UserId, privateInfo, (id, instance) => privateInfo);
     }
 
     public void RemovePrivate(string userId)
     {
     }
 
-    protected virtual Task<ContractUpdateResult> UpdateMemberIfPossible(MessageContext messageRequestContext)
+    protected virtual Task<ContractUpdateResult> UpdateMemberIfPossible(MessageContext messageContext)
     {
         return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
     }
 
-    protected virtual Task<ContractUpdateResult> UpdateChannelsIfPossible(MessageContext messageRequestContext)
+    protected virtual Task<ContractUpdateResult> UpdateChannelsIfPossible(MessageContext messageContext)
     {
         return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
     }
@@ -148,23 +149,23 @@ public abstract class ContractsManagerBase : IContractsManager
         return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
     }
 
-    private async Task Dispatcher_NoticeMessageReceived(MessageContext messageRequestContext)
+    private async Task Dispatcher_NoticeMessageReceived(MessageContext messageContext)
     {
-        var updateResult = await UpdateMemberIfPossible(messageRequestContext);
+        var updateResult = await UpdateMemberIfPossible(messageContext);
         if (updateResult.IsSuccess)
         {
             _logger.LogInformation("Member " + updateResult.ContractUpdateType + ": " + updateResult.Id);
             return;
         }
 
-        updateResult = await UpdateChannelsIfPossible(messageRequestContext);
+        updateResult = await UpdateChannelsIfPossible(messageContext);
         if (updateResult.IsSuccess)
         {
             _logger.LogInformation("Channel " + updateResult.ContractUpdateType + ": " + updateResult.Id);
             return;
         }
 
-        updateResult = await UpdatePrivatesIfPossible(messageRequestContext);
+        updateResult = await UpdatePrivatesIfPossible(messageContext);
         if (updateResult.IsSuccess)
         {
             _logger.LogInformation("Private " + updateResult.ContractUpdateType + ": " + updateResult.Id);

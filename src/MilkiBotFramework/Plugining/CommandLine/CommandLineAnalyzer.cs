@@ -6,15 +6,25 @@ namespace MilkiBotFramework.Plugining.CommandLine;
 
 public class CommandLineAnalyzer : ICommandLineAnalyzer
 {
+    private const char CommandFlag = '/';
     private static readonly HashSet<char> OptionFlags = new() { '-' };
     private static readonly HashSet<char> QuoteFlags = new() { '\"', '\'', '`' };
     private static readonly HashSet<char> SplitterFlags = new() { ' ', ':' };
 
     public bool TryAnalyze(string input,
         [NotNullWhen(true)] out CommandLineResult? result,
-        [NotNullWhen(false)] out CommandLineException? exception)
+        out CommandLineException? exception)
     {
         var memory = input.AsMemory().Trim();
+        if (memory.Length <= 1 || memory.Span[0] != CommandFlag)
+        {
+            result = null;
+            exception = null;
+            return false;
+        }
+
+        memory = memory[1..];
+
         int index = 0;
         int? argStartIndex = null;
         int count = 0;

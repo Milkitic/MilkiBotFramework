@@ -8,7 +8,7 @@ namespace MilkiBotFramework.Plugining;
 public abstract class BasicPlugin : PluginBase, IMessagePlugin
 {
     public sealed override PluginType PluginType => PluginType.Basic;
-    public Task OnMessageReceived(MessageContext context) =>
+    public virtual Task OnMessageReceived(MessageContext context) =>
         Task.CompletedTask;
 }
 
