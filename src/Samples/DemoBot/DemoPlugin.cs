@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MilkiBotFramework.Plugins;
+using MilkiBotFramework.Plugins.Loading;
 
 namespace DemoBot
 {

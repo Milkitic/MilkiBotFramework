@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.GoCqHttp.Connecting;
 using MilkiBotFramework.Plugins;
+using MilkiBotFramework.Plugins.Loading;
 
 namespace DemoBot;
 

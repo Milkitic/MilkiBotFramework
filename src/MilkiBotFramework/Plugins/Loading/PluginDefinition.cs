@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MilkiBotFramework.Plugins;
+namespace MilkiBotFramework.Plugins.Loading;
 
 public sealed class PluginDefinition
 {

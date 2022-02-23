@@ -1,5 +1,6 @@
 ﻿using MilkiBotFramework.GoCqHttp.Messaging;
 using MilkiBotFramework.Plugins;
+using MilkiBotFramework.Plugins.Loading;
 
 namespace DemoBot;
 

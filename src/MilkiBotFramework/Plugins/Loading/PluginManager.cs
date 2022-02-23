@@ -5,9 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Text;
 using System.Threading.Tasks;
-using dnlib.DotNet;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContractsManaging.Models;
@@ -16,7 +14,7 @@ using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Utils;
 using MemberInfo = MilkiBotFramework.ContractsManaging.Models.MemberInfo;
 
-namespace MilkiBotFramework.Plugins
+namespace MilkiBotFramework.Plugins.Loading
 {
     public class PluginManager
     {
@@ -177,12 +175,12 @@ namespace MilkiBotFramework.Plugins
                 }
                 else
                 {
-                    InitializeServiceProvider(loaderContext);
+                    InitializeLoaderContext(loaderContext);
                 }
             }
         }
 
-        private void InitializeServiceProvider(LoaderContext loaderContext)
+        private void InitializeLoaderContext(LoaderContext loaderContext)
         {
             var allTypes = BaseServiceCollection
                 .Where(o => o.Lifetime == ServiceLifetime.Singleton);
@@ -245,26 +243,4 @@ namespace MilkiBotFramework.Plugins
         }
     }
 
-    internal class LoaderContext
-    {
-        public string Name { get; init; }
-        public bool IsRuntimeContext { get; init; }
-        public IServiceCollection ServiceCollection { get; init; }
-        public ServiceProvider? ServiceProvider { get; private set; }
-        public AssemblyLoadContext AssemblyLoadContext { get; init; }
-        public Dictionary<string, AssemblyContext> AssemblyContexts { get; } = new();
-
-        public ServiceProvider BuildServiceProvider()
-        {
-            if (ServiceProvider != null) return ServiceProvider;
-            return this.ServiceProvider = ServiceCollection.BuildServiceProvider();
-        }
-    }
-
-    internal class AssemblyContext
-    {
-        public string AssemblyName { get; init; }
-        public Assembly Assembly { get; init; }
-        public List<PluginDefinition> PluginDefinitions { get; } = new();
-    }
 }

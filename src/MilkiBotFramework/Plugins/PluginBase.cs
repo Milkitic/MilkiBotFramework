@@ -8,6 +8,7 @@ public abstract class PluginBase
 {
     public PluginMetadata Metadata { get; internal set; }
     public bool IsInitialized { get; internal set; }
+    public abstract PluginType PluginType { get; }
 
     protected internal virtual Task OnInitialized() => Task.CompletedTask;
     protected internal virtual Task OnUninitialized() => Task.CompletedTask;
