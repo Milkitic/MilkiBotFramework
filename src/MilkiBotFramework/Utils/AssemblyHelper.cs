@@ -20,8 +20,8 @@ internal static class AssemblyHelper
 
     public class TypeResult
     {
-        public string TypeFullName { get; init; }
-        public Type BaseType { get; init; }
+        public string? TypeFullName { get; init; }
+        public Type? BaseType { get; init; }
     }
 
     public static readonly Dictionary<string, Type> PluginTypes = new()
@@ -31,10 +31,14 @@ internal static class AssemblyHelper
         [nameof(ServicePlugin)] = typeof(ServicePlugin)
     };
 
-    public static List<AssemblyResult> AnalyzePluginsInAssemblyFilesByDnlib(
+    public static IReadOnlyList<AssemblyResult> AnalyzePluginsInAssemblyFilesByDnlib(
         ILogger logger,
         params string[] assemblyFiles)
     {
+        if (assemblyFiles.Length == 0)
+            return Array.Empty<AssemblyResult>();
+        var folder = Path.GetFileName(Path.GetDirectoryName(assemblyFiles[0]));
+        using var scope = logger.BeginScope($"Search in directory \"{folder}\"");
         var availableDictionary = new List<AssemblyResult>();
 
         foreach (var asmPath in assemblyFiles)
@@ -48,11 +52,10 @@ internal static class AssemblyHelper
     private static void AnalyzeSingle(ILogger logger, string asmPath, ICollection<AssemblyResult> availableDictionary)
     {
         var asmName = Path.GetFileName(asmPath);
-        var folder = Path.GetFileName(Path.GetDirectoryName(asmPath));
         var modCtx = ModuleDef.CreateModuleContext();
         try
         {
-            logger.LogDebug("Find " + asmName + " in ./" + folder);
+            logger.LogDebug("Find " + asmName);
             using var module = ModuleDefMD.Load(asmPath, modCtx);
             var typeResults = module.HasTypes
                 ? module.Types.Select(k =>
@@ -94,7 +97,7 @@ internal static class AssemblyHelper
                 }).Where(k => k.TypeFullName != null).ToArray()
                 : Array.Empty<TypeResult>();
             if (typeResults.Length == 0)
-                logger.LogDebug($"\"{folder}/{asmName}\" has no valid classes.");
+                logger.LogDebug($"\"{asmName}\" has no valid classes.");
             availableDictionary.Add(new AssemblyResult
             {
                 TypeResults = typeResults,

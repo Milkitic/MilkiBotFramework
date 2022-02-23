@@ -63,7 +63,7 @@ namespace MilkiBotFramework.Plugining.Loading
 
             foreach (var loaderContext in _loaderContexts.Values)
             {
-                var serviceProvider = loaderContext.ServiceProvider;
+                var serviceProvider = loaderContext.BuildServiceProvider();
 
                 foreach (var assemblyContext in loaderContext.AssemblyContexts.Values)
                 {
@@ -79,14 +79,15 @@ namespace MilkiBotFramework.Plugining.Loading
         private void CreateContextAndAddPlugins(string? contextName, params string[] files)
         {
             var assemblyResults = AssemblyHelper.AnalyzePluginsInAssemblyFilesByDnlib(_logger, files);
-            if (assemblyResults.Count <= 0 || assemblyResults.All(k => k.TypeResults.Length == 0)) return;
+            if (assemblyResults.Count <= 0 || assemblyResults.All(k => k.TypeResults.Length == 0))
+                return;
 
             var isRuntimeContext = contextName == null;
 
             var ctx = !isRuntimeContext
                 ? new AssemblyLoadContext(contextName, true)
                 : AssemblyLoadContext.Default;
-            var loaderContext = new LoaderContext()
+            var loaderContext = new LoaderContext
             {
                 AssemblyLoadContext = ctx,
                 ServiceCollection = new ServiceCollection(),
@@ -141,8 +142,8 @@ namespace MilkiBotFramework.Plugining.Loading
 
                         foreach (var typeResult in typeResults)
                         {
-                            var typeFullName = typeResult.TypeFullName;
-                            var baseType = typeResult.BaseType;
+                            var typeFullName = typeResult.TypeFullName!;
+                            var baseType = typeResult.BaseType!;
                             string typeName = "";
                             PluginDefinition? definition = null;
                             try
@@ -238,7 +239,7 @@ namespace MilkiBotFramework.Plugining.Loading
             var bot = BaseServiceProvider.GetService<Bot>();
             if (bot != null) loaderContext.ServiceCollection.AddLogging(o => bot.Builder._configureLogger!(o));
 
-            var serviceProvider = loaderContext.BuildServiceProvider();
+            loaderContext.BuildServiceProvider();
             _loaderContexts.Add(loaderContext.Name, loaderContext);
         }
 

@@ -15,7 +15,7 @@ namespace DemoBot
     {
         static async Task Main(string[] args)
         {
-            var bot = Bot.Create(builder => builder.AddGoCqHttp("ws://127.0.0.1:6700"));
+            var bot = Bot.Create(builder => builder.UseGoCqHttp("ws://127.0.0.1:6700"));
             await bot.RunAsync();
         }
     }
