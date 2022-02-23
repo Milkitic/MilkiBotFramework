@@ -35,6 +35,7 @@ namespace MilkiBotFramework
         public BotTaskScheduler BotTaskScheduler { get; }
         public IConnector Connector { get; }
         public IDispatcher Dispatcher { get; }
+        internal BotBuilder Builder { get; set; }
 
         public static Bot Create(Action<BotBuilder>? configureBot = null)
         {
@@ -49,9 +50,17 @@ namespace MilkiBotFramework
             _connectionTcs = new TaskCompletionSource();
             try
             {
+                try
+                {
+                    Connector.ConnectAsync().Wait(3000);
+                }
+                catch
+                {
+                    // ignored
+                }
+
                 _pluginManager.InitializeAllPlugins().Wait();
                 _contractsManager.Initialize();
-                Connector.ConnectAsync().Wait();
             }
             catch (Exception ex)
             {
@@ -67,9 +76,17 @@ namespace MilkiBotFramework
             _connectionTcs = new TaskCompletionSource();
             try
             {
+                try
+                {
+                    Connector.ConnectAsync().Wait(3000);
+                }
+                catch
+                {
+                    // ignored
+                }
+
                 await _pluginManager.InitializeAllPlugins();
                 _contractsManager.Initialize();
-                await Connector.ConnectAsync();
             }
             catch (Exception ex)
             {

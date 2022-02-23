@@ -2,11 +2,6 @@
 
 namespace MilkiBotFramework.Plugins
 {
-    public sealed class PluginDefinition
-    {
-        public PluginMetadata Metadata { get; init; }
-        public Type PluginType { get; init; }
-    }
     public sealed class PluginCommandDefinition
     {
         public PluginCommandDefinition(string command,

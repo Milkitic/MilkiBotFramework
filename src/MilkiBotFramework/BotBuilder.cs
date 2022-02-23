@@ -19,7 +19,7 @@ public sealed class BotBuilder
     }
 
     private readonly BotOptions _botOptions = new();
-    private Action<ILoggingBuilder>? _configureLogger;
+    internal Action<ILoggingBuilder>? _configureLogger;
     private Action<IConnectorConfigurable>? _configureConnector;
     private Type? _connectorType;
     private Type? _dispatcherType;
@@ -100,6 +100,7 @@ public sealed class BotBuilder
                 _contractsManagerType ?? throw new ArgumentNullException(nameof(IContractsManager),
                     "The IContractsManager implementation is not specified."))
             .AddSingleton<Bot>();
+        _services.AddSingleton(_services);
         var serviceProvider = _services.BuildServiceProvider();
 
         // PluginManager
@@ -122,6 +123,9 @@ public sealed class BotBuilder
         // Bot
         var bot = (Bot)serviceProvider.GetService(typeof(Bot));
         bot.SingletonServiceProvider = serviceProvider;
+        bot.Builder = this;
+        pluginManager.BaseServiceCollection = _services;
+        pluginManager.BaseServiceProvider = serviceProvider;
         return bot;
     }
 

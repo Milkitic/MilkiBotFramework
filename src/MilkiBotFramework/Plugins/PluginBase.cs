@@ -1,22 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using MilkiBotFramework.Dispatching;
 
 namespace MilkiBotFramework.Plugins;
 
 public abstract class PluginBase
 {
-    public Func<PluginMetadata> GetMetadata { get; internal set; }
+    public PluginMetadata Metadata { get; internal set; }
+    public bool IsInitialized { get; internal set; }
 
-    public bool IsInitialized { get; protected set; }
-
-    protected internal PluginManager PluginManager { get; internal set; }
-
-    protected virtual Task OnInitialized() => Task.CompletedTask;
-    protected virtual Task OnUninitialized() => Task.CompletedTask;
-    protected virtual Task OnExecuting() => Task.CompletedTask;
-    protected virtual Task OnExecuted() => Task.CompletedTask;
+    protected internal virtual Task OnInitialized() => Task.CompletedTask;
+    protected internal virtual Task OnUninitialized() => Task.CompletedTask;
+    protected internal virtual Task OnExecuting() => Task.CompletedTask;
+    protected internal virtual Task OnExecuted() => Task.CompletedTask;
 
     protected Task<T> ReadValueAsync<T>(string key)
     {
