@@ -13,6 +13,7 @@ namespace MilkiBotFramework.Plugining.CommandLine;
 public class CommandLineInjector
 {
     private static readonly Type _messageContextType = typeof(MessageContext);
+    private static readonly Type _typeString = typeof(string);
 
     private readonly ICommandLineAnalyzer _commandLineAnalyzer;
 
@@ -233,7 +234,7 @@ public class CommandLineInjector
                 throw new Exception("The specified argument is not found in the input command.");
             }
 
-            argValue = paramDef.DefaultValue is string
+            argValue = paramDef.DefaultValue is string && paramDef.ParameterType != _typeString
                 ? paramDef.ValueConverter.Convert(paramDef.ParameterType, ((string)paramDef.DefaultValue).AsMemory())
                 : paramDef.DefaultValue;
         }
@@ -263,7 +264,7 @@ public class CommandLineInjector
                 throw new Exception("The specified option is not found in the input command.");
             }
 
-            optionValue = paramDef.DefaultValue is string
+            optionValue = paramDef.DefaultValue is string && paramDef.ParameterType != _typeString
                 ? paramDef.ValueConverter.Convert(paramDef.ParameterType, ((string)paramDef.DefaultValue).AsMemory())
                 : paramDef.DefaultValue;
         }
