@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Text;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {
     /// <summary>
     /// CQ码

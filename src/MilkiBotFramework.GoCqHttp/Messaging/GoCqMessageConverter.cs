@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using MilkiBotFramework.GoCqHttp.Messaging.CqCodes;
-using MilkiBotFramework.GoCqHttp.Utils;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
+using MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes;
+using MilkiBotFramework.Platforms.GoCqHttp.Utils;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging;
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 
 public class GoCqMessageConverter : IRichMessageConverter
 {

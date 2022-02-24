@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using MilkiBotFramework.GoCqHttp.Internal;
+using MilkiBotFramework.Platforms.GoCqHttp.Internal;
 
-namespace MilkiBotFramework.GoCqHttp.Connecting.ResponseModel.Guild;
+namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel.Guild;
 
 public class SubChannelInfo
 {

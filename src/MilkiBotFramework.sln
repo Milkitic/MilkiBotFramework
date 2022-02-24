@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.32126.317
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework", "MilkiBotFramework\MilkiBotFramework.csproj", "{EC607AE2-8633-43C0-9A8A-05ECDEDAACEF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework.GoCqHttp", "MilkiBotFramework.GoCqHttp\MilkiBotFramework.GoCqHttp.csproj", "{91A2977B-FFF4-4D30-8E74-8E7490708EFD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework.Platforms.GoCqHttp", "MilkiBotFramework.GoCqHttp\MilkiBotFramework.Platforms.GoCqHttp.csproj", "{91A2977B-FFF4-4D30-8E74-8E7490708EFD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{A130D3F4-6E65-4F6C-A0EE-2412DA1D2C7E}"
 EndProject
@@ -19,7 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{94A508B0
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTests", "Tests\UnitTests\UnitTests.csproj", "{ED346BCE-EEC7-4A86-A923-9473A782F48A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoPlugin", "Samples\DemoPlugin\DemoPlugin.csproj", "{66C06747-A27B-4AF2-822A-0DD41537BB5B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DemoPlugin", "Samples\DemoPlugin\DemoPlugin.csproj", "{66C06747-A27B-4AF2-822A-0DD41537BB5B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

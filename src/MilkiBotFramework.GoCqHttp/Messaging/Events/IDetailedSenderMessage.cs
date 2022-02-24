@@ -1,4 +1,4 @@
-﻿namespace MilkiBotFramework.GoCqHttp.Messaging.Events
+﻿namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events
 {
     public interface IDetailedSenderMessage
     {

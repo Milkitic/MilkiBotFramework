@@ -1,10 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using MilkiBotFramework.GoCqHttp.Utils;
 using MilkiBotFramework.Messaging.RichMessages;
+using MilkiBotFramework.Platforms.GoCqHttp.Utils;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes;
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes;
 
 public class CQRecord : IRichMessage
 {

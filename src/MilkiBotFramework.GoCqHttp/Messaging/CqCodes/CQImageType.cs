@@ -1,4 +1,4 @@
-﻿namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
+﻿namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {
     // ReSharper disable once InconsistentNaming
     public enum CQImageType

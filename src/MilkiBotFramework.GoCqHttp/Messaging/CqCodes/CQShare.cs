@@ -1,6 +1,6 @@
 ﻿using MilkiBotFramework.Messaging.RichMessages;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {
     /// <summary>
     /// 发送链接分享

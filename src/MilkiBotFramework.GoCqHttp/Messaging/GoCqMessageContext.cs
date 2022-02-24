@@ -1,6 +1,6 @@
 ﻿using MilkiBotFramework.Messaging;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging;
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 
 public class GoCqMessageContext : MessageContext
 {

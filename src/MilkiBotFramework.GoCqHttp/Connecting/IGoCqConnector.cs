@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using MilkiBotFramework.GoCqHttp.Connecting.ResponseModel;
+using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
 
-namespace MilkiBotFramework.GoCqHttp.Connecting;
+namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 
 public interface IGoCqConnector
 {

@@ -1,10 +1,10 @@
-﻿using MilkiBotFramework.GoCqHttp.Connecting;
-using MilkiBotFramework.GoCqHttp.ContractsManaging;
-using MilkiBotFramework.GoCqHttp.Dispatching;
-using MilkiBotFramework.GoCqHttp.Messaging;
+﻿using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
+using MilkiBotFramework.Platforms.GoCqHttp.ContractsManaging;
+using MilkiBotFramework.Platforms.GoCqHttp.Dispatching;
+using MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 using MilkiBotFramework.Plugining.CommandLine;
 
-namespace MilkiBotFramework.GoCqHttp
+namespace MilkiBotFramework.Platforms.GoCqHttp
 {
     public static class BotBuilderExtensions
     {

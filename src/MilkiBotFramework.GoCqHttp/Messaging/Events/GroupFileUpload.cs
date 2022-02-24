@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging.Events
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events
 {
     /// <summary>
     /// 群文件上传。

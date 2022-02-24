@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace MilkiBotFramework.GoCqHttp.Connecting.RequestModel
+namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel
 {
     public class SendGroupMsg
     {

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace MilkiBotFramework.GoCqHttp.Connecting.ResponseModel.Guild;
+namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel.Guild;
 
 public class GuildMember
 {

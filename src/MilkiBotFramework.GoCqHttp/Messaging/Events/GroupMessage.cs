@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Serialization;
-using MilkiBotFramework.GoCqHttp.Internal;
+using MilkiBotFramework.Platforms.GoCqHttp.Internal;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging.Events
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events
 {
     /// <summary>
     /// 群消息。

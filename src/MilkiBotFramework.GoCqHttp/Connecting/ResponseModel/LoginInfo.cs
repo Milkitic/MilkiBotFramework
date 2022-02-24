@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace MilkiBotFramework.GoCqHttp.Connecting.ResponseModel
+namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel
 {
     public class LoginInfo
     {

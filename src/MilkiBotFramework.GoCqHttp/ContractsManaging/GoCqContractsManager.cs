@@ -4,11 +4,11 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContractsManaging;
 using MilkiBotFramework.ContractsManaging.Models;
 using MilkiBotFramework.ContractsManaging.Results;
-using MilkiBotFramework.GoCqHttp.Connecting;
 using MilkiBotFramework.Messaging;
+using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 using MilkiBotFramework.Tasking;
 
-namespace MilkiBotFramework.GoCqHttp.ContractsManaging;
+namespace MilkiBotFramework.Platforms.GoCqHttp.ContractsManaging;
 
 public sealed class GoCqContractsManager : ContractsManagerBase
 {

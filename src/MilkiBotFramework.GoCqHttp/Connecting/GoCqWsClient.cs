@@ -5,10 +5,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.GoCqHttp.Connecting.RequestModel;
-using MilkiBotFramework.GoCqHttp.Connecting.ResponseModel;
+using MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel;
+using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
 
-namespace MilkiBotFramework.GoCqHttp.Connecting;
+namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 
 public sealed class GoCqWsClient : WebSocketClientConnector, IGoCqConnector
 {

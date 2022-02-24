@@ -1,6 +1,6 @@
 ﻿using MilkiBotFramework.Messaging.RichMessages;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {
     /// <summary>
     /// 发送音乐自定义分享

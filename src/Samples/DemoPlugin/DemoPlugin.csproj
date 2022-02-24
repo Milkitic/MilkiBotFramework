@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\MilkiBotFramework.GoCqHttp\MilkiBotFramework.GoCqHttp.csproj" />
+    <ProjectReference Include="..\..\MilkiBotFramework.GoCqHttp\MilkiBotFramework.Platforms.GoCqHttp.csproj" />
     <ProjectReference Include="..\..\MilkiBotFramework\MilkiBotFramework.csproj" />
   </ItemGroup>
 

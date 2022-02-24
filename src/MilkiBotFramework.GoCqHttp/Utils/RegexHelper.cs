@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace MilkiBotFramework.GoCqHttp.Utils;
+namespace MilkiBotFramework.Platforms.GoCqHttp.Utils;
 
 internal class RegexHelper
 {

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging;
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 
 public class RangeComparer : IComparer<(int index, int count, bool isRaw)>
 {
