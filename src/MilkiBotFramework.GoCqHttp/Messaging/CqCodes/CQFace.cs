@@ -1,7 +1,7 @@
 ﻿using System;
 using MilkiBotFramework.Messaging.RichMessages;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {
     /// <summary>
     /// QQ表情

@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace MilkiBotFramework.GoCqHttp.Internal
+namespace MilkiBotFramework.Platforms.GoCqHttp.Internal
 {
     internal class UnixDateTimeConverter : JsonConverter<DateTimeOffset>
     {

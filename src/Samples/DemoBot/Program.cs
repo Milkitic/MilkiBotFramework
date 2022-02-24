@@ -4,10 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework;
 using MilkiBotFramework.Dispatching;
-using MilkiBotFramework.GoCqHttp;
-using MilkiBotFramework.GoCqHttp.Connecting;
-using MilkiBotFramework.GoCqHttp.ContractsManaging;
-using MilkiBotFramework.GoCqHttp.Dispatching;
+using MilkiBotFramework.Platforms.GoCqHttp;
 
 namespace DemoBot
 {

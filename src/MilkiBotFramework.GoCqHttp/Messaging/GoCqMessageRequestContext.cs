@@ -1,8 +1,8 @@
 ﻿using System.Text.Json;
-using MilkiBotFramework.GoCqHttp.Messaging.Events;
 using MilkiBotFramework.Messaging;
+using MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging;
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 
 public class GoCqMessageRequestContext : MessageRequestContext
 {

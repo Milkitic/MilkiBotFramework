@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.GoCqHttp.Connecting.RequestModel;
-using MilkiBotFramework.GoCqHttp.Connecting.ResponseModel;
-using MilkiBotFramework.GoCqHttp.Connecting.ResponseModel.Guild;
+using MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel;
+using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
+using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel.Guild;
 
-namespace MilkiBotFramework.GoCqHttp.Connecting;
+namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 
 public class GoCqApi : IMessageApi
 {

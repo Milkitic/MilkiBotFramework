@@ -1,14 +1,12 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
-using MilkiBotFramework.GoCqHttp.Utils;
 using MilkiBotFramework.Imaging;
 using MilkiBotFramework.Messaging.RichMessages;
+using MilkiBotFramework.Platforms.GoCqHttp.Utils;
 using SixLabors.ImageSharp;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {
     // ReSharper disable once InconsistentNaming
     public class CQImage : IRichMessage

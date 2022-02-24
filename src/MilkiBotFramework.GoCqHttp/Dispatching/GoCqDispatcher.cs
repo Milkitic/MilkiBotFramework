@@ -1,15 +1,14 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContractsManaging;
 using MilkiBotFramework.Dispatching;
-using MilkiBotFramework.GoCqHttp.Connecting;
-using MilkiBotFramework.GoCqHttp.Messaging;
-using MilkiBotFramework.GoCqHttp.Messaging.Events;
 using MilkiBotFramework.Messaging;
+using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
+using MilkiBotFramework.Platforms.GoCqHttp.Messaging;
+using MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events;
 
-namespace MilkiBotFramework.GoCqHttp.Dispatching
+namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
 {
     public class GoCqDispatcher : DispatcherBase<GoCqMessageContext>
     {

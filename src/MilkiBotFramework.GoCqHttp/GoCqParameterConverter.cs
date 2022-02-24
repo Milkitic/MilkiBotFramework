@@ -2,7 +2,7 @@
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Plugining.Loading;
 
-namespace MilkiBotFramework.GoCqHttp;
+namespace MilkiBotFramework.Platforms.GoCqHttp;
 
 internal class GoCqParameterConverter : DefaultParameterConverter
 {

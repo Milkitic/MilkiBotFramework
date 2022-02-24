@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Text.Json.Serialization;
-using MilkiBotFramework.GoCqHttp.Internal;
+using MilkiBotFramework.Platforms.GoCqHttp.Internal;
 
-namespace MilkiBotFramework.GoCqHttp.Messaging.Events
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events
 {
     /// <summary>
     /// 上报消息中含有的字段。
