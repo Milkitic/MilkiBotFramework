@@ -30,6 +30,7 @@ public sealed class BotBuilder
     private readonly ServiceCollection _services;
     private string _pluginBaseDir = "./plugins";
     private Type? _commandAnalyzerType;
+    private IParameterConverter? _defaultConverter;
 
     public BotBuilder ConfigureOptions(Action<BotOptions> configureBot)
     {
@@ -67,8 +68,9 @@ public sealed class BotBuilder
         return this;
     }
 
-    public BotBuilder UseCommandLineAnalyzer<T>() where T : ICommandLineAnalyzer
+    public BotBuilder UseCommandLineAnalyzer<T>(IParameterConverter? defaultConverter = null) where T : ICommandLineAnalyzer
     {
+        _defaultConverter = defaultConverter;
         _commandAnalyzerType = typeof(T);
         return this;
     }
@@ -121,11 +123,15 @@ public sealed class BotBuilder
         if (_messageApiType != null)
         {
             _services.AddSingleton(_messageApiType);
-            _services.AddSingleton(typeof(IMessageApi), provider => provider.GetService(_messageApiType));
+            _services.AddSingleton(typeof(IMessageApi), provider => provider.GetService(_messageApiType)!);
         }
 
         _services.AddSingleton(_services);
         var serviceProvider = _services.BuildServiceProvider();
+
+        // CommandLineAnalyzer
+        var commandLineAnalyzer = serviceProvider.GetService<ICommandLineAnalyzer>()!;
+        if (_defaultConverter != null) commandLineAnalyzer.DefaultParameterConverter = _defaultConverter;
 
         // PluginManager
         var pluginManager = serviceProvider.GetService<PluginManager>()!;
@@ -135,8 +141,10 @@ public sealed class BotBuilder
         var connector = (IConnector)serviceProvider.GetService(typeof(IConnector));
         _configureConnector?.Invoke(connector);
 
+        // Dispatcher
         var dispatcher = serviceProvider.GetService<IDispatcher>()!;
 
+        // ContractsManager
         var contractsManager = serviceProvider.GetService<IContractsManager>();
         if (contractsManager is ContractsManagerBase cmb) cmb.Dispatcher = dispatcher;
 

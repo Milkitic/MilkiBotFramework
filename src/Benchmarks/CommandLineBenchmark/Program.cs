@@ -12,7 +12,7 @@ namespace CommandLineBenchmark
     {
         static void Main(string[] args)
         {
-            var summary = BenchmarkRunner.Run<GeneralTask>();
+            var summary = BenchmarkRunner.Run<GeneralTask2>();
         }
     }
 
@@ -45,5 +45,37 @@ namespace CommandLineBenchmark
             return result;
         }
 
+    }
+
+    [Orderer(SummaryOrderPolicy.FastestToSlowest)]
+    [MemoryDiagnoser]
+    [SimpleJob(RuntimeMoniker.Net60)]
+    public class GeneralTask2
+    {
+        private Type _taskType;
+
+        [GlobalSetup]
+        public void Setup()
+        {
+            _taskType = typeof(GeneralTask);
+        }
+
+        [Benchmark(Baseline = true)]
+        public object TypeOfCall()
+        {
+            return typeof(GeneralTask);
+        }
+
+        [Benchmark]
+        public object StaticCall()
+        {
+            return _taskType;
+        }
+
+        [Benchmark]
+        public object GetTypeCall()
+        {
+            return GetType();
+        }
     }
 }

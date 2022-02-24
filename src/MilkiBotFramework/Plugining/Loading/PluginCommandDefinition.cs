@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Reflection;
 
 namespace MilkiBotFramework.Plugining.Loading
 {
@@ -7,40 +7,21 @@ namespace MilkiBotFramework.Plugining.Loading
     {
         public PluginCommandDefinition(string command,
             string description,
-            string sourceMethodName,
+            MethodInfo methodInfo, 
+            CommandReturnType commandReturnType,
             IReadOnlyList<ParameterDefinition> parameterDefinitions)
         {
             Command = command;
             Description = description;
-            SourceMethodName = sourceMethodName;
+            MethodInfo = methodInfo;
+            CommandReturnType = commandReturnType;
             ParameterDefinitions = parameterDefinitions;
         }
 
         public string Command { get; }
         public string Description { get; }
-        public string SourceMethodName { get; }
+        public MethodInfo MethodInfo { get; }
+        public CommandReturnType CommandReturnType { get; set; }
         public IReadOnlyList<ParameterDefinition> ParameterDefinitions { get; }
-    }
-
-    public sealed class ParameterDefinition
-    {
-        private IValueConverter? _valueConverter = DefaultConverter.Instance;
-
-        public string Name { get; internal set; }
-        public string ParameterName { get; internal set; }
-        public Type ParameterType { get; internal set; }
-
-        public char? Abbr { get; internal set; }
-        public bool IsArgument { get; internal set; }
-
-        public IValueConverter? ValueConverter
-        {
-            get => _valueConverter;
-            internal set => _valueConverter = value ?? DefaultConverter.Instance;
-        }
-
-        public object? DefaultValue { get; internal set; }
-        public string? Description { get; internal set; }
-        public bool IsServiceArgument { get; set; }
     }
 }

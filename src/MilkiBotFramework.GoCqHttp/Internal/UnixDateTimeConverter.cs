@@ -7,11 +7,11 @@ namespace MilkiBotFramework.GoCqHttp.Internal
     internal class UnixDateTimeConverter : JsonConverter<DateTimeOffset>
     {
         private static readonly DateTime UnixEpoch = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        private static readonly Type ObjectType = typeof(DateTimeOffset);
 
         public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert,
             JsonSerializerOptions options)
         {
-            var objectType = typeof(DateTimeOffset);
 
             long result;
             if (reader.TokenType == JsonTokenType.Number)
@@ -26,13 +26,13 @@ namespace MilkiBotFramework.GoCqHttp.Internal
 
                 var str = reader.GetString();
                 if (!long.TryParse(str, out result))
-                    throw new JsonException($"Cannot convert invalid value to {objectType}.");
+                    throw new JsonException($"Cannot convert invalid value to {ObjectType}.");
             }
 
             DateTime dateTime = result >= 0L
                 ? UnixEpoch.AddSeconds(result)
                 : throw new JsonException(
-                    $"Cannot convert value that is before Unix epoch of 00:00:00 UTC on 1 January 1970 to {objectType}.");
+                    $"Cannot convert value that is before Unix epoch of 00:00:00 UTC on 1 January 1970 to {ObjectType}.");
             return new DateTimeOffset(dateTime, TimeSpan.Zero);
         }
 

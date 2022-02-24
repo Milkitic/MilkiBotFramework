@@ -2,6 +2,7 @@
 using MilkiBotFramework.GoCqHttp.Connecting;
 using MilkiBotFramework.GoCqHttp.ContractsManaging;
 using MilkiBotFramework.GoCqHttp.Dispatching;
+using MilkiBotFramework.Plugining.CommandLine;
 
 namespace MilkiBotFramework.GoCqHttp
 {
@@ -12,6 +13,7 @@ namespace MilkiBotFramework.GoCqHttp
             return builder
                 .UseConnector<GoCqWsClient>(uri)
                 .UseDispatcher<GoCqDispatcher>()
+                .UseCommandLineAnalyzer<CommandLineAnalyzer>(new GoCqValueConverter())
                 .UseContractsManager<GoCqContractsManager>()
                 .UseMessageApi<GoCqApi>();
         }

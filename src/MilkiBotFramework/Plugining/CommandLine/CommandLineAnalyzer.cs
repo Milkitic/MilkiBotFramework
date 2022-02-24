@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using MilkiBotFramework.Plugining.Loading;
 
 namespace MilkiBotFramework.Plugining.CommandLine;
 
 public class CommandLineAnalyzer : ICommandLineAnalyzer
 {
+    public IParameterConverter DefaultParameterConverter { get; set; } = DefaultConverter.Instance;
+
     private const char CommandFlag = '/';
     private static readonly HashSet<char> OptionFlags = new() { '-' };
     private static readonly HashSet<char> QuoteFlags = new() { '\"', '\'', '`' };
@@ -29,7 +32,7 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
         int? argStartIndex = null;
         int count = 0;
 
-        CommandLineAuthority authority = CommandLineAuthority.Public;
+        var authority = CommandLineAuthority.Public;
         ReadOnlyMemory<char>? command = null;
         char? currentQuote = null;
 

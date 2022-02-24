@@ -23,13 +23,22 @@ namespace DemoBot
             _logger = logger;
         }
 
+        [CommandHandler("gg")]
+        [Description("Echo all of your contents.")]
+        public async Task Haha2(MessageContext context, [Option("o")] byte option)
+        {
+            await context.Response.QuickReply(((byte)(option + 1)).ToString());
+        }
+
         [CommandHandler("asdf")]
         [Description("Echo all of your contents.")]
-        public async Task Haha(MessageContext context, [Argument] string arguments)
+        public async Task Haha(MessageContext context,
+            [Argument] ReadOnlyMemory<char> arguments,
+            [Argument] MessageAuthority messageAuthority = MessageAuthority.Unspecified)
         {
-            await context.Response.QuickReply(arguments);
+            await context.Response.QuickReply(arguments + " " + messageAuthority);
         }
-         
+
         public override async Task OnMessageReceived(MessageContext context)
         {
             await context.Response.QuickReply("not this one!");

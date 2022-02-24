@@ -21,6 +21,11 @@ namespace MilkiBotFramework.Plugining.Loading
     public class PluginManager
     {
         private static readonly string[] DefaultAuthors = { "anonym" };
+        private static readonly Type _basicPluginType = typeof(BasicPlugin);
+        private static readonly Type _basicPluginGenericType = typeof(BasicPlugin<>);
+        private static readonly Type _voidType = typeof(void);
+        private static readonly Type _taskType = typeof(Task);
+        private static readonly Type _valueTaskType = typeof(ValueTask);
 
         private readonly IDispatcher _dispatcher;
         private readonly ILogger<PluginManager> _logger;
@@ -49,9 +54,9 @@ namespace MilkiBotFramework.Plugining.Loading
         {
         }
 
-        private async Task Dispatcher_PrivateMessageReceived(MessageContext context, PrivateInfo privateInfo)
+        private async Task Dispatcher_PrivateMessageReceived(MessageContext messageContext, PrivateInfo privateInfo)
         {
-            var message = context.Request.TextMessage;
+            var message = messageContext.Request.TextMessage;
             var success = _commandLineAnalyzer.TryAnalyze(message, out var commandLineResult, out var exception);
             if (!success && exception != null) throw exception;
             ReadOnlyMemory<char>? commandName = null;
@@ -59,16 +64,16 @@ namespace MilkiBotFramework.Plugining.Loading
 
             foreach (var loaderContext in _loaderContexts.Values)
             {
-                using var serviceProvider = loaderContext.BuildServiceProvider().CreateScope();
+                using var serviceScope = loaderContext.BuildServiceProvider().CreateScope();
                 Dictionary<IMessagePlugin, (bool, PluginDefinition)> plugins = new();
                 foreach (var assemblyContext in loaderContext.AssemblyContexts.Values)
                 {
                     foreach (var pluginDefinition in assemblyContext.PluginDefinitions)
                     {
-                        if (pluginDefinition.BaseType != typeof(BasicPlugin) &&
-                            pluginDefinition.BaseType != typeof(BasicPlugin<>)) continue;
+                        if (pluginDefinition.BaseType != _basicPluginType &&
+                            pluginDefinition.BaseType != _basicPluginGenericType) continue;
 
-                        var pluginInstance = (IMessagePlugin)serviceProvider.ServiceProvider.GetService(pluginDefinition.Type)!;
+                        var pluginInstance = (IMessagePlugin)serviceScope.ServiceProvider.GetService(pluginDefinition.Type)!;
                         if (pluginDefinition.Lifetime != PluginLifetime.Singleton)
                         {
                             InitializePlugin((PluginBase)pluginInstance, pluginDefinition);
@@ -88,11 +93,12 @@ namespace MilkiBotFramework.Plugining.Loading
                     if (commandName != null &&
                         pluginDefinition.Commands.TryGetValue(commandName.Value.ToString(), out var commandDefinition))
                     {
-                        await _commandLineInjector.InjectParametersAndRunAsync(commandLineResult!, commandDefinition, plugin);
+                        await _commandLineInjector.InjectParametersAndRunAsync(commandLineResult!,
+                            commandDefinition, plugin, messageContext, serviceScope.ServiceProvider);
                     }
                     else
                     {
-                        await pluginInstance.OnMessageReceived(context);
+                        await pluginInstance.OnMessageReceived(messageContext);
                     }
 
                     await plugin.OnExecuted();
@@ -119,7 +125,13 @@ namespace MilkiBotFramework.Plugining.Loading
                 CreateContextAndAddPlugins(contextName, files);
             }
 
-            CreateContextAndAddPlugins(null, Assembly.GetEntryAssembly().Location);
+            var entryAsm = Assembly.GetEntryAssembly();
+            if (entryAsm != null)
+            {
+                var dir = Path.GetDirectoryName(entryAsm.Location)!;
+                var context = AssemblyLoadContext.Default.Assemblies;
+                CreateContextAndAddPlugins(null, context.Where(k => k.Location.StartsWith(dir)).Select(k => k.Location));
+            }
 
             foreach (var loaderContext in _loaderContexts.Values)
             {
@@ -144,7 +156,7 @@ namespace MilkiBotFramework.Plugining.Loading
             }
         }
 
-        private void CreateContextAndAddPlugins(string? contextName, params string[] files)
+        private void CreateContextAndAddPlugins(string? contextName, IEnumerable<string> files)
         {
             var assemblyResults = AssemblyHelper.AnalyzePluginsInAssemblyFilesByDnlib(_logger, files);
             if (assemblyResults.Count <= 0 || assemblyResults.All(k => k.TypeResults.Length == 0))
@@ -170,12 +182,15 @@ namespace MilkiBotFramework.Plugining.Loading
                 var assemblyFilename = Path.GetFileName(assemblyPath);
                 var typeResults = assemblyResult.TypeResults;
 
-                if (typeResults.Length == 0 && !isRuntimeContext)
+                if (typeResults.Length == 0)
                 {
+                    if (isRuntimeContext) continue;
+
                     try
                     {
                         var inEntryAssembly =
-                            AssemblyLoadContext.Default.Assemblies.FirstOrDefault(k => k.FullName == assemblyFullName);
+                            AssemblyLoadContext.Default.Assemblies.FirstOrDefault(k =>
+                                k.FullName == assemblyFullName);
                         if (inEntryAssembly != null)
                         {
                             ctx.LoadFromAssemblyName(inEntryAssembly.GetName());
@@ -196,6 +211,7 @@ namespace MilkiBotFramework.Plugining.Loading
                 }
 
                 bool isValid = false;
+
                 try
                 {
                     Assembly? asm = isRuntimeContext
@@ -319,7 +335,7 @@ namespace MilkiBotFramework.Plugining.Loading
             instance.OnInitialized();
         }
 
-        private static PluginDefinition GetPluginDefinition(Type type, Type baseType)
+        private PluginDefinition GetPluginDefinition(Type type, Type baseType)
         {
             var lifetime = type.GetCustomAttribute<PluginLifetimeAttribute>()?.Lifetime ??
                            throw new ArgumentNullException(nameof(PluginLifetimeAttribute.Lifetime),
@@ -356,11 +372,25 @@ namespace MilkiBotFramework.Plugining.Loading
                 {
                     var targetType = parameter.ParameterType;
                     var attrs = parameter.GetCustomAttributes(false);
-                    var parameterDefinition = GetParameterDefinition(attrs, targetType, parameter.Name);
+                    var parameterDefinition = GetParameterDefinition(attrs, targetType, parameter);
                     parameterDefinitions.Add(parameterDefinition);
                 }
 
-                commands.Add(command, new PluginCommandDefinition(command, methodDescription, methodInfo.Name, parameterDefinitions));
+                CommandReturnType returnType;
+                var retType = methodInfo.ReturnType;
+                if (retType == _voidType)
+                    returnType = CommandReturnType.Void;
+                else if (retType == _taskType)
+                    returnType = CommandReturnType.Task;
+                else if (retType == _valueTaskType)
+                    returnType = CommandReturnType.ValueTask;
+                else
+                    returnType = CommandReturnType.Dynamic;
+
+                var commandDefinition = new PluginCommandDefinition(command, methodDescription, methodInfo, returnType,
+                    parameterDefinitions);
+
+                commands.Add(command, commandDefinition);
             }
 
             return new PluginDefinition
@@ -373,9 +403,14 @@ namespace MilkiBotFramework.Plugining.Loading
             };
         }
 
-        private static ParameterDefinition GetParameterDefinition(object[] attrs, Type targetType, string parameterName)
+        private ParameterDefinition GetParameterDefinition(object[] attrs, Type targetType,
+            ParameterInfo parameter)
         {
-            var parameterDefinition = new ParameterDefinition { ParameterName = parameterName };
+            var parameterDefinition = new ParameterDefinition
+            {
+                ParameterName = parameter.Name!,
+                ParameterType = targetType
+            };
 
             bool isReady = false;
             foreach (var attr in attrs)
@@ -383,18 +418,19 @@ namespace MilkiBotFramework.Plugining.Loading
                 if (attr is OptionAttribute option)
                 {
                     parameterDefinition.Abbr = option.Abbreviate;
-                    parameterDefinition.DefaultValue = option.DefaultValue;
+                    parameterDefinition.DefaultValue = parameter.DefaultValue ?? option.DefaultValue;
                     parameterDefinition.Name = option.Name;
-                    parameterDefinition.ParameterType = targetType;
-                    parameterDefinition.ValueConverter = DefaultConverter.Instance;
+                    parameterDefinition.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
                     isReady = true;
                 }
                 else if (attr is ArgumentAttribute argument)
                 {
-                    parameterDefinition.DefaultValue = argument.DefaultValue;
-                    parameterDefinition.ParameterType = targetType;
+                    parameterDefinition.DefaultValue = parameter.DefaultValue == DBNull.Value
+                        ? argument.DefaultValue
+                        : parameter.DefaultValue;
+
                     parameterDefinition.IsArgument = true;
-                    parameterDefinition.ValueConverter = DefaultConverter.Instance;
+                    parameterDefinition.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
                     isReady = true;
                 }
                 else if (attr is DescriptionAttribute description)

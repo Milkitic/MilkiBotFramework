@@ -30,8 +30,5 @@ namespace MilkiBotFramework.GoCqHttp.Messaging.Events
 
         /// <inheritdoc />
         SenderBase IDetailedSenderMessage.Sender { get => Sender; set => Sender = value; }
-
-        //public int ComputedId => HashCode.Combine(GuildId, ChannelId);
-
     }
 }

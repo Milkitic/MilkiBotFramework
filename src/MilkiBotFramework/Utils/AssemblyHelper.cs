@@ -33,29 +33,31 @@ internal static class AssemblyHelper
 
     public static IReadOnlyList<AssemblyResult> AnalyzePluginsInAssemblyFilesByDnlib(
         ILogger logger,
-        params string[] assemblyFiles)
+        IEnumerable<string> assemblyFiles)
     {
-        if (assemblyFiles.Length == 0)
+        var first = assemblyFiles.FirstOrDefault();
+        if (first == null)
             return Array.Empty<AssemblyResult>();
-        var folder = Path.GetFileName(Path.GetDirectoryName(assemblyFiles[0]));
-        using var scope = logger.BeginScope($"Search in directory \"{folder}\"");
+        var folder = Path.GetFileName(Path.GetDirectoryName(first));
+        //using var scope = logger.BeginScope($"Quick search in directory \"{folder}\"");
         var availableDictionary = new List<AssemblyResult>();
 
         foreach (var asmPath in assemblyFiles)
         {
-            AnalyzeSingle(logger, asmPath, availableDictionary);
+            AnalyzeSingle(logger, asmPath, folder, availableDictionary);
         }
 
         return availableDictionary;
     }
 
-    private static void AnalyzeSingle(ILogger logger, string asmPath, ICollection<AssemblyResult> availableDictionary)
+    private static void AnalyzeSingle(ILogger logger, string asmPath, string? folder,
+        ICollection<AssemblyResult> availableDictionary)
     {
         var asmName = Path.GetFileName(asmPath);
         var modCtx = ModuleDef.CreateModuleContext();
         try
         {
-            logger.LogDebug("Find " + asmName);
+            //logger.LogDebug("Find " + asmName);
             using var module = ModuleDefMD.Load(asmPath, modCtx);
             var typeResults = module.HasTypes
                 ? module.Types.Select(k =>
@@ -97,7 +99,9 @@ internal static class AssemblyHelper
                 }).Where(k => k.TypeFullName != null).ToArray()
                 : Array.Empty<TypeResult>();
             if (typeResults.Length == 0)
-                logger.LogDebug($"\"{asmName}\" has no valid classes.");
+                logger.LogDebug($"Found \"{folder}/{asmName}\" with no plugins.");
+            else
+                logger.LogInformation($"Found \"{folder}/{asmName}\" with {typeResults.Length} plugins.");
             availableDictionary.Add(new AssemblyResult
             {
                 TypeResults = typeResults,

@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using MilkiBotFramework.Plugining.Loading;
 
 namespace MilkiBotFramework.Plugining.CommandLine;
 
@@ -12,6 +13,8 @@ public class StreamCommandLineAnalyzer : ICommandLineAnalyzer
 {
     private static readonly char[] Keywords = { '/', '-' };
     private static readonly char[] Quotes = { '\"', '\'', '`' };
+
+    public IParameterConverter DefaultParameterConverter { get; set; } = DefaultConverter.Instance;
 
     public bool TryAnalyze(string input,
         [NotNullWhen(true)] out CommandLineResult? result,
