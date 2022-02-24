@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -62,10 +63,10 @@ namespace MilkiBotFramework.Plugining.Loading
             ReadOnlyMemory<char>? commandName = null;
             if (success) commandName = commandLineResult.Command;
 
+            Dictionary<IMessagePlugin, (bool dispose, PluginDefinition pluginDefinition, IServiceScope serviceScope)> plugins = new();
             foreach (var loaderContext in _loaderContexts.Values)
             {
                 using var serviceScope = loaderContext.BuildServiceProvider().CreateScope();
-                Dictionary<IMessagePlugin, (bool, PluginDefinition)> plugins = new();
                 foreach (var assemblyContext in loaderContext.AssemblyContexts.Values)
                 {
                     foreach (var pluginDefinition in assemblyContext.PluginDefinitions)
@@ -76,47 +77,53 @@ namespace MilkiBotFramework.Plugining.Loading
                         var pluginInstance = (IMessagePlugin)serviceScope.ServiceProvider.GetService(pluginDefinition.Type)!;
                         if (pluginDefinition.Lifetime != PluginLifetime.Singleton)
                         {
-                            InitializePlugin((PluginBase)pluginInstance, pluginDefinition);
-                            plugins.Add(pluginInstance, (true, pluginDefinition));
+                            //InitializePlugin((PluginBase)pluginInstance, pluginDefinition);
+                            plugins.Add(pluginInstance, (true, pluginDefinition, serviceScope));
                         }
                         else
                         {
-                            plugins.Add(pluginInstance, (false, pluginDefinition));
+                            plugins.Add(pluginInstance, (false, pluginDefinition, serviceScope));
                         }
                     }
                 }
+            }
 
-                foreach (var (pluginInstance, (dispose, pluginDefinition)) in plugins)
+            plugins = plugins
+                .OrderBy(k => k.Value.pluginDefinition.Index)
+                .ToDictionary(k => k.Key, k => k.Value);
+
+            foreach (var (pluginInstance, (dispose, pluginDefinition, serviceScope)) in plugins)
+            {
+                var plugin = (PluginBase)pluginInstance;
+                await plugin.OnExecuting();
+                if (commandName != null &&
+                    pluginDefinition.Commands.TryGetValue(commandName.Value.ToString(), out var commandDefinition))
                 {
-                    var plugin = (PluginBase)pluginInstance;
-                    await plugin.OnExecuting();
-                    if (commandName != null &&
-                        pluginDefinition.Commands.TryGetValue(commandName.Value.ToString(), out var commandDefinition))
-                    {
-                        await _commandLineInjector.InjectParametersAndRunAsync(commandLineResult!,
-                            commandDefinition, plugin, messageContext, serviceScope.ServiceProvider);
-                    }
-                    else
-                    {
-                        await pluginInstance.OnMessageReceived(messageContext);
-                    }
-
-                    await plugin.OnExecuted();
-
-                    if (messageContext.Response.Handled) break;
+                    await _commandLineInjector.InjectParametersAndRunAsync(commandLineResult!,
+                        commandDefinition, plugin, messageContext, serviceScope.ServiceProvider);
+                }
+                else
+                {
+                    await pluginInstance.OnMessageReceived(messageContext);
                 }
 
-                foreach (var (pluginInstance, (dispose, pluginDefinition)) in plugins)
-                {
-                    var plugin = (PluginBase)pluginInstance;
-                    if (dispose) await plugin.OnUninitialized();
-                }
+                await plugin.OnExecuted();
+
+                if (messageContext.Response.Handled) break;
+            }
+
+            foreach (var (pluginInstance, (dispose, pluginDefinition, serviceScope)) in plugins)
+            {
+                var plugin = (PluginBase)pluginInstance;
+                if (dispose) 
+                    await plugin.OnUninitialized();
             }
         }
 
         //todo: Same command; Same guid
         public async Task InitializeAllPlugins()
         {
+            var sw = Stopwatch.StartNew();
             if (!Directory.Exists(PluginBaseDirectory)) Directory.CreateDirectory(PluginBaseDirectory);
             var directories = Directory.GetDirectories(PluginBaseDirectory);
 
@@ -156,6 +163,8 @@ namespace MilkiBotFramework.Plugining.Loading
                     }
                 }
             }
+
+            _logger.LogInformation($"Plugin initialization done in {sw.Elapsed:g}ms.");
         }
 
         private void CreateContextAndAddPlugins(string? contextName, IEnumerable<string> files)
@@ -464,5 +473,4 @@ namespace MilkiBotFramework.Plugining.Loading
             return parameterDefinition;
         }
     }
-
 }

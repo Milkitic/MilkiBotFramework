@@ -21,5 +21,10 @@ namespace MilkiBotFramework.Messaging.RichMessages
         {
             return string.Join("", RichMessages.Select(k => k.Encode()));
         }
+
+        public override string ToString()
+        {
+            return string.Join("", RichMessages.Select(k => k.ToString()));
+        }
     }
 }
