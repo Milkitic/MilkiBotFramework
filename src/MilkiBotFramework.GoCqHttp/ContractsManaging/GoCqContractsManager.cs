@@ -22,6 +22,17 @@ public sealed class GoCqContractsManager : ContractsManagerBase
         _logger = logger;
     }
 
+    public override async Task<SelfInfoResult> TryGetSelfInfo()
+    {
+        var result = await _goCqApi.GetLoginInfo();
+        return new SelfInfoResult()
+        {
+            IsSuccess = true,
+            UserId = result.UserId.ToString(),
+            Nickname = result.Nickname
+        };
+    }
+
     public override async Task<ChannelInfoResult> TryGetChannelInfoByMessageContext(MessageIdentity messageIdentity, string userId)
     {
         if (messageIdentity.Id == null) throw new ArgumentNullException(nameof(messageIdentity.Id));

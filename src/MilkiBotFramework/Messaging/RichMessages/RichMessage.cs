@@ -1,18 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MilkiBotFramework.Messaging.RichMessages
 {
-    public class RichMessage : IRichMessage
+    public sealed class RichMessage : IRichMessage
     {
-        public IRichMessage[] RichMessages { get; set; }
+        public List<IRichMessage> RichMessages { get; } = new();
+
+        public RichMessage(IEnumerable<IRichMessage> richMessages)
+        {
+            RichMessages.AddRange(richMessages);
+        }
 
         public RichMessage(params IRichMessage[] richMessages)
         {
-            RichMessages = richMessages;
+            RichMessages.AddRange(richMessages);
         }
 
         public string Encode()

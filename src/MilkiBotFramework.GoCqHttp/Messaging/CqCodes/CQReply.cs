@@ -1,4 +1,5 @@
 ﻿using System;
+using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
 {
@@ -6,7 +7,7 @@ namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
     /// 回复
     /// </summary>
     // ReSharper disable once InconsistentNaming
-    public class CQReply : CQCode
+    public class CQReply : IRichMessage
     {
         /// <summary>
         /// 被@回复时所引用的消息id, 必须为本群消息。
@@ -23,10 +24,11 @@ namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
             MessageId = messageId;
         }
 
-        internal new static CQReply Parse(string content)
+        internal new static CQReply Parse(ReadOnlyMemory<char> content)
         {
             const int flagLen = 5;
-            var dictionary = GetParameters(content.Substring(5 + flagLen, content.Length - 6 - flagLen));
+            var s = content.Slice(5 + flagLen, content.Length - 6 - flagLen).ToString();
+            var dictionary = CQCodeHelper.GetParameters(s);
             if (!dictionary.TryGetValue("id", out var id))
                 throw new InvalidOperationException(nameof(CQReply) + "至少需要id参数");
 
@@ -36,6 +38,6 @@ namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
         }
 
         public override string ToString() => $"[回复]";
-        public override string Encode() => $"[CQ:reply,id={MessageId}]";
+        public string Encode() => $"[CQ:reply,id={MessageId}]";
     }
 }

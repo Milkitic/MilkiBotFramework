@@ -1,6 +1,8 @@
-﻿namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
+﻿using MilkiBotFramework.Messaging.RichMessages;
+
+namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
 {
-    public class CQUnknown : CQCode
+    public class CQUnknown : IRichMessage
     {
         public string Type { get; }
         public string Content { get; }
@@ -12,5 +14,6 @@
         }
 
         public override string ToString() => $"[不支持的消息:{Type}]";
+        public string Encode() => Content;
     }
 }

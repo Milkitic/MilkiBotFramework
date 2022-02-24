@@ -2,7 +2,7 @@
 
 public class At : IRichMessage
 {
-    public At(long userId) => UserId = userId;
-    public long UserId { get; set; }
-    public string Encode() => $"[At {UserId}]";
+    public At(string userId) => UserId = userId;
+    public string UserId { get; set; }
+    public virtual string Encode() => $"[At {UserId}]";
 }

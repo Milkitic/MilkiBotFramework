@@ -2,10 +2,11 @@
 using System.IO;
 using System.Threading.Tasks;
 using MilkiBotFramework.GoCqHttp.Utils;
+using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes;
 
-public class CQRecord : CQCode
+public class CQRecord : IRichMessage
 {
     private string? _downloadUri;
 
@@ -80,9 +81,9 @@ public class CQRecord : CQCode
         //return cachePath;
     }
 
-    public override string ToString() => "[图片]";
+    public override string ToString() => "[语音]";
 
-    public override string Encode()
+    public string Encode()
     {
         for (int i = 0; i < 2; i++)
         {

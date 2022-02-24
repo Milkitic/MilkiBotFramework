@@ -55,6 +55,9 @@ public abstract class ContractsManagerBase : IContractsManager
         }
     }
 
+    public abstract Task<SelfInfoResult> TryGetSelfInfo();
+
+    // todo: not a good design for public
     public bool TryGetMemberInfo(string channelId, string userId, [NotNullWhen(true)] out MemberInfo? memberInfo, string? subChannelId = null)
     {
         if (subChannelId == null)
@@ -79,6 +82,7 @@ public abstract class ContractsManagerBase : IContractsManager
         return false;
     }
 
+    // todo: not a good design for public
     public bool TryGetChannelInfo(string channelId,
         [NotNullWhen(true)] out ChannelInfo? channelInfo,
         string? subChannelId = null)
@@ -91,6 +95,7 @@ public abstract class ContractsManagerBase : IContractsManager
                dict.TryGetValue(subChannelId, out channelInfo);
     }
 
+    // todo: not a good design for public
     public bool TryGetPrivateInfo(string userId, [NotNullWhen(true)] out PrivateInfo? privateInfo)
     {
         return PrivateMapping.TryGetValue(userId, out privateInfo);

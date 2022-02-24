@@ -15,5 +15,5 @@ public class MemoryImage : IRichMessage, IDisposable
     public Image ImageSource { get; set; }
     public ImageType ImageType { get; }
     public void Dispose() => ImageSource?.Dispose();
-    public string Encode() => "[Image]";
+    public virtual string Encode() => "[Image]";
 }

@@ -20,5 +20,5 @@ public class FileImage : IRichMessage
         return new MemoryImage(bitmap, imageType);
     }
 
-    public string Encode() => "[FileImage]";
+    public virtual string Encode() => "[FileImage]";
 }

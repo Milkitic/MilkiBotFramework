@@ -1,11 +1,12 @@
 ﻿using System;
+using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
 {
     /// <summary>
     /// QQ表情
     /// </summary>
-    public class CQFace : CQCode
+    public class CQFace : IRichMessage
     {
         /// <summary>
         /// QQ表情ID。
@@ -24,15 +25,16 @@ namespace MilkiBotFramework.GoCqHttp.Messaging.CqCodes
             FaceId = faceId;
         }
 
-        public override string Encode() => $"[CQ:face,id={FaceId}]";
+        public string Encode() => $"[CQ:face,id={FaceId}]";
 
         public override string ToString() => $"[表情{FaceId}]";
 
 
-        internal new static CQFace Parse(string content)
+        internal static CQFace Parse(ReadOnlyMemory<char> content)
         {
             const int flagLen = 4;
-            var dictionary = GetParameters(content.Substring(5 + flagLen, content.Length - 6 - flagLen));
+            var s = content.Slice(5 + flagLen, content.Length - 6 - flagLen).ToString();
+            var dictionary = CQCodeHelper.GetParameters(s);
 
             if (!dictionary.TryGetValue("id", out var id))
                 throw new InvalidOperationException(nameof(CQFace) + "至少需要id参数");
