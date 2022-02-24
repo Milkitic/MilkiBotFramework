@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace MilkiBotFramework.Plugining.Loading
@@ -23,5 +24,12 @@ namespace MilkiBotFramework.Plugining.Loading
         public MethodInfo MethodInfo { get; }
         public CommandReturnType CommandReturnType { get; set; }
         public IReadOnlyList<ParameterDefinition> ParameterDefinitions { get; }
+        public ModelBindingDefinition? ModelBindingDefinition { get; set; }
+    }
+
+    public class ModelBindingDefinition
+    {
+        public Type TargetType { get; init; }
+        public List<ParameterDefinition> ParameterDefinitions { get; init; }
     }
 }

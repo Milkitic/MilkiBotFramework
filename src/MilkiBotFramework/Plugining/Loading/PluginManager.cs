@@ -409,7 +409,7 @@ namespace MilkiBotFramework.Plugining.Loading
             var parameterDefinition = new ParameterDefinition
             {
                 ParameterName = parameter.Name!,
-                ParameterType = targetType
+                ParameterType = targetType,
             };
 
             bool isReady = false;

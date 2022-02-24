@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Messaging;
@@ -23,16 +24,28 @@ namespace DemoBot
             _logger = logger;
         }
 
-        [CommandHandler("gg")]
+        [CommandHandler("sign")]
         [Description("Echo all of your contents.")]
-        public async Task Haha2(MessageContext context, [Option("o")] byte option)
+        public async Task ModelBinding(MessageContext context, BindingModel bindingModel)
+        {
+            await context.Response.QuickReply(JsonSerializer.Serialize(new
+            {
+                bindingModel.Name,
+                bindingModel.Age,
+                Description = bindingModel.Description.ToString()
+            }));
+        }
+
+        [CommandHandler("option")]
+        [Description("Echo all of your contents.")]
+        public async Task Option(MessageContext context, [Option("o")] byte option)
         {
             await context.Response.QuickReply(((byte)(option + 1)).ToString());
         }
 
-        [CommandHandler("asdf")]
+        [CommandHandler("arg")]
         [Description("Echo all of your contents.")]
-        public async Task Haha(MessageContext context,
+        public async Task Arguments(MessageContext context,
             [Argument] ReadOnlyMemory<char> arguments,
             [Argument] MessageAuthority messageAuthority = MessageAuthority.Unspecified)
         {
@@ -63,5 +76,15 @@ namespace DemoBot
         {
             _logger.LogDebug(nameof(OnExecuted));
         }
+    }
+
+    public class BindingModel
+    {
+        [Option("name")]
+        public string Name { get; set; }
+        [Option("age", DefaultValue = 14)]
+        public int Age { get; set; }
+        [Argument(DefaultValue = "no description")]
+        public ReadOnlyMemory<char> Description { get; set; }
     }
 }
