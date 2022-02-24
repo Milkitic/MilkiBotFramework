@@ -14,15 +14,18 @@ namespace MilkiBotFramework.GoCqHttp.Dispatching
     public class GoCqDispatcher : DispatcherBase<GoCqMessageContext>
     {
         private readonly GoCqApi _goCqApi;
+        private readonly IRichMessageConverter _richMessageConverter;
         private readonly ILogger<MessageResponseContext> _logger2;
 
         public GoCqDispatcher(GoCqApi goCqApi,
             IContractsManager contractsManager,
+            IRichMessageConverter richMessageConverter,
             ILogger<GoCqDispatcher> logger,
             ILogger<MessageResponseContext> logger2)
             : base(goCqApi.Connector, contractsManager, logger)
         {
             _goCqApi = goCqApi;
+            _richMessageConverter = richMessageConverter;
             _logger2 = logger2;
         }
 
@@ -30,9 +33,10 @@ namespace MilkiBotFramework.GoCqHttp.Dispatching
         {
             var goCqMessageContext = new GoCqMessageContext
             {
-                Request = new GoCqMessageRequestContext(rawMessage),
+                Request = new GoCqMessageRequestContext(rawMessage, _richMessageConverter),
             };
-            goCqMessageContext.Response = new MessageResponseContext(goCqMessageContext, _goCqApi, _logger2);
+            goCqMessageContext.Response =
+                new MessageResponseContext(goCqMessageContext, _goCqApi, _logger2, _richMessageConverter);
             return goCqMessageContext;
         }
 

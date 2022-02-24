@@ -4,7 +4,7 @@ using MilkiBotFramework.Plugining.Loading;
 
 namespace MilkiBotFramework.GoCqHttp;
 
-internal class GoCqValueConverter : DefaultConverter
+internal class GoCqParameterConverter : DefaultParameterConverter
 {
     public override object Convert(Type targetType, ReadOnlyMemory<char> source)
     {

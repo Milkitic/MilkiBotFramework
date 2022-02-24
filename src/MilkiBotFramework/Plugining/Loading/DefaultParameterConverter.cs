@@ -2,9 +2,9 @@
 
 namespace MilkiBotFramework.Plugining.Loading;
 
-public class DefaultConverter : IParameterConverter
+public class DefaultParameterConverter : IParameterConverter
 {
-    public static DefaultConverter Instance { get; } = new();
+    public static DefaultParameterConverter Instance { get; } = new();
 
     private static readonly Type _typeBoolean = typeof(bool);
     private static readonly Type _typeByte = typeof(byte);

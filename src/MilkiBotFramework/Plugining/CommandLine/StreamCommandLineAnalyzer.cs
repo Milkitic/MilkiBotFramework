@@ -14,7 +14,7 @@ public class StreamCommandLineAnalyzer : ICommandLineAnalyzer
     private static readonly char[] Keywords = { '/', '-' };
     private static readonly char[] Quotes = { '\"', '\'', '`' };
 
-    public IParameterConverter DefaultParameterConverter { get; set; } = DefaultConverter.Instance;
+    public IParameterConverter DefaultParameterConverter { get; set; } = Loading.DefaultParameterConverter.Instance;
 
     public bool TryAnalyze(string input,
         [NotNullWhen(true)] out CommandLineResult? result,

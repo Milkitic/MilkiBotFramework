@@ -13,4 +13,5 @@ public sealed class PluginIdentifierAttribute : Attribute
 
     public string Guid { get; }
     public string? Name { get; }
+    public int Index { get; init; }
 }

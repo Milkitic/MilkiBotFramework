@@ -1,11 +1,13 @@
 ﻿using System;
 using MilkiBotFramework.ContractsManaging.Models;
+using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Plugining.CommandLine;
 
 namespace MilkiBotFramework.Messaging;
 
 public class MessageRequestContext
 {
+    private readonly IRichMessageConverter _richMessageConverter;
     public string RawTextMessage { get; }
 
     public string? MessageId { get; set; }
@@ -25,13 +27,19 @@ public class MessageRequestContext
 
     public DateTimeOffset ReceivedTime { get; set; }
 
-    public MessageRequestContext(string rawTextMessage)
+    public MessageRequestContext(string rawTextMessage, IRichMessageConverter richMessageConverter)
     {
+        _richMessageConverter = richMessageConverter;
         RawTextMessage = rawTextMessage;
     }
 
     public bool ValidateAuthority(MessageAuthority authority)
     {
         return authority >= MinimumAuthority;
+    }
+
+    public RichMessage GetRichMessage()
+    {
+        return _richMessageConverter.Decode(TextMessage.AsMemory());
     }
 }

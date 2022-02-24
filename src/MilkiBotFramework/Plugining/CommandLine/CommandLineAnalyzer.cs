@@ -7,7 +7,7 @@ namespace MilkiBotFramework.Plugining.CommandLine;
 
 public class CommandLineAnalyzer : ICommandLineAnalyzer
 {
-    public IParameterConverter DefaultParameterConverter { get; set; } = DefaultConverter.Instance;
+    public IParameterConverter DefaultParameterConverter { get; set; } = Loading.DefaultParameterConverter.Instance;
 
     private const char CommandFlag = '/';
     private static readonly HashSet<char> OptionFlags = new() { '-' };

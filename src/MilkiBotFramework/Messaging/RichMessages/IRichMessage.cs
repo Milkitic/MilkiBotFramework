@@ -2,4 +2,5 @@
 
 public interface IRichMessage
 {
+    string Encode();
 }

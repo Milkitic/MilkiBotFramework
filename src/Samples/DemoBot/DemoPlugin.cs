@@ -9,19 +9,24 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Attributes;
+using MilkiBotFramework.Plugining.Loading;
 
 namespace DemoBot
 {
-    [PluginIdentifier("1e1e623a-d89d-49ad-b801-f93dd94cf2d7")]
+    [PluginIdentifier("1e1e623a-d89d-49ad-b801-f93dd94cf2d7", Index = 1)]
     public class DemoPlugin : BasicPlugin
     {
         private readonly DemoPlugin2 _demoPlugin2;
         private readonly ILogger<DemoPlugin> _logger;
+        private readonly IRichMessageConverter _richMessageConverter;
+        private readonly PluginManager _pluginManager;
 
-        public DemoPlugin(DemoPlugin2 demoPlugin2, ILogger<DemoPlugin> logger)
+        public DemoPlugin(DemoPlugin2 demoPlugin2, ILogger<DemoPlugin> logger, IRichMessageConverter richMessageConverter, PluginManager pluginManager)
         {
             _demoPlugin2 = demoPlugin2;
             _logger = logger;
+            _richMessageConverter = richMessageConverter;
+            _pluginManager = pluginManager;
         }
 
         [CommandHandler("sign")]
@@ -54,6 +59,9 @@ namespace DemoBot
 
         public override async Task OnMessageReceived(MessageContext context)
         {
+            var message = context.Request.TextMessage;
+            var richMessage = context.Request.GetRichMessage();
+
             await context.Response.QuickReply("not this one!");
         }
 

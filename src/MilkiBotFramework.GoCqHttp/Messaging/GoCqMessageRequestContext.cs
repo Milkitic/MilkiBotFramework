@@ -6,10 +6,11 @@ namespace MilkiBotFramework.GoCqHttp.Messaging;
 
 public class GoCqMessageRequestContext : MessageRequestContext
 {
-    public GoCqMessageRequestContext(string rawTextMessage) : base(rawTextMessage)
+    public GoCqMessageRequestContext(string rawTextMessage, IRichMessageConverter richMessageConverter)
+        : base(rawTextMessage, richMessageConverter)
     {
     }
-
     public JsonDocument RawJsonDocument { get; internal set; }
     public MessageBase RawMessage { get; internal set; }
+
 }

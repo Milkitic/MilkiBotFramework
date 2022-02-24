@@ -102,6 +102,8 @@ namespace MilkiBotFramework.Plugining.Loading
                     }
 
                     await plugin.OnExecuted();
+
+                    if (messageContext.Response.Handled) break;
                 }
 
                 foreach (var (pluginInstance, (dispose, pluginDefinition)) in plugins)
@@ -313,12 +315,23 @@ namespace MilkiBotFramework.Plugining.Loading
                 .Where(o => o.Lifetime == ServiceLifetime.Singleton);
             foreach (var serviceDescriptor in allTypes)
             {
-                var instance = serviceDescriptor.ImplementationType != null
-                    ? BaseServiceProvider.GetService(serviceDescriptor.ImplementationType)
-                    : BaseServiceProvider.GetService(serviceDescriptor.ServiceType);
-
-                if (instance != null)
+                var ns = serviceDescriptor.ServiceType.Namespace;
+                if (serviceDescriptor.ImplementationType == serviceDescriptor.ServiceType)
+                {
+                    if (ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
+                        ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
+                        continue;
+                    var instance = BaseServiceProvider.GetService(serviceDescriptor.ImplementationType);
+                    loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ImplementationType, instance);
+                }
+                else
+                {
+                    if (ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
+                        ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
+                        continue;
+                    var instance = BaseServiceProvider.GetService(serviceDescriptor.ServiceType);
                     loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ServiceType, instance);
+                }
             }
 
             var bot = BaseServiceProvider.GetService<Bot>();
@@ -344,6 +357,7 @@ namespace MilkiBotFramework.Plugining.Loading
             var identifierAttribute = type.GetCustomAttribute<PluginIdentifierAttribute>() ??
                                       throw new Exception("The plugin identifier is undefined: " + type.FullName);
             var guid = identifierAttribute.Guid;
+            var index = identifierAttribute.Index;
             var name = identifierAttribute.Name ?? type.Name;
             var description = type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "Nothing here.";
             var version = type.GetCustomAttribute<VersionAttribute>()?.Version ?? "0.0.1-alpha";
@@ -399,6 +413,7 @@ namespace MilkiBotFramework.Plugining.Loading
                 BaseType = baseType,
                 Type = type,
                 Lifetime = lifetime,
+                Index = index,
                 Commands = commands
             };
         }

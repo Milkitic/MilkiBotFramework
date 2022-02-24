@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContractsManaging;
 using MilkiBotFramework.Dispatching;
+using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Plugining.Loading;
 using MilkiBotFramework.Tasking;
@@ -31,6 +32,7 @@ public sealed class BotBuilder
     private string _pluginBaseDir = "./plugins";
     private Type? _commandAnalyzerType;
     private IParameterConverter? _defaultConverter;
+    private Type? _richMessageConverterType;
 
     public BotBuilder ConfigureOptions(Action<BotOptions> configureBot)
     {
@@ -75,6 +77,12 @@ public sealed class BotBuilder
         return this;
     }
 
+    public BotBuilder UseRichMessageConverter<T>() where T : IRichMessageConverter
+    {
+        _richMessageConverterType = typeof(T);
+        return this;
+    }
+
     public BotBuilder UseDispatcher<T>() where T : IDispatcher
     {
         _dispatcherType = typeof(T);
@@ -110,6 +118,8 @@ public sealed class BotBuilder
             .AddSingleton<PluginManager>()
             .AddSingleton(typeof(ICommandLineAnalyzer),
                 _commandAnalyzerType ?? typeof(CommandLineAnalyzer))
+            .AddSingleton(typeof(IRichMessageConverter),
+                _richMessageConverterType ?? typeof(DefaultRichMessageConverter))
             .AddSingleton(typeof(IConnector),
                 _connectorType ?? throw new ArgumentNullException(nameof(IConnector),
                     "The IConnector implementation is not specified."))
@@ -129,6 +139,9 @@ public sealed class BotBuilder
         _services.AddSingleton(_services);
         var serviceProvider = _services.BuildServiceProvider();
 
+        // RichMessageConverter
+        var richMessageConverter = serviceProvider.GetService<IRichMessageConverter>()!;
+    
         // CommandLineAnalyzer
         var commandLineAnalyzer = serviceProvider.GetService<ICommandLineAnalyzer>()!;
         if (_defaultConverter != null) commandLineAnalyzer.DefaultParameterConverter = _defaultConverter;
