@@ -58,7 +58,7 @@ namespace MilkiBotFramework.Plugining.Loading
 
         private async Task HandleMessage(MessageContext messageContext)
         {
-            var message = messageContext.Request.TextMessage;
+            var message = messageContext.TextMessage;
             var success = _commandLineAnalyzer.TryAnalyze(message, out var commandLineResult, out var exception);
             ReadOnlyMemory<char>? commandName = null;
             if (success)
@@ -113,7 +113,7 @@ namespace MilkiBotFramework.Plugining.Loading
 
                 await plugin.OnExecuted();
 
-                if (messageContext.Response.Handled) break;
+                if (messageContext.Handled) break;
             }
 
             foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in plugins)

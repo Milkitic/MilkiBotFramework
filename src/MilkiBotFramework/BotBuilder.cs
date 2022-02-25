@@ -156,7 +156,7 @@ public sealed class BotBuilder
 
         // Dispatcher
         var dispatcher = serviceProvider.GetService<IDispatcher>()!;
-
+        dispatcher.SingletonServiceProvider = serviceProvider;
         // ContractsManager
         var contractsManager = serviceProvider.GetService<IContractsManager>();
         if (contractsManager is ContractsManagerBase cmb) cmb.Dispatcher = dispatcher;

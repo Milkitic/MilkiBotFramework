@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContractsManaging;
@@ -14,36 +15,22 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
     {
         private readonly GoCqApi _goCqApi;
         private readonly IRichMessageConverter _richMessageConverter;
-        private readonly ILogger<MessageResponseContext> _logger2;
 
         public GoCqDispatcher(GoCqApi goCqApi,
             IContractsManager contractsManager,
             IRichMessageConverter richMessageConverter,
-            ILogger<GoCqDispatcher> logger,
-            ILogger<MessageResponseContext> logger2)
+            ILogger<GoCqDispatcher> logger)
             : base(goCqApi.Connector, contractsManager, logger)
         {
             _goCqApi = goCqApi;
             _richMessageConverter = richMessageConverter;
-            _logger2 = logger2;
-        }
-
-        protected override GoCqMessageContext CreateMessageContext(string rawMessage)
-        {
-            var goCqMessageContext = new GoCqMessageContext
-            {
-                Request = new GoCqMessageRequestContext(rawMessage, _richMessageConverter),
-            };
-            goCqMessageContext.Response =
-                new MessageResponseContext(goCqMessageContext, _goCqApi, _logger2, _richMessageConverter);
-            return goCqMessageContext;
         }
 
         protected override bool TrySetTextMessage(GoCqMessageContext messageContext)
         {
-            if (messageContext.Request.Identity == MessageIdentity.MetaMessage ||
-                messageContext.Request.Identity == MessageIdentity.NoticeMessage) return false;
-            messageContext.GoCqRequest.TextMessage = messageContext.GoCqRequest.RawMessage.Message;
+            if (messageContext.MessageIdentity == MessageIdentity.MetaMessage ||
+                messageContext.MessageIdentity == MessageIdentity.NoticeMessage) return false;
+            messageContext.TextMessage = messageContext.RawMessage.Message;
             return true;
         }
 
@@ -51,7 +38,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
             [NotNullWhen(true)] out MessageIdentity? messageIdentity,
             out string? strIdentity)
         {
-            var rawJson = messageContext.Request.RawTextMessage;
+            var rawJson = messageContext.RawTextMessage;
             strIdentity = null;
 
             var jDoc = JsonDocument.Parse(rawJson);
@@ -62,7 +49,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
                 return false;
             }
 
-            messageContext.GoCqRequest.RawJsonDocument = jDoc;
+            messageContext.RawJsonDocument = jDoc;
             var postType = postTypeElement.GetString();
 
             if (postType == "meta_event")
@@ -85,9 +72,9 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
                     var parsedObj = JsonSerializer.Deserialize<PrivateMessage>(rawJson)!;
                     messageIdentity = new MessageIdentity(parsedObj.UserId, MessageType.Private);
 
-                    messageContext.GoCqRequest.RawMessage = parsedObj;
-                    messageContext.GoCqRequest.UserId = parsedObj.UserId;
-                    messageContext.GoCqRequest.ReceivedTime = parsedObj.Time;
+                    messageContext.RawMessage = parsedObj;
+                    messageContext.UserId = parsedObj.UserId;
+                    messageContext.ReceivedTime = parsedObj.Time;
                     return true;
                 }
 
@@ -96,9 +83,9 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
                     var parsedObj = JsonSerializer.Deserialize<GroupMessage>(rawJson)!;
                     messageIdentity = new MessageIdentity(parsedObj.GroupId, MessageType.Channel);
 
-                    messageContext.GoCqRequest.RawMessage = parsedObj;
-                    messageContext.GoCqRequest.UserId = parsedObj.UserId;
-                    messageContext.GoCqRequest.ReceivedTime = parsedObj.Time;
+                    messageContext.RawMessage = parsedObj;
+                    messageContext.UserId = parsedObj.UserId;
+                    messageContext.ReceivedTime = parsedObj.Time;
                     return true;
                 }
 
@@ -106,10 +93,10 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
                 {
                     var parsedObj = JsonSerializer.Deserialize<GuildMessage>(rawJson)!;
                     messageIdentity = new MessageIdentity(parsedObj.GuildId, parsedObj.ChannelId, MessageType.Channel);
-                  
-                    messageContext.GoCqRequest.RawMessage = parsedObj;
-                    messageContext.GoCqRequest.UserId = parsedObj.UserId;
-                    messageContext.GoCqRequest.ReceivedTime = parsedObj.Time;
+
+                    messageContext.RawMessage = parsedObj;
+                    messageContext.UserId = parsedObj.UserId;
+                    messageContext.ReceivedTime = parsedObj.Time;
                     return true;
                 }
 

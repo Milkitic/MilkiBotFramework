@@ -1,4 +1,5 @@
-﻿using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 using MilkiBotFramework.Platforms.GoCqHttp.ContractsManaging;
 using MilkiBotFramework.Platforms.GoCqHttp.Dispatching;
 using MilkiBotFramework.Platforms.GoCqHttp.Messaging;
@@ -11,6 +12,10 @@ namespace MilkiBotFramework.Platforms.GoCqHttp
         public static BotBuilder UseGoCqHttp(this BotBuilder builder, string uri)
         {
             return builder
+                .ConfigureServices(k =>
+                {
+                    k.AddScoped(typeof(GoCqMessageContext));
+                })
                 .UseConnector<GoCqWsClient>(uri)
                 .UseDispatcher<GoCqDispatcher>()
                 .UseCommandLineAnalyzer<CommandLineAnalyzer>(new GoCqParameterConverter())

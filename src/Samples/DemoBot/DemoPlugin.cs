@@ -33,7 +33,7 @@ namespace DemoBot
         [Description("Echo all of your contents.")]
         public async Task ModelBinding(MessageContext context, BindingModel bindingModel)
         {
-            await context.Response.QuickReply(JsonSerializer.Serialize(new
+            await context.QuickReply(JsonSerializer.Serialize(new
             {
                 bindingModel.Name,
                 bindingModel.Age,
@@ -45,7 +45,7 @@ namespace DemoBot
         [Description("Echo all of your contents.")]
         public async Task Option(MessageContext context, [Option("o")] byte option)
         {
-            await context.Response.QuickReply(((byte)(option + 1)).ToString());
+            await context.QuickReply(((byte)(option + 1)).ToString());
         }
 
         [CommandHandler("arg")]
@@ -54,15 +54,15 @@ namespace DemoBot
             [Argument] ReadOnlyMemory<char> arguments,
             [Argument] MessageAuthority messageAuthority = MessageAuthority.Unspecified)
         {
-            await context.Response.QuickReply(arguments + " " + messageAuthority);
+            await context.QuickReply(arguments + " " + messageAuthority);
         }
 
         public override async Task OnMessageReceived(MessageContext context)
         {
-            var message = context.Request.TextMessage;
-            var richMessage = context.Request.GetRichMessage();
+            var message = context.TextMessage;
+            var richMessage = context.GetRichMessage();
 
-            await context.Response.QuickReply("not this one!");
+            await context.QuickReply("not this one!");
         }
 
         protected override async Task OnInitialized()

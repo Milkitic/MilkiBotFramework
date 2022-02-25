@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContractsManaging;
@@ -19,6 +20,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
     private readonly IConnector _connector;
     private readonly IContractsManager _contractsManager;
     private readonly ILogger _logger;
+    public IServiceProvider SingletonServiceProvider { get; set; }
 
     public DispatcherBase(IConnector connector, IContractsManager contractsManager, ILogger logger)
     {
@@ -32,7 +34,9 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
     {
         try
         {
-            var messageContext = CreateMessageContext(rawMessage);
+            using var scope = SingletonServiceProvider.CreateScope();
+            var messageContext = (TMessageContext)scope.ServiceProvider.GetService(typeof(TMessageContext))!;
+            messageContext.RawTextMessage = rawMessage;
             await HandleMessageCore(messageContext);
         }
         catch (Exception ex)
@@ -53,7 +57,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
             return;
         }
 
-        messageContext.Request.Identity = messageIdentity;
+        messageContext.MessageIdentity = messageIdentity;
         TrySetTextMessage(messageContext);
         switch (messageIdentity!.MessageType)
         {
@@ -61,17 +65,17 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                 var privateResult = await _contractsManager.TryGetPrivateInfoByMessageContext(messageIdentity);
                 if (privateResult.IsSuccess && PrivateMessageReceived != null)
                 {
-                    messageContext.Request.PrivateInfo = privateResult.PrivateInfo;
+                    messageContext.PrivateInfo = privateResult.PrivateInfo;
                     await PrivateMessageReceived.Invoke(messageContext);
                 }
                 break;
             case MessageType.Channel:
                 var channelResult =
-                    await _contractsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.Request.UserId);
+                    await _contractsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.UserId);
                 if (channelResult.IsSuccess && ChannelMessageReceived != null)
                 {
-                    messageContext.Request.ChannelInfo = channelResult.ChannelInfo;
-                    messageContext.Request.MemberInfo = channelResult.MemberInfo;
+                    messageContext.ChannelInfo = channelResult.ChannelInfo;
+                    messageContext.MemberInfo = channelResult.MemberInfo;
                     await ChannelMessageReceived.Invoke(messageContext);
                 }
                 break;
@@ -87,8 +91,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
 
         //_logger.LogDebug($"Received data: \r\n{messageContext}");
     }
-
-    protected abstract TMessageContext CreateMessageContext(string rawMessage);
+    
     protected abstract bool TrySetTextMessage(TMessageContext messageContext);
 
     protected abstract bool TryGetIdentityByRawMessage(TMessageContext messageContext,
