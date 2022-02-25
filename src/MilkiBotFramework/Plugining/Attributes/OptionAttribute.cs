@@ -12,5 +12,4 @@ public sealed class OptionAttribute : ParameterAttribute
 
     public char? Abbreviate { get; set; }
     public string Name { get; set; }
-    public bool IsSwitch { get; set; }
 }
