@@ -2,5 +2,5 @@
 
 public enum MessageType
 {
-    Private, Public, Notice, Meta
+    Private, Channel, Notice, Meta
 }

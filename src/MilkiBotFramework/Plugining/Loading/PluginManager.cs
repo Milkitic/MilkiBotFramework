@@ -46,21 +46,28 @@ namespace MilkiBotFramework.Plugining.Loading
         public ServiceCollection BaseServiceCollection { get; internal set; }
         public IServiceProvider BaseServiceProvider { get; internal set; }
 
-        private async Task Dispatcher_ChannelMessageReceived(MessageContext context, ChannelInfo channelInfo, MemberInfo memberInfo)
+        private async Task Dispatcher_ChannelMessageReceived(MessageContext messageContext)
         {
+            await HandleMessage(messageContext);
         }
 
-        private async Task Dispatcher_PrivateMessageReceived(MessageContext messageContext, PrivateInfo privateInfo)
+        private async Task Dispatcher_PrivateMessageReceived(MessageContext messageContext)
+        {
+            await HandleMessage(messageContext);
+        }
+
+        private async Task HandleMessage(MessageContext messageContext)
         {
             var message = messageContext.Request.TextMessage;
             var success = _commandLineAnalyzer.TryAnalyze(message, out var commandLineResult, out var exception);
             ReadOnlyMemory<char>? commandName = null;
             if (success)
                 commandName = commandLineResult?.Command;
-            else
+            else if (exception != null)
                 _logger.LogWarning("Error occurs while analyzing command: " + (exception?.Message ?? "Unknown reason"));
 
-            List<(IMessagePlugin plugin, bool dispose, PluginDefinition pluginDefinition, IServiceScope serviceScope)> plugins = new();
+            List<(IMessagePlugin plugin, bool dispose, PluginDefinition pluginDefinition, IServiceScope serviceScope)> plugins =
+                new();
             var scopes = new HashSet<IServiceScope>();
 
             foreach (var loaderContext in _loaderContexts.Values)
@@ -166,7 +173,7 @@ namespace MilkiBotFramework.Plugining.Loading
                 }
             }
 
-            _logger.LogInformation($"Plugin initialization done in {sw.Elapsed:g}ms.");
+            _logger.LogInformation($"Plugin initialization done in {sw.Elapsed.TotalSeconds:N3}s!");
         }
 
         private void CreateContextAndAddPlugins(string? contextName, IEnumerable<string> files)

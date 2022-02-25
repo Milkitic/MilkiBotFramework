@@ -13,12 +13,17 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.ContractsManaging;
 public sealed class GoCqContractsManager : ContractsManagerBase
 {
     private readonly GoCqApi _goCqApi;
+    private readonly BotOptions _botOptions;
     private readonly ILogger<GoCqContractsManager> _logger;
 
-    public GoCqContractsManager(GoCqApi goCqApi, BotTaskScheduler botTaskScheduler, ILogger<GoCqContractsManager> logger)
+    public GoCqContractsManager(GoCqApi goCqApi,
+        BotOptions botOptions,
+        BotTaskScheduler botTaskScheduler,
+        ILogger<GoCqContractsManager> logger)
         : base(botTaskScheduler, logger)
     {
         _goCqApi = goCqApi;
+        _botOptions = botOptions;
         _logger = logger;
     }
 
@@ -46,7 +51,10 @@ public sealed class GoCqContractsManager : ContractsManagerBase
                 try
                 {
                     var groupInfo = await _goCqApi.GetGroupInfo(long.Parse(channelId));
-                    channelInfo = new ChannelInfo(channelId) { Name = groupInfo.GroupName };
+                    channelInfo = new ChannelInfo(channelId)
+                    {
+                        Name = string.IsNullOrEmpty(groupInfo.GroupName) ? null : groupInfo.GroupName
+                    };
                     AddChannel(channelInfo);
                 }
                 catch (GoCqApiException ex)
@@ -68,8 +76,8 @@ public sealed class GoCqContractsManager : ContractsManagerBase
                 var groupMember = await _goCqApi.GetGroupMemberDetail(long.Parse(channelId), long.Parse(userId));
                 memberInfo = new MemberInfo(groupMember.UserId)
                 {
-                    Nickname = groupMember.Nickname,
-                    Card = groupMember.Card,
+                    Nickname = string.IsNullOrEmpty(groupMember.Nickname) ? null : groupMember.Nickname,
+                    Card = string.IsNullOrEmpty(groupMember.Card) ? null : groupMember.Card,
                     MemberRole = groupMember.Role switch
                     {
                         "owner" => MemberRole.Owner,
@@ -87,6 +95,13 @@ public sealed class GoCqContractsManager : ContractsManagerBase
             }
         }
 
+        if (_botOptions.RootAccounts.Contains(userId))
+            memberInfo.Authority = MessageAuthority.Root;
+        else if (memberInfo.MemberRole != MemberRole.Member)
+            memberInfo.Authority = MessageAuthority.Admin;
+        else
+            memberInfo.Authority = MessageAuthority.Public;
+
         return new ChannelInfoResult { ChannelInfo = channelInfo, IsSuccess = true, MemberInfo = memberInfo };
     }
 
@@ -102,7 +117,7 @@ public sealed class GoCqContractsManager : ContractsManagerBase
                 var stranger = await _goCqApi.GetStrangerInfo(long.Parse(userId));
                 privateInfo = new PrivateInfo(userId)
                 {
-                    Nickname = stranger.Nickname,
+                    Nickname = string.IsNullOrEmpty(stranger.Nickname) ? null : stranger.Nickname
                 };
                 AddPrivate(privateInfo);
             }
@@ -113,6 +128,9 @@ public sealed class GoCqContractsManager : ContractsManagerBase
             }
         }
 
+        privateInfo.Authority = _botOptions.RootAccounts.Contains(userId)
+            ? MessageAuthority.Root
+            : MessageAuthority.Admin;
         return new PrivateInfoResult { PrivateInfo = privateInfo, IsSuccess = true };
     }
 }

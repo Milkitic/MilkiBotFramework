@@ -107,9 +107,9 @@ public sealed class BotBuilder
         _services
             .AddLogging(k =>
             {
-#if DEBUG
-                k.AddFilter(o => true);
-#endif
+//#if DEBUG
+//                k.AddFilter(o => true);
+//#endif
                 _configureLogger(k);
             })
             .AddSingleton(_botOptions)

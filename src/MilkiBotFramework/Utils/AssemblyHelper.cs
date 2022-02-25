@@ -101,7 +101,7 @@ internal static class AssemblyHelper
             if (typeResults.Length == 0)
                 logger.LogDebug($"Found \"{folder}/{asmName}\" with no plugins.");
             else
-                logger.LogInformation($"Found \"{folder}/{asmName}\" with {typeResults.Length} plugins.");
+                logger.LogInformation($"Found \"{folder}/{asmName}\" with {typeResults.Length} plugin{(typeResults.Length == 1 ? "" : "s")}.");
             availableDictionary.Add(new AssemblyResult
             {
                 TypeResults = typeResults,

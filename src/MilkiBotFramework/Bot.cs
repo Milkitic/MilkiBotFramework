@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
@@ -15,6 +16,7 @@ namespace MilkiBotFramework
         private readonly IContractsManager _contractsManager;
         private readonly ILogger<Bot> _logger;
         private TaskCompletionSource? _connectionTcs;
+        private int _exitCode;
 
         public Bot(BotTaskScheduler botTaskScheduler, PluginManager pluginManager, IContractsManager contractsManager, IConnector connector, IDispatcher dispatcher, BotOptions options, ILogger<Bot> logger)
         {
@@ -70,12 +72,13 @@ namespace MilkiBotFramework
             _connectionTcs.Task.Wait();
         }
 
-        public async Task RunAsync()
+        public async Task<int> RunAsync()
         {
             if (_connectionTcs != null) throw new InvalidOperationException();
             _connectionTcs = new TaskCompletionSource();
             try
             {
+                _exitCode = 0;
                 try
                 {
                     Connector.ConnectAsync().Wait(3000);
@@ -94,26 +97,32 @@ namespace MilkiBotFramework
             }
 
             await _connectionTcs.Task;
+            return _exitCode;
         }
 
-        public void Stop()
+        public int Stop(int exitCode = 0)
         {
+            _exitCode = exitCode;
             Connector.DisconnectAsync().Wait();
             _connectionTcs?.SetResult();
             _connectionTcs = null;
+            return exitCode;
         }
 
-        public async Task StopAsync()
+        public async Task<int> StopAsync(int exitCode = 0)
         {
+            _exitCode = exitCode;
             await Connector.DisconnectAsync();
             _connectionTcs?.SetResult();
             _connectionTcs = null;
+            return exitCode;
         }
     }
 
     public sealed class BotOptions
     {
-        public string CacheImageDir { get; set; }
+        public HashSet<string> RootAccounts { get; set; } = new();
+        public string CacheImageDir { get; set; } = "./caches/images";
         public string GifSiclePath { get; set; }
         public string FfMpegPath { get; set; }
     }

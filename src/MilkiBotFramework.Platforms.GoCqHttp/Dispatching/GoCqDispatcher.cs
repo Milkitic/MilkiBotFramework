@@ -84,26 +84,32 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
                 {
                     var parsedObj = JsonSerializer.Deserialize<PrivateMessage>(rawJson)!;
                     messageIdentity = new MessageIdentity(parsedObj.UserId, MessageType.Private);
+
                     messageContext.GoCqRequest.RawMessage = parsedObj;
                     messageContext.GoCqRequest.UserId = parsedObj.UserId;
+                    messageContext.GoCqRequest.ReceivedTime = parsedObj.Time;
                     return true;
                 }
 
                 if (messageType == "group")
                 {
                     var parsedObj = JsonSerializer.Deserialize<GroupMessage>(rawJson)!;
-                    messageIdentity = new MessageIdentity(parsedObj.GroupId, MessageType.Public);
+                    messageIdentity = new MessageIdentity(parsedObj.GroupId, MessageType.Channel);
+
                     messageContext.GoCqRequest.RawMessage = parsedObj;
                     messageContext.GoCqRequest.UserId = parsedObj.UserId;
+                    messageContext.GoCqRequest.ReceivedTime = parsedObj.Time;
                     return true;
                 }
 
                 if (messageType == "guild")
                 {
                     var parsedObj = JsonSerializer.Deserialize<GuildMessage>(rawJson)!;
-                    messageIdentity = new MessageIdentity(parsedObj.GuildId, parsedObj.ChannelId, MessageType.Public);
+                    messageIdentity = new MessageIdentity(parsedObj.GuildId, parsedObj.ChannelId, MessageType.Channel);
+                  
                     messageContext.GoCqRequest.RawMessage = parsedObj;
                     messageContext.GoCqRequest.UserId = parsedObj.UserId;
+                    messageContext.GoCqRequest.ReceivedTime = parsedObj.Time;
                     return true;
                 }
 

@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContractsManaging;
-using MilkiBotFramework.ContractsManaging.Models;
 using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.Dispatching;
@@ -12,8 +11,8 @@ namespace MilkiBotFramework.Dispatching;
 public abstract class DispatcherBase<TMessageContext> : IDispatcher
     where TMessageContext : MessageContext
 {
-    public event Func<TMessageContext, ChannelInfo, MemberInfo, Task>? ChannelMessageReceived;
-    public event Func<TMessageContext, PrivateInfo, Task>? PrivateMessageReceived;
+    public event Func<TMessageContext, Task>? ChannelMessageReceived;
+    public event Func<TMessageContext, Task>? PrivateMessageReceived;
     public event Func<TMessageContext, Task>? NoticeMessageReceived;
     public event Func<TMessageContext, Task>? MetaMessageReceived;
 
@@ -62,15 +61,18 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                 var privateResult = await _contractsManager.TryGetPrivateInfoByMessageContext(messageIdentity);
                 if (privateResult.IsSuccess && PrivateMessageReceived != null)
                 {
-                    await PrivateMessageReceived.Invoke(messageContext, privateResult.PrivateInfo);
+                    messageContext.Request.PrivateInfo = privateResult.PrivateInfo;
+                    await PrivateMessageReceived.Invoke(messageContext);
                 }
                 break;
-            case MessageType.Public:
+            case MessageType.Channel:
                 var channelResult =
                     await _contractsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.Request.UserId);
                 if (channelResult.IsSuccess && ChannelMessageReceived != null)
                 {
-                    await ChannelMessageReceived.Invoke(messageContext, channelResult.ChannelInfo, channelResult.MemberInfo);
+                    messageContext.Request.ChannelInfo = channelResult.ChannelInfo;
+                    messageContext.Request.MemberInfo = channelResult.MemberInfo;
+                    await ChannelMessageReceived.Invoke(messageContext);
                 }
                 break;
             case MessageType.Notice:
@@ -93,13 +95,13 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         [NotNullWhen(true)] out MessageIdentity? messageIdentity,
         out string? strIdentity);
 
-    event Func<MessageContext, ChannelInfo, MemberInfo, Task>? IDispatcher.ChannelMessageReceived
+    event Func<MessageContext, Task>? IDispatcher.ChannelMessageReceived
     {
         add => ChannelMessageReceived += value;
         remove => ChannelMessageReceived -= value;
     }
 
-    event Func<MessageContext, PrivateInfo, Task>? IDispatcher.PrivateMessageReceived
+    event Func<MessageContext, Task>? IDispatcher.PrivateMessageReceived
     {
         add => PrivateMessageReceived += value;
         remove => PrivateMessageReceived -= value;

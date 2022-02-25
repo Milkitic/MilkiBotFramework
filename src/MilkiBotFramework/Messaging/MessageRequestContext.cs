@@ -22,8 +22,13 @@ public class MessageRequestContext
     public PrivateInfo? PrivateInfo { get; set; }
 
     public MessageIdentity? Identity { get; set; }
-    public MessageAuthority Authority { get; set; }
-    public MessageAuthority MinimumAuthority { get; set; }
+    public MessageAuthority Authority =>
+        Identity?.MessageType switch
+        {
+            MessageType.Private => PrivateInfo!.Authority,
+            MessageType.Channel => MemberInfo!.Authority,
+            _ => MessageAuthority.Unspecified
+        };
 
     public DateTimeOffset ReceivedTime { get; set; }
 
@@ -33,9 +38,9 @@ public class MessageRequestContext
         RawTextMessage = rawTextMessage;
     }
 
-    public bool ValidateAuthority(MessageAuthority authority)
+    public bool ValidateAuthority(MessageAuthority requiredAuthority)
     {
-        return authority >= MinimumAuthority;
+        return Authority >= requiredAuthority;
     }
 
     public RichMessage GetRichMessage()
