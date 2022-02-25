@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes;
@@ -12,6 +13,18 @@ public class GoCqMessageConverter : IRichMessageConverter
 {
     public string Encode(IRichMessage message)
     {
+        if (message is RichMessage rich)
+        {
+            var sb = new StringBuilder();
+            foreach (var subMessage in rich.RichMessages)
+                sb.Append(Encode(subMessage));
+            return sb.ToString();
+        }
+
+        if (message is At at)
+            return new CQAt(at.UserId).Encode();
+        if (message is Reply reply)
+            return new CQReply(reply.MessageId).Encode();
         return message.Encode();
     }
 

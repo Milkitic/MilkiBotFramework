@@ -563,7 +563,7 @@ namespace MilkiBotFramework.Plugining.Loading
                         if (identity.MessageType == MessageType.Private)
                             await _messageApi.SendPrivateMessageAsync(identity.Id!, plainMessage);
                         else
-                            await _messageApi.SendChannelMessageAsync(identity.Id!, message, identity.SubId);
+                            await _messageApi.SendChannelMessageAsync(identity.Id!, plainMessage, identity.SubId);
                     }
                     else
                     {
