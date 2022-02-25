@@ -1,25 +1,25 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using MilkiBotFramework.ContractsManaging;
-using MilkiBotFramework.ContractsManaging.Models;
-using MilkiBotFramework.ContractsManaging.Results;
+using MilkiBotFramework.ContactsManaging;
+using MilkiBotFramework.ContactsManaging.Models;
+using MilkiBotFramework.ContactsManaging.Results;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 using MilkiBotFramework.Tasking;
 
-namespace MilkiBotFramework.Platforms.GoCqHttp.ContractsManaging;
+namespace MilkiBotFramework.Platforms.GoCqHttp.ContactsManaging;
 
-public sealed class GoCqContractsManager : ContractsManagerBase
+public sealed class GoCqContactsManager : ContactsManagerBase
 {
     private readonly GoCqApi _goCqApi;
     private readonly BotOptions _botOptions;
-    private readonly ILogger<GoCqContractsManager> _logger;
+    private readonly ILogger<GoCqContactsManager> _logger;
 
-    public GoCqContractsManager(GoCqApi goCqApi,
+    public GoCqContactsManager(GoCqApi goCqApi,
         BotOptions botOptions,
         BotTaskScheduler botTaskScheduler,
-        ILogger<GoCqContractsManager> logger)
+        ILogger<GoCqContactsManager> logger)
         : base(botTaskScheduler, logger)
     {
         _goCqApi = goCqApi;

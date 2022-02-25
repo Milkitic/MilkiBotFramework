@@ -5,15 +5,15 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using MilkiBotFramework.ContractsManaging.Models;
-using MilkiBotFramework.ContractsManaging.Results;
+using MilkiBotFramework.ContactsManaging.Models;
+using MilkiBotFramework.ContactsManaging.Results;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Tasking;
 
-namespace MilkiBotFramework.ContractsManaging;
+namespace MilkiBotFramework.ContactsManaging;
 
-public abstract class ContractsManagerBase : IContractsManager
+public abstract class ContactsManagerBase : IContactsManager
 {
     private readonly BotTaskScheduler _botTaskScheduler;
     private readonly ILogger _logger;
@@ -26,7 +26,7 @@ public abstract class ContractsManagerBase : IContractsManager
     protected readonly ConcurrentDictionary<string, Avatar> UserAvatarMapping = new();
     protected readonly ConcurrentDictionary<string, Avatar> ChannelAvatarMapping = new();
 
-    public ContractsManagerBase(BotTaskScheduler botTaskScheduler, ILogger logger)
+    public ContactsManagerBase(BotTaskScheduler botTaskScheduler, ILogger logger)
     {
         _botTaskScheduler = botTaskScheduler;
         _logger = logger;

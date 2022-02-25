@@ -1,6 +1,6 @@
 ﻿using MilkiBotFramework.Messaging;
 
-namespace MilkiBotFramework.ContractsManaging.Models;
+namespace MilkiBotFramework.ContactsManaging.Models;
 
 public sealed class MemberInfo
 {

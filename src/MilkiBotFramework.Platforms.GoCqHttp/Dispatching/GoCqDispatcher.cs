@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using MilkiBotFramework.ContractsManaging;
+using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
@@ -17,10 +17,10 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
         private readonly IRichMessageConverter _richMessageConverter;
 
         public GoCqDispatcher(GoCqApi goCqApi,
-            IContractsManager contractsManager,
+            IContactsManager contactsManager,
             IRichMessageConverter richMessageConverter,
             ILogger<GoCqDispatcher> logger)
-            : base(goCqApi.Connector, contractsManager, logger)
+            : base(goCqApi.Connector, contactsManager, logger)
         {
             _goCqApi = goCqApi;
             _richMessageConverter = richMessageConverter;

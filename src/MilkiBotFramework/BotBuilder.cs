@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.ContractsManaging;
+using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining.CommandLine;
@@ -64,7 +64,7 @@ public sealed class BotBuilder
         return UseConnector<T>(connector => connector.ServerUri = uri);
     }
 
-    public BotBuilder UseContractsManager<T>() where T : IContractsManager
+    public BotBuilder UseContractsManager<T>() where T : IContactsManager
     {
         _contractsManagerType = typeof(T);
         return this;
@@ -126,8 +126,8 @@ public sealed class BotBuilder
             .AddSingleton(typeof(IDispatcher),
                 _dispatcherType ?? throw new ArgumentNullException(nameof(IDispatcher),
                     "The IDispatcher implementation is not specified."))
-            .AddSingleton(typeof(IContractsManager),
-                _contractsManagerType ?? throw new ArgumentNullException(nameof(IContractsManager),
+            .AddSingleton(typeof(IContactsManager),
+                _contractsManagerType ?? throw new ArgumentNullException(nameof(IContactsManager),
                     "The IContractsManager implementation is not specified."))
             .AddSingleton<Bot>();
         if (_messageApiType != null)
@@ -158,8 +158,8 @@ public sealed class BotBuilder
         var dispatcher = serviceProvider.GetService<IDispatcher>()!;
         dispatcher.SingletonServiceProvider = serviceProvider;
         // ContractsManager
-        var contractsManager = serviceProvider.GetService<IContractsManager>();
-        if (contractsManager is ContractsManagerBase cmb) cmb.Dispatcher = dispatcher;
+        var contractsManager = serviceProvider.GetService<IContactsManager>();
+        if (contractsManager is ContactsManagerBase cmb) cmb.Dispatcher = dispatcher;
 
         // TaskScheduler
         var taskScheduler = serviceProvider.GetService<BotTaskScheduler>()!;

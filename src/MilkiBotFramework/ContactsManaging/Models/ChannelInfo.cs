@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace MilkiBotFramework.ContractsManaging.Models;
+namespace MilkiBotFramework.ContactsManaging.Models;
 
 public sealed class ChannelInfo
 {

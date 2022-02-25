@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
-using MilkiBotFramework.Platforms.GoCqHttp.ContractsManaging;
+using MilkiBotFramework.Platforms.GoCqHttp.ContactsManaging;
 using MilkiBotFramework.Platforms.GoCqHttp.Dispatching;
 using MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 using MilkiBotFramework.Plugining.CommandLine;
@@ -20,7 +20,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp
                 .UseDispatcher<GoCqDispatcher>()
                 .UseCommandLineAnalyzer<CommandLineAnalyzer>(new GoCqParameterConverter())
                 .UseRichMessageConverter<GoCqMessageConverter>()
-                .UseContractsManager<GoCqContractsManager>()
+                .UseContractsManager<GoCqContactsManager>()
                 .UseMessageApi<GoCqApi>();
         }
     }

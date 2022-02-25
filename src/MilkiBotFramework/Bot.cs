@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.ContractsManaging;
+using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Plugining.Loading;
 using MilkiBotFramework.Tasking;
@@ -13,19 +13,19 @@ namespace MilkiBotFramework
     public class Bot
     {
         private readonly PluginManager _pluginManager;
-        private readonly IContractsManager _contractsManager;
+        private readonly IContactsManager _contactsManager;
         private readonly ILogger<Bot> _logger;
         private TaskCompletionSource? _connectionTcs;
         private int _exitCode;
 
-        public Bot(BotTaskScheduler botTaskScheduler, PluginManager pluginManager, IContractsManager contractsManager, IConnector connector, IDispatcher dispatcher, BotOptions options, ILogger<Bot> logger)
+        public Bot(BotTaskScheduler botTaskScheduler, PluginManager pluginManager, IContactsManager contactsManager, IConnector connector, IDispatcher dispatcher, BotOptions options, ILogger<Bot> logger)
         {
             BotTaskScheduler = botTaskScheduler;
             Connector = connector;
             Dispatcher = dispatcher;
             Options = options;
             _pluginManager = pluginManager;
-            _contractsManager = contractsManager;
+            _contactsManager = contactsManager;
             _logger = logger;
             Current = this;
         }
@@ -62,7 +62,7 @@ namespace MilkiBotFramework
                 }
 
                 _pluginManager.InitializeAllPlugins().Wait();
-                _contractsManager.Initialize();
+                _contactsManager.Initialize();
             }
             catch (Exception ex)
             {
@@ -89,7 +89,7 @@ namespace MilkiBotFramework
                 }
 
                 await _pluginManager.InitializeAllPlugins();
-                _contractsManager.Initialize();
+                _contactsManager.Initialize();
             }
             catch (Exception ex)
             {

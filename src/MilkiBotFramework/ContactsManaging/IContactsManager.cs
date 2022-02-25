@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using MilkiBotFramework.ContractsManaging.Models;
-using MilkiBotFramework.ContractsManaging.Results;
+using MilkiBotFramework.ContactsManaging.Models;
+using MilkiBotFramework.ContactsManaging.Results;
 using MilkiBotFramework.Messaging;
 
-namespace MilkiBotFramework.ContractsManaging;
+namespace MilkiBotFramework.ContactsManaging;
 
-public interface IContractsManager
+public interface IContactsManager
 {
     void Initialize();
     Task<SelfInfoResult> TryGetSelfInfo();

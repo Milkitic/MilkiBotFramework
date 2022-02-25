@@ -1,4 +1,4 @@
-﻿namespace MilkiBotFramework.ContractsManaging.Results;
+﻿namespace MilkiBotFramework.ContactsManaging.Results;
 
 public sealed class SelfInfoResult : ResultInfoBase
 {

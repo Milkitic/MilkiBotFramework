@@ -1,6 +1,6 @@
-﻿using MilkiBotFramework.ContractsManaging.Models;
+﻿using MilkiBotFramework.ContactsManaging.Models;
 
-namespace MilkiBotFramework.ContractsManaging.Results;
+namespace MilkiBotFramework.ContactsManaging.Results;
 
 public sealed class ChannelInfoResult : ResultInfoBase
 {

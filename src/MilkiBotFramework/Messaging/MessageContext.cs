@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.ContractsManaging.Models;
+using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Plugining.CommandLine;
 

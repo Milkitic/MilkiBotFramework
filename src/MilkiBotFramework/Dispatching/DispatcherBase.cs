@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.ContractsManaging;
+using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.Dispatching;
@@ -19,14 +19,14 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
     public event Func<TMessageContext, Task>? MetaMessageReceived;
 
     private readonly IConnector _connector;
-    private readonly IContractsManager _contractsManager;
+    private readonly IContactsManager _contactsManager;
     private readonly ILogger _logger;
     public IServiceProvider SingletonServiceProvider { get; set; }
 
-    public DispatcherBase(IConnector connector, IContractsManager contractsManager, ILogger logger)
+    public DispatcherBase(IConnector connector, IContactsManager contactsManager, ILogger logger)
     {
         _connector = connector;
-        _contractsManager = contractsManager;
+        _contactsManager = contactsManager;
         _logger = logger;
         _connector.RawMessageReceived += Connector_RawMessageReceived;
     }
@@ -65,7 +65,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         switch (messageIdentity!.MessageType)
         {
             case MessageType.Private:
-                var privateResult = await _contractsManager.TryGetPrivateInfoByMessageContext(messageIdentity);
+                var privateResult = await _contactsManager.TryGetPrivateInfoByMessageContext(messageIdentity);
                 if (privateResult.IsSuccess && PrivateMessageReceived != null)
                 {
                     messageContext.PrivateInfo = privateResult.PrivateInfo;
@@ -74,7 +74,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                 break;
             case MessageType.Channel:
                 var channelResult =
-                    await _contractsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.UserId);
+                    await _contactsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.UserId);
                 if (channelResult.IsSuccess && ChannelMessageReceived != null)
                 {
                     messageContext.ChannelInfo = channelResult.ChannelInfo;

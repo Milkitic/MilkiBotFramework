@@ -10,14 +10,13 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.ContractsManaging.Models;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Plugining.Attributes;
 using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Utils;
-using MemberInfo = MilkiBotFramework.ContractsManaging.Models.MemberInfo;
+using MemberInfo = MilkiBotFramework.ContactsManaging.Models.MemberInfo;
 
 namespace MilkiBotFramework.Plugining.Loading
 {
