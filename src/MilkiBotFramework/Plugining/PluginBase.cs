@@ -33,6 +33,8 @@ public abstract class PluginBase
     protected internal virtual Task OnExecuting() => Task.CompletedTask;
     protected internal virtual Task OnExecuted() => Task.CompletedTask;
 
+    protected string ResourceDir => throw new NotImplementedException();
+
     protected Task<T> ReadValueAsync<T>(string key)
     {
         throw new NotImplementedException();
