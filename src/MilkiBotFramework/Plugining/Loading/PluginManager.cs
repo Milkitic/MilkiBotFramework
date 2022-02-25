@@ -501,6 +501,7 @@ namespace MilkiBotFramework.Plugining.Loading
                         commandDefinition, plugin, messageContext, serviceScope.ServiceProvider);
                     await foreach (var response in asyncEnumerable)
                     {
+                        response?.Forced();
                         await SendAndCheckResponse(response);
                     }
                 }
