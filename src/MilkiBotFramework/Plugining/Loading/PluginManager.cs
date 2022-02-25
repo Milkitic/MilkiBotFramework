@@ -9,9 +9,11 @@ using System.Runtime.Loader;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContractsManaging.Models;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Messaging;
+using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Plugining.Attributes;
 using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Utils;
@@ -24,6 +26,8 @@ namespace MilkiBotFramework.Plugining.Loading
         private static readonly string[] DefaultAuthors = { "anonym" };
 
         private readonly IDispatcher _dispatcher;
+        private readonly IMessageApi _messageApi;
+        private readonly IRichMessageConverter _richMessageConverter;
         private readonly ILogger<PluginManager> _logger;
         private readonly ICommandLineAnalyzer _commandLineAnalyzer;
         private readonly CommandLineInjector _commandLineInjector;
@@ -32,9 +36,15 @@ namespace MilkiBotFramework.Plugining.Loading
         private readonly Dictionary<string, LoaderContext> _loaderContexts = new();
         private readonly HashSet<PluginDefinition> _plugins = new();
 
-        public PluginManager(IDispatcher dispatcher, ILogger<PluginManager> logger, ICommandLineAnalyzer commandLineAnalyzer)
+        public PluginManager(IDispatcher dispatcher,
+            IMessageApi messageApi,
+            IRichMessageConverter richMessageConverter,
+            ILogger<PluginManager> logger,
+            ICommandLineAnalyzer commandLineAnalyzer)
         {
             _dispatcher = dispatcher;
+            _messageApi = messageApi;
+            _richMessageConverter = richMessageConverter;
             _logger = logger;
             _commandLineAnalyzer = commandLineAnalyzer;
             _commandLineInjector = new CommandLineInjector(commandLineAnalyzer);
@@ -54,79 +64,6 @@ namespace MilkiBotFramework.Plugining.Loading
         private async Task Dispatcher_PrivateMessageReceived(MessageContext messageContext)
         {
             await HandleMessage(messageContext);
-        }
-
-        private async Task HandleMessage(MessageContext messageContext)
-        {
-            var message = messageContext.TextMessage;
-            var success = _commandLineAnalyzer.TryAnalyze(message, out var commandLineResult, out var exception);
-            ReadOnlyMemory<char>? commandName = null;
-            if (success)
-                commandName = commandLineResult?.Command;
-            else if (exception != null)
-                _logger.LogWarning("Error occurs while analyzing command: " + (exception?.Message ?? "Unknown reason"));
-
-            List<(IMessagePlugin plugin, bool dispose, PluginDefinition pluginDefinition, IServiceScope serviceScope)> plugins =
-                new();
-            var scopes = new HashSet<IServiceScope>();
-
-            foreach (var loaderContext in _loaderContexts.Values)
-            {
-                var serviceScope = loaderContext.BuildServiceProvider().CreateScope();
-                scopes.Add(serviceScope);
-                foreach (var assemblyContext in loaderContext.AssemblyContexts.Values)
-                {
-                    foreach (var pluginDefinition in assemblyContext.PluginDefinitions)
-                    {
-                        if (pluginDefinition.BaseType != StaticTypes.BasicPlugin &&
-                            pluginDefinition.BaseType != StaticTypes.BasicPlugin_) continue;
-
-                        var pluginInstance = (IMessagePlugin)serviceScope.ServiceProvider.GetService(pluginDefinition.Type)!;
-                        if (pluginDefinition.Lifetime != PluginLifetime.Singleton)
-                        {
-                            InitializePlugin((PluginBase)pluginInstance, pluginDefinition);
-                            plugins.Add((pluginInstance, true, pluginDefinition, serviceScope));
-                        }
-                        else
-                        {
-                            plugins.Add((pluginInstance, false, pluginDefinition, serviceScope));
-                        }
-                    }
-                }
-            }
-
-            foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in
-                     plugins.OrderBy(k => k.pluginDefinition.Index))
-            {
-                var plugin = (PluginBase)pluginInstance;
-                await plugin.OnExecuting();
-                if (commandName != null &&
-                    pluginDefinition.Commands.TryGetValue(commandName.Value.ToString(), out var commandDefinition))
-                {
-                    await _commandLineInjector.InjectParametersAndRunAsync(commandLineResult!,
-                        commandDefinition, plugin, messageContext, serviceScope.ServiceProvider);
-                }
-                else
-                {
-                    await pluginInstance.OnMessageReceived(messageContext);
-                }
-
-                await plugin.OnExecuted();
-
-                if (messageContext.Handled) break;
-            }
-
-            foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in plugins)
-            {
-                var plugin = (PluginBase)pluginInstance;
-                if (dispose)
-                    await plugin.OnUninitialized();
-            }
-
-            foreach (var serviceScope in scopes)
-            {
-                serviceScope.Dispose();
-            }
         }
 
         //todo: Same command; Same guid
@@ -416,8 +353,31 @@ namespace MilkiBotFramework.Plugining.Loading
                     returnType = CommandReturnType.Task;
                 else if (retType == StaticTypes.ValueTask)
                     returnType = CommandReturnType.ValueTask;
+                else if (retType == StaticTypes.IResponse)
+                    returnType = CommandReturnType.IResponse;
                 else
-                    returnType = CommandReturnType.Dynamic;
+                {
+                    if (retType.IsGenericType)
+                    {
+                        var genericDef = retType.GetGenericTypeDefinition();
+                        if (genericDef == StaticTypes.Task_ &&
+                            retType.GenericTypeArguments[0] == StaticTypes.IResponse)
+                            returnType = CommandReturnType.Task_IResponse;
+                        else if (genericDef == StaticTypes.ValueTask_ &&
+                                 retType.GenericTypeArguments[0] == StaticTypes.IResponse)
+                            returnType = CommandReturnType.ValueTask_IResponse;
+                        else if (genericDef == StaticTypes.IEnumerable_ &&
+                                 retType.GenericTypeArguments[0] == StaticTypes.IResponse)
+                            returnType = CommandReturnType.IEnumerable_IResponse;
+                        else if (genericDef == StaticTypes.IAsyncEnumerable_ &&
+                                 retType.GenericTypeArguments[0] == StaticTypes.IResponse)
+                            returnType = CommandReturnType.IAsyncEnumerable_IResponse;
+                        else
+                            returnType = CommandReturnType.Dynamic;
+                    }
+                    else
+                        returnType = CommandReturnType.Dynamic;
+                }
 
                 var commandDefinition = new PluginCommandDefinition(command, methodDescription, methodInfo, returnType,
                     parameterDefinitions);
@@ -480,6 +440,156 @@ namespace MilkiBotFramework.Plugining.Loading
             }
 
             return parameterDefinition;
+        }
+
+        private async Task HandleMessage(MessageContext messageContext)
+        {
+            var message = messageContext.TextMessage;
+            var success = _commandLineAnalyzer.TryAnalyze(message, out var commandLineResult, out var exception);
+            ReadOnlyMemory<char>? commandName = null;
+            if (success)
+                commandName = commandLineResult?.Command;
+            else if (exception != null)
+                _logger.LogWarning("Error occurs while analyzing command: " + (exception?.Message ?? "Unknown reason"));
+
+            List<(IMessagePlugin plugin, bool dispose, PluginDefinition pluginDefinition, IServiceScope serviceScope)> plugins =
+                new();
+            List<(ServicePlugin plugin, PluginDefinition pluginDefinition)> servicePlugins = new();
+            var scopes = new HashSet<IServiceScope>();
+
+            foreach (var loaderContext in _loaderContexts.Values)
+            {
+                var serviceScope = loaderContext.BuildServiceProvider().CreateScope();
+                scopes.Add(serviceScope);
+                foreach (var assemblyContext in loaderContext.AssemblyContexts.Values)
+                {
+                    foreach (var pluginDefinition in assemblyContext.PluginDefinitions)
+                    {
+                        var pluginInstance = serviceScope.ServiceProvider.GetService(pluginDefinition.Type)!;
+                        if (pluginDefinition.BaseType != StaticTypes.BasicPlugin &&
+                            pluginDefinition.BaseType != StaticTypes.BasicPlugin_)
+                        {
+                            if (pluginDefinition.BaseType == StaticTypes.ServicePlugin)
+                                servicePlugins.Add(((ServicePlugin)pluginInstance, pluginDefinition));
+                            continue;
+                        }
+
+                        var messagePlugin = (IMessagePlugin)pluginInstance;
+                        if (pluginDefinition.Lifetime != PluginLifetime.Singleton)
+                        {
+                            InitializePlugin((PluginBase)pluginInstance, pluginDefinition);
+                            plugins.Add((messagePlugin, true, pluginDefinition, serviceScope));
+                        }
+                        else
+                        {
+                            plugins.Add((messagePlugin, false, pluginDefinition, serviceScope));
+                        }
+                    }
+                }
+            }
+
+            bool handled = false;
+            foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in
+                     plugins.OrderBy(k => k.pluginDefinition.Index))
+            {
+                var plugin = (PluginBase)pluginInstance;
+                await plugin.OnExecuting();
+                if (commandName != null &&
+                    pluginDefinition.Commands.TryGetValue(commandName.Value.ToString(), out var commandDefinition))
+                {
+                    var asyncEnumerable = _commandLineInjector.InjectParametersAndRunAsync(commandLineResult!,
+                        commandDefinition, plugin, messageContext, serviceScope.ServiceProvider);
+                    await foreach (var response in asyncEnumerable)
+                    {
+                        await SendAndCheckResponse(response);
+                    }
+                }
+                else
+                {
+                    var asyncEnumerable = pluginInstance.OnMessageReceived(messageContext);
+                    await foreach (var response in asyncEnumerable)
+                    {
+                        await SendAndCheckResponse(response);
+                    }
+                }
+
+                await plugin.OnExecuted();
+
+                if (handled) break;
+            }
+
+            foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in plugins)
+            {
+                var plugin = (PluginBase)pluginInstance;
+                if (dispose)
+                    await plugin.OnUninitialized();
+            }
+
+            foreach (var serviceScope in scopes)
+            {
+                serviceScope.Dispose();
+            }
+
+            async Task SendAndCheckResponse(IResponse? response)
+            {
+                if (response == null) return;
+                handled = response.IsHandled;
+                foreach (var (svcPlugin, _) in servicePlugins.OrderBy(k => k.pluginDefinition.Index))
+                {
+                    await svcPlugin.BeforeSend(response);
+                }
+
+                if (response.Message == null) return;
+
+                if (response.Id == null)
+                {
+                    var identity = messageContext.MessageIdentity;
+                    if (identity?.MessageType == MessageType.Channel &&
+                        response.TryReply &&
+                        response.Message is not RichMessage { FirstIsReply: true } &&
+                        response.Message is not Reply)
+                    {
+                        response.Message =
+                            new RichMessage(new Reply(messageContext.MessageId!), response.Message);
+                    }
+
+                    var plainMessage = _richMessageConverter.Encode(response.Message);
+
+                    if (identity != null &&
+                        identity != MessageIdentity.MetaMessage &&
+                        identity != MessageIdentity.NoticeMessage)
+                    {
+                        if (identity.MessageType == MessageType.Private)
+                            await _messageApi.SendPrivateMessageAsync(identity.Id!, plainMessage);
+                        else
+                            await _messageApi.SendChannelMessageAsync(identity.Id!, message, identity.SubId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Reply failed: destination undefined.");
+                    }
+                }
+                else
+                {
+                    if (response.MessageType == MessageType.Channel &&
+                        response.TryAt != null &&
+                        (response.Message is not RichMessage r || !r.FirstIsAt(response.TryAt!)) &&
+                        (response.Message is not At at || at.UserId != response.TryAt))
+                    {
+                        response.Message =
+                            new RichMessage(new At(response.TryAt), response.Message);
+                    }
+
+                    var plainMessage = _richMessageConverter.Encode(response.Message);
+                    if (response.MessageType == MessageType.Private)
+                        await _messageApi.SendPrivateMessageAsync(response.Id!, plainMessage);
+                    else if (response.MessageType == MessageType.Channel)
+                        await _messageApi.SendChannelMessageAsync(response.Id!, message, response.SubId);
+                    else
+                        _logger.LogWarning("Send failed: destination undefined.");
+                }
+
+            }
         }
     }
 }

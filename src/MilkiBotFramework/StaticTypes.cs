@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining;
@@ -7,6 +8,7 @@ namespace MilkiBotFramework;
 
 public static class StaticTypes
 {
+    public static readonly Type IResponse = typeof(IResponse);
     public static readonly Type BasicPlugin = typeof(BasicPlugin);
     public static readonly Type BasicPlugin_ = typeof(BasicPlugin<>);
     public static readonly Type ServicePlugin = typeof(ServicePlugin);
@@ -15,6 +17,10 @@ public static class StaticTypes
     public static readonly Type Void = typeof(void);
     public static readonly Type Task = typeof(Task);
     public static readonly Type ValueTask = typeof(ValueTask);
+    public static readonly Type Task_ = typeof(Task<>);
+    public static readonly Type ValueTask_ = typeof(ValueTask<>);
+    public static readonly Type IEnumerable_ = typeof(IEnumerable<>);
+    public static readonly Type IAsyncEnumerable_ = typeof(IAsyncEnumerable<>);
 
     public static readonly Type Boolean = typeof(bool);
     public static readonly Type Byte = typeof(byte);

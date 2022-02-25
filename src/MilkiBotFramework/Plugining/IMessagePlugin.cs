@@ -1,9 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.Plugining;
 
 public interface IMessagePlugin
 {
-    Task OnMessageReceived(MessageContext context);
+    IAsyncEnumerable<IResponse> OnMessageReceived(MessageContext context);
 }

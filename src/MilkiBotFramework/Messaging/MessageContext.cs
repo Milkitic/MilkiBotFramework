@@ -30,8 +30,6 @@ public class MessageContext
     public string? SelfId { get; set; }
     public virtual string? TextMessage { get; set; }
 
-    public CommandLineResult? CommandLineResult { get; set; }
-
     public MemberInfo? MemberInfo { get; set; }
     public ChannelInfo? ChannelInfo { get; set; }
     public PrivateInfo? PrivateInfo { get; set; }
@@ -46,7 +44,7 @@ public class MessageContext
         };
 
     public DateTimeOffset ReceivedTime { get; set; }
-    
+
     public bool ValidateAuthority(MessageAuthority requiredAuthority)
     {
         return Authority >= requiredAuthority;
@@ -56,37 +54,4 @@ public class MessageContext
     {
         return _richMessageConverter.Decode(TextMessage.AsMemory());
     }
-
-    #region Response
-
-    public bool Handled { get; set; }
-
-    public async Task QuickReply(IRichMessage message)
-    {
-        await QuickReply(_richMessageConverter.Encode(message));
-    }
-
-    public async Task QuickReply(string message)
-    {
-        var identity = MessageIdentity;
-        if (identity != null &&
-            identity != MessageIdentity.MetaMessage &&
-            identity != MessageIdentity.NoticeMessage)
-        {
-            if (identity.MessageType == MessageType.Private)
-            {
-                await _messageApi.SendPrivateMessageAsync(identity.Id!, message);
-            }
-            else
-            {
-                await _messageApi.SendChannelMessageAsync(identity.Id!, message, identity.SubId);
-            }
-        }
-        else
-        {
-            _logger.LogWarning("Quick reply failed: destination undefined.");
-        }
-    }
-
-    #endregion
 }

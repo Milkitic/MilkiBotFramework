@@ -21,7 +21,7 @@ public class CommandLineInjector
         _commandLineAnalyzer = commandLineAnalyzer;
     }
 
-    public async Task InjectParameters(string input,
+    public async IAsyncEnumerable<IResponse?> InjectParameters(string input,
         PluginCommandDefinition commandDefinition,
         PluginBase obj,
         MessageContext messageContext,
@@ -29,10 +29,13 @@ public class CommandLineInjector
     {
         var success = _commandLineAnalyzer.TryAnalyze(input, out var result, out var ex);
         if (!success) throw ex!;
-        await InjectParametersAndRunAsync(result!, commandDefinition, obj, messageContext, serviceProvider);
+        await foreach (var runResult in InjectParametersAndRunAsync(result!, commandDefinition, obj, messageContext, serviceProvider))
+        {
+            yield return runResult;
+        }
     }
 
-    public async Task InjectParametersAndRunAsync(CommandLineResult commandLineResult,
+    public async IAsyncEnumerable<IResponse?> InjectParametersAndRunAsync(CommandLineResult commandLineResult,
         PluginCommandDefinition commandDefinition,
         PluginBase obj,
         MessageContext messageContext,
@@ -117,19 +120,49 @@ public class CommandLineInjector
         {
             case CommandReturnType.Void:
                 method.Invoke(obj, parameters);
-                break;
+                yield break;
             case CommandReturnType.Task:
                 await (Task)method.Invoke(obj, parameters)!;
-                break;
+                yield break;
             case CommandReturnType.ValueTask:
                 await (ValueTask)method.Invoke(obj, parameters)!;
-                break;
+                yield break;
+            case CommandReturnType.IResponse:
+                yield return (IResponse)method.Invoke(obj, parameters)!;
+                yield break;
+            case CommandReturnType.Task_IResponse:
+                {
+                    var result = (Task<IResponse>)method.Invoke(obj, parameters)!;
+                    yield return await result;
+                    yield break;
+                }
+            case CommandReturnType.ValueTask_IResponse:
+                {
+                    var result = (ValueTask<IResponse>)method.Invoke(obj, parameters)!;
+                    yield return await result;
+                    yield break;
+                }
+            case CommandReturnType.IEnumerable_IResponse:
+                {
+                    var result = (IEnumerable<IResponse>)method.Invoke(obj, parameters)!;
+                    foreach (var response in result)
+                        yield return response;
+                    yield break;
+                }
+            case CommandReturnType.IAsyncEnumerable_IResponse:
+                {
+                    var result = (IAsyncEnumerable<IResponse>)method.Invoke(obj, parameters)!;
+                    await foreach (var response in result)
+                        yield return response;
+                    yield break;
+                }
             case CommandReturnType.Dynamic:
-                throw new ArgumentException($"Unknown return type of method {method}");
-                break;
             default:
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(retType), retType, $"Unknown return type of method \"{method.Name}\"");
         }
+
+        throw new NotImplementedException();
+        yield break;
     }
 
     private object? GetBindingModel(Type parameterType,

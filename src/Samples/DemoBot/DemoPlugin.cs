@@ -31,9 +31,9 @@ namespace DemoBot
 
         [CommandHandler("sign")]
         [Description("Echo all of your contents.")]
-        public async Task ModelBinding(MessageContext context, BindingModel bindingModel)
+        public async Task<IResponse> ModelBinding(BindingModel bindingModel)
         {
-            await context.QuickReply(JsonSerializer.Serialize(new
+            return Reply(JsonSerializer.Serialize(new
             {
                 bindingModel.Name,
                 bindingModel.Age,
@@ -43,26 +43,26 @@ namespace DemoBot
 
         [CommandHandler("option")]
         [Description("Echo all of your contents.")]
-        public async Task Option(MessageContext context, [Option("o")] byte option)
+        public IResponse Option([Option("o")] byte option)
         {
-            await context.QuickReply(((byte)(option + 1)).ToString());
+            return Reply(((byte)(option + 1)).ToString());
         }
 
         [CommandHandler("arg")]
         [Description("Echo all of your contents.")]
-        public async Task Arguments(MessageContext context,
+        public async IAsyncEnumerable<IResponse> Arguments(
             [Argument] ReadOnlyMemory<char> arguments,
             [Argument] MessageAuthority messageAuthority = MessageAuthority.Unspecified)
         {
-            await context.QuickReply(arguments + " " + messageAuthority);
+            yield return Reply(arguments + " " + messageAuthority);
         }
 
-        public override async Task OnMessageReceived(MessageContext context)
+        public override async IAsyncEnumerable<IResponse> OnMessageReceived(MessageContext context)
         {
             var message = context.TextMessage;
             var richMessage = context.GetRichMessage();
 
-            await context.QuickReply("not this one!");
+            yield return Reply("not this one!");
         }
 
         protected override async Task OnInitialized()
