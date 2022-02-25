@@ -12,7 +12,6 @@ namespace MilkiBotFramework.Plugining.CommandLine;
 
 public class CommandLineInjector
 {
-    private static readonly Type _messageContextType = typeof(MessageContext);
     private static readonly Type _typeString = typeof(string);
 
     private readonly ICommandLineAnalyzer _commandLineAnalyzer;
@@ -63,7 +62,7 @@ public class CommandLineInjector
 
             if (paramDef.IsServiceArgument)
             {
-                if (paramDef.ParameterType == _messageContextType)
+                if (paramDef.ParameterType == StaticTypes.MessageContext)
                 {
                     parameters[i] = messageContext;
                     continue;

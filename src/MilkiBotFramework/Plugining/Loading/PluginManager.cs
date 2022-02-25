@@ -22,11 +22,6 @@ namespace MilkiBotFramework.Plugining.Loading
     public class PluginManager
     {
         private static readonly string[] DefaultAuthors = { "anonym" };
-        private static readonly Type _basicPluginType = typeof(BasicPlugin);
-        private static readonly Type _basicPluginGenericType = typeof(BasicPlugin<>);
-        private static readonly Type _voidType = typeof(void);
-        private static readonly Type _taskType = typeof(Task);
-        private static readonly Type _valueTaskType = typeof(ValueTask);
 
         private readonly IDispatcher _dispatcher;
         private readonly ILogger<PluginManager> _logger;
@@ -59,40 +54,42 @@ namespace MilkiBotFramework.Plugining.Loading
         {
             var message = messageContext.Request.TextMessage;
             var success = _commandLineAnalyzer.TryAnalyze(message, out var commandLineResult, out var exception);
-            if (!success && exception != null) throw exception;
             ReadOnlyMemory<char>? commandName = null;
-            if (success) commandName = commandLineResult.Command;
+            if (success)
+                commandName = commandLineResult?.Command;
+            else
+                _logger.LogWarning("Error occurs while analyzing command: " + (exception?.Message ?? "Unknown reason"));
 
-            Dictionary<IMessagePlugin, (bool dispose, PluginDefinition pluginDefinition, IServiceScope serviceScope)> plugins = new();
+            List<(IMessagePlugin plugin, bool dispose, PluginDefinition pluginDefinition, IServiceScope serviceScope)> plugins = new();
+            var scopes = new HashSet<IServiceScope>();
+
             foreach (var loaderContext in _loaderContexts.Values)
             {
-                using var serviceScope = loaderContext.BuildServiceProvider().CreateScope();
+                var serviceScope = loaderContext.BuildServiceProvider().CreateScope();
+                scopes.Add(serviceScope);
                 foreach (var assemblyContext in loaderContext.AssemblyContexts.Values)
                 {
                     foreach (var pluginDefinition in assemblyContext.PluginDefinitions)
                     {
-                        if (pluginDefinition.BaseType != _basicPluginType &&
-                            pluginDefinition.BaseType != _basicPluginGenericType) continue;
+                        if (pluginDefinition.BaseType != StaticTypes.BasicPlugin &&
+                            pluginDefinition.BaseType != StaticTypes.BasicPlugin_) continue;
 
                         var pluginInstance = (IMessagePlugin)serviceScope.ServiceProvider.GetService(pluginDefinition.Type)!;
                         if (pluginDefinition.Lifetime != PluginLifetime.Singleton)
                         {
-                            //InitializePlugin((PluginBase)pluginInstance, pluginDefinition);
-                            plugins.Add(pluginInstance, (true, pluginDefinition, serviceScope));
+                            InitializePlugin((PluginBase)pluginInstance, pluginDefinition);
+                            plugins.Add((pluginInstance, true, pluginDefinition, serviceScope));
                         }
                         else
                         {
-                            plugins.Add(pluginInstance, (false, pluginDefinition, serviceScope));
+                            plugins.Add((pluginInstance, false, pluginDefinition, serviceScope));
                         }
                     }
                 }
             }
 
-            plugins = plugins
-                .OrderBy(k => k.Value.pluginDefinition.Index)
-                .ToDictionary(k => k.Key, k => k.Value);
-
-            foreach (var (pluginInstance, (dispose, pluginDefinition, serviceScope)) in plugins)
+            foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in
+                     plugins.OrderBy(k => k.pluginDefinition.Index))
             {
                 var plugin = (PluginBase)pluginInstance;
                 await plugin.OnExecuting();
@@ -112,11 +109,16 @@ namespace MilkiBotFramework.Plugining.Loading
                 if (messageContext.Response.Handled) break;
             }
 
-            foreach (var (pluginInstance, (dispose, pluginDefinition, serviceScope)) in plugins)
+            foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in plugins)
             {
                 var plugin = (PluginBase)pluginInstance;
-                if (dispose) 
+                if (dispose)
                     await plugin.OnUninitialized();
+            }
+
+            foreach (var serviceScope in scopes)
+            {
+                serviceScope.Dispose();
             }
         }
 
@@ -401,11 +403,11 @@ namespace MilkiBotFramework.Plugining.Loading
 
                 CommandReturnType returnType;
                 var retType = methodInfo.ReturnType;
-                if (retType == _voidType)
+                if (retType == StaticTypes.Void)
                     returnType = CommandReturnType.Void;
-                else if (retType == _taskType)
+                else if (retType == StaticTypes.Task)
                     returnType = CommandReturnType.Task;
-                else if (retType == _valueTaskType)
+                else if (retType == StaticTypes.ValueTask)
                     returnType = CommandReturnType.ValueTask;
                 else
                     returnType = CommandReturnType.Dynamic;

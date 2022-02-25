@@ -26,9 +26,9 @@ internal static class AssemblyHelper
 
     public static readonly Dictionary<string, Type> PluginTypes = new()
     {
-        ["BasicPlugin`1"] = typeof(BasicPlugin<>),
-        [nameof(BasicPlugin)] = typeof(BasicPlugin),
-        [nameof(ServicePlugin)] = typeof(ServicePlugin)
+        ["BasicPlugin`1"] = StaticTypes.BasicPlugin_,
+        [nameof(BasicPlugin)] = StaticTypes.BasicPlugin,
+        [nameof(ServicePlugin)] = StaticTypes.ServicePlugin
     };
 
     public static IReadOnlyList<AssemblyResult> AnalyzePluginsInAssemblyFilesByDnlib(

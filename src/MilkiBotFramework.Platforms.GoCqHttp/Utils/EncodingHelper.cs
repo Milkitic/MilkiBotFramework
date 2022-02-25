@@ -11,7 +11,7 @@ public static class EncodingHelper
 
         byte[] array;
         var length = stream.Length;
-        Span<byte> span = length <= Constants.MaxStackArrayLength
+        Span<byte> span = length <= FrameworkConstants.MaxStackArrayLength
             ? stackalloc byte[(int)length]
             : array = new byte[length];
         _ = stream.Read(span);
