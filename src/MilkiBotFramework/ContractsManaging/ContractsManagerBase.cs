@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
@@ -179,4 +180,13 @@ public abstract class ContractsManagerBase : IContractsManager
 
     public abstract Task<ChannelInfoResult> TryGetChannelInfoByMessageContext(MessageIdentity messageIdentity, string userId);
     public abstract Task<PrivateInfoResult> TryGetPrivateInfoByMessageContext(MessageIdentity messageIdentity);
+    public IEnumerable<ChannelInfo> GetAllMainChannels()
+    {
+        return ChannelMapping.Values;
+    }
+
+    public IEnumerable<PrivateInfo> GetAllPrivates()
+    {
+        return PrivateMapping.Values;
+    }
 }

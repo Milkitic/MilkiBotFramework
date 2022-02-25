@@ -411,7 +411,9 @@ namespace MilkiBotFramework.Plugining.Loading
                 if (attr is OptionAttribute option)
                 {
                     parameterDefinition.Abbr = option.Abbreviate;
-                    parameterDefinition.DefaultValue = parameter.DefaultValue ?? option.DefaultValue;
+                    parameterDefinition.DefaultValue = parameter.DefaultValue == DBNull.Value
+                        ? option.DefaultValue
+                        : parameter.DefaultValue;
                     parameterDefinition.Name = option.Name;
                     parameterDefinition.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
                     isReady = true;

@@ -13,6 +13,14 @@ public abstract class PluginBase
     public abstract PluginType PluginType { get; }
 
     protected static IResponse Handled() => new MessageResponse(true);
+    protected static IResponse Reply(string message, out IAsyncMessage nextMessage, bool reply = true) => Reply(new Text(message), out nextMessage, reply);
+    protected static IResponse Reply(IRichMessage message, out IAsyncMessage nextMessage, bool reply = true)
+    {
+        var nextResponse = new NextMessage();
+        nextMessage = nextResponse;
+        return new MessageResponse(message, reply) { NextMessage = nextResponse };
+    }
+
     protected static IResponse Reply(string message, bool reply = true) => Reply(new Text(message), reply);
     protected static IResponse Reply(IRichMessage message, bool reply = true) => new MessageResponse(message, reply);
     protected static IResponse ToPrivate(string userId, string message) => ToPrivate(userId, new Text(message));
