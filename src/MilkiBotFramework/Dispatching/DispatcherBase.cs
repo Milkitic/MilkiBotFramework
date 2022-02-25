@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,10 +35,12 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
     {
         try
         {
+            var sw = Stopwatch.StartNew();
             using var scope = SingletonServiceProvider.CreateScope();
             var messageContext = (TMessageContext)scope.ServiceProvider.GetService(typeof(TMessageContext))!;
             messageContext.RawTextMessage = rawMessage;
             await HandleMessageCore(messageContext);
+            _logger.LogDebug($"Total dispatching elapsed: {sw.Elapsed.TotalMilliseconds:N1}ms");
         }
         catch (Exception ex)
         {
@@ -91,7 +94,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
 
         //_logger.LogDebug($"Received data: \r\n{messageContext}");
     }
-    
+
     protected abstract bool TrySetTextMessage(TMessageContext messageContext);
 
     protected abstract bool TryGetIdentityByRawMessage(TMessageContext messageContext,
