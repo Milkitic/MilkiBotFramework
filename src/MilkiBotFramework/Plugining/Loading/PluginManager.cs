@@ -52,7 +52,7 @@ namespace MilkiBotFramework.Plugining.Loading
         }
 
         public string PluginBaseDirectory { get; internal set; }
-        public ServiceCollection BaseServiceCollection { get; internal set; }
+        public IServiceCollection BaseServiceCollection { get; internal set; }
         public IServiceProvider BaseServiceProvider { get; internal set; }
 
         private async Task Dispatcher_ChannelMessageReceived(MessageContext messageContext)
@@ -272,7 +272,8 @@ namespace MilkiBotFramework.Plugining.Loading
                 var ns = serviceDescriptor.ServiceType.Namespace;
                 if (serviceDescriptor.ImplementationType == serviceDescriptor.ServiceType)
                 {
-                    if (ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
+                    if (/*ns.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal) || */
+                        ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
                         ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
                         continue;
                     var instance = BaseServiceProvider.GetService(serviceDescriptor.ImplementationType);
@@ -280,7 +281,8 @@ namespace MilkiBotFramework.Plugining.Loading
                 }
                 else
                 {
-                    if (ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
+                    if (/*ns.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal) ||*/
+                        ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
                         ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
                         continue;
                     var instance = BaseServiceProvider.GetService(serviceDescriptor.ServiceType);
@@ -289,7 +291,7 @@ namespace MilkiBotFramework.Plugining.Loading
             }
 
             var bot = BaseServiceProvider.GetService<Bot>();
-            if (bot != null) loaderContext.ServiceCollection.AddLogging(o => bot.Builder._configureLogger!(o));
+            if (bot != null) loaderContext.ServiceCollection.AddLogging(o => bot.ConfigureLogger!(o));
 
             loaderContext.BuildServiceProvider();
             _loaderContexts.Add(loaderContext.Name, loaderContext);

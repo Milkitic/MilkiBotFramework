@@ -9,7 +9,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp
 {
     public static class BotBuilderExtensions
     {
-        public static BotBuilder UseGoCqHttp(this BotBuilder builder, string uri)
+        public static TBuilder UseGoCqHttp<TBot, TBuilder>(this BotBuilderBase<TBot, TBuilder> builder, string uri) where TBot : Bot where TBuilder : BotBuilderBase<TBot, TBuilder>
         {
             return builder
                 .ConfigureServices(k =>
