@@ -39,7 +39,7 @@ namespace MilkiBotFramework
         public IDispatcher Dispatcher { get; }
         public Action<ILoggingBuilder>? ConfigureLogger { get; set; }
 
-        public virtual void Run()
+        public void Run()
         {
             if (ConnectionTcs != null) throw new InvalidOperationException();
             ConnectionTcs = new TaskCompletionSource();
@@ -49,8 +49,13 @@ namespace MilkiBotFramework
                 {
                     Connector.ConnectAsync().Wait(3000);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    if (ex is not TaskCanceledException &&
+                        ex.InnerException is not TaskCanceledException)
+                    {
+                        throw;
+                    }
                     // ignored
                 }
 
@@ -65,7 +70,7 @@ namespace MilkiBotFramework
             ConnectionTcs.Task.Wait();
         }
 
-        public virtual async Task<int> RunAsync()
+        public async Task<int> RunAsync()
         {
             if (ConnectionTcs != null) throw new InvalidOperationException();
             ConnectionTcs = new TaskCompletionSource();
@@ -76,8 +81,13 @@ namespace MilkiBotFramework
                 {
                     Connector.ConnectAsync().Wait(3000);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    if (ex is not TaskCanceledException &&
+                        ex.InnerException is not TaskCanceledException)
+                    {
+                        throw;
+                    }
                     // ignored
                 }
 
@@ -93,7 +103,7 @@ namespace MilkiBotFramework
             return ExitCode;
         }
 
-        public virtual int Stop(int exitCode = 0)
+        public int Stop(int exitCode = 0)
         {
             ExitCode = exitCode;
             Connector.DisconnectAsync().Wait();
@@ -102,7 +112,7 @@ namespace MilkiBotFramework
             return exitCode;
         }
 
-        public virtual async Task<int> StopAsync(int exitCode = 0)
+        public async Task<int> StopAsync(int exitCode = 0)
         {
             ExitCode = exitCode;
             await Connector.DisconnectAsync();

@@ -5,7 +5,9 @@ namespace MilkiBotFramework.Connecting;
 
 public interface IConnectorConfigurable
 {
-    public string ServerUri { get; set; }
+    public ConnectionType ConnectionType { get; set; }
+    public string? TargetUri { get; set; }
+    public string? BindingUri { get; set; }
     public TimeSpan ConnectionTimeout { get; set; }
 
     /// <summary>

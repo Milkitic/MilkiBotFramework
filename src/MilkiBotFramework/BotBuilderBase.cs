@@ -55,7 +55,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     public TBuilder UseConnector<T>(string uri) where T : IConnector
     {
-        return UseConnector<T>(connector => connector.ServerUri = uri);
+        return UseConnector<T>(connector => connector.TargetUri = uri);
     }
 
     public TBuilder UseContractsManager<T>() where T : IContactsManager

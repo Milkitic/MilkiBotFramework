@@ -10,22 +10,21 @@ using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 
-public sealed class GoCqWsClient : WebSocketClientConnector, IGoCqConnector
+public sealed class GoCqClient : WebSocketClientConnector, IGoCqConnector
 {
-
-    public GoCqWsClient(ILogger<GoCqWsClient> logger) : base(logger)
+    public GoCqClient(ILogger<GoCqClient> logger) : base(logger)
     {
     }
 
-    public Task<GoCqWsResponse<object>> SendMessageAsync(string action, IDictionary<string, object>? @params)
+    public Task<GoCqApiResponse<object>> SendMessageAsync(string action, IDictionary<string, object>? @params)
     {
         return SendMessageAsync<object>(action, @params);
     }
 
-    public async Task<GoCqWsResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params)
+    public async Task<GoCqApiResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params)
     {
         var state = Guid.NewGuid().ToString("B");
-        var req = new GoCqWsRequest
+        var req = new GoCqRequest
         {
             Action = action,
             Params = @params,
@@ -33,7 +32,7 @@ public sealed class GoCqWsClient : WebSocketClientConnector, IGoCqConnector
         };
         var reqJson = JsonSerializer.Serialize(req);
         var str = await base.SendMessageAsync(reqJson, state);
-        return JsonSerializer.Deserialize<GoCqWsResponse<T>>(str)!;
+        return JsonSerializer.Deserialize<GoCqApiResponse<T>>(str)!;
     }
 
     protected override bool TryGetStateByMessage(string msg, [NotNullWhen(true)] out string? state)

@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MilkiBotFramework.Aspnetcore\MilkiBotFramework.Aspnetcore.csproj" />
     <ProjectReference Include="..\MilkiBotFramework\MilkiBotFramework.csproj" />
   </ItemGroup>
 

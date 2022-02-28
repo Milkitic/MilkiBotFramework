@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
 using Microsoft.AspNetCore.Mvc.Controllers;
+using MilkiBotFramework.Connecting;
 
 namespace MilkiBotFramework.Aspnetcore
 {
@@ -59,6 +60,11 @@ namespace MilkiBotFramework.Aspnetcore
             _app.UseWebSockets(webSocketOptions);
 
             _app.MapControllers();
+
+            if (serviceProvider.GetService(typeof(IConnector)) is AspnetcoreConnector connector)
+            {
+                connector.WebApplication = _app;
+            }
 
             var bot = (AspnetcoreBot)serviceProvider.GetService(typeof(Bot))!;
             bot.WebApplication = _app;
