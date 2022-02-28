@@ -31,6 +31,11 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         _connector.RawMessageReceived += Connector_RawMessageReceived;
     }
 
+    public async Task InvokeRawMessageReceived(string rawMessage)
+    {
+        await Connector_RawMessageReceived(rawMessage);
+    }
+
     private async Task Connector_RawMessageReceived(string rawMessage)
     {
         try

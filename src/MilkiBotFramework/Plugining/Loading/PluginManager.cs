@@ -84,7 +84,10 @@ namespace MilkiBotFramework.Plugining.Loading
             {
                 var dir = Path.GetDirectoryName(entryAsm.Location)!;
                 var context = AssemblyLoadContext.Default.Assemblies;
-                CreateContextAndAddPlugins(null, context.Where(k => k.Location.StartsWith(dir)).Select(k => k.Location));
+                CreateContextAndAddPlugins(null, context
+                    .Where(k => !k.IsDynamic && k.Location.StartsWith(dir))
+                    .Select(k => k.Location)
+                );
             }
 
             foreach (var loaderContext in _loaderContexts.Values)
@@ -258,7 +261,7 @@ namespace MilkiBotFramework.Plugining.Loading
 
                 foreach (var assembly in AssemblyLoadContext.Default.Assemblies)
                 {
-                    if (!existAssemblies.Contains(assembly.FullName))
+                    if (!assembly.IsDynamic && !existAssemblies.Contains(assembly.FullName))
                     {
                         loaderContext.AssemblyLoadContext.LoadFromAssemblyName(assembly.GetName());
                     }

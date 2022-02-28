@@ -1,9 +1,17 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using MilkiBotFramework.Aspnetcore;
 using MilkiBotFramework.Plugining.Loading;
 
 namespace DemoBot
 {
+    //[ApiController]
+    //[Route("[controller]")]
+    //public class SbController : HomeController
+    //{
+    //}
+
     [ApiController]
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase

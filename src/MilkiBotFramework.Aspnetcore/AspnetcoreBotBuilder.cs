@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc.Abstractions;
+﻿using System.Reflection;
+using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
 using Microsoft.AspNetCore.Mvc.Controllers;
 
@@ -7,19 +8,26 @@ namespace MilkiBotFramework.Aspnetcore
     public class AspnetcoreBotBuilder : BotBuilderBase<AspnetcoreBot, AspnetcoreBotBuilder>
     {
         private readonly WebApplicationBuilder _builder;
-        private WebApplication _app;
+        private WebApplication? _app;
 
         public AspnetcoreBotBuilder(string[] args)
         {
+#if DEBUG
+            Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+#endif
             _builder = WebApplication.CreateBuilder(args);
         }
 
         protected override void ConfigServices(IServiceCollection serviceCollection)
         {
-            _builder.Services.AddControllers();
+            _builder.WebHost.UseUrls("http://0.0.0.0:23333");
+            // 如果用此方法请注意对应的插件程序集将无法Unload，需重启生效
+            _builder.Services.AddControllers()
+                .AddApplicationPart(Assembly.GetExecutingAssembly())
+                .AddControllersAsServices();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             _builder.Services.AddEndpointsApiExplorer();
-
+            _builder.Services.AddSwaggerGen();
             base.ConfigServices(serviceCollection);
         }
 
@@ -33,18 +41,26 @@ namespace MilkiBotFramework.Aspnetcore
         {
             base.ConfigureApp(serviceProvider);
 
-            _app.UseHttpsRedirection();
-            _app.UseAuthorization();
+            if (_app == null) return;
+            if (_app.Environment.IsDevelopment())
+            {
+                _app.UseSwagger();
+                _app.UseSwaggerUI();
+            }
 
-            _app.MapControllerRoute(
-                "connector",
-                "Connector/{controller}/{action}/{content?}",
-                new { controller = "Home", action = "Index" },
-                new { Namespace = "MilkiBotFramework.Aspnetcore.HomeController" } // Namespace
-            );
+            //_app.UseMiddleware<WsMiddleware>();
+            _app.UseHttpsRedirection();
+            _app.UseAuthorization(); 
+            
+            var webSocketOptions = new WebSocketOptions
+            {
+                KeepAliveInterval = TimeSpan.FromSeconds(2)
+            };
+            _app.UseWebSockets(webSocketOptions);
+
             _app.MapControllers();
 
-            var bot = (AspnetcoreBot)serviceProvider.GetService(typeof(Bot));
+            var bot = (AspnetcoreBot)serviceProvider.GetService(typeof(Bot))!;
             bot.WebApplication = _app;
         }
 
@@ -54,14 +70,32 @@ namespace MilkiBotFramework.Aspnetcore
         }
     }
 
-    public class NamespaceConstraint : ActionMethodSelectorAttribute
+    public class WsMiddleware
     {
-        public override bool IsValidForRequest(RouteContext routeContext, ActionDescriptor action)
-        {
-            var dataTokenNamespace = (string)routeContext.RouteData.DataTokens.FirstOrDefault(dt => dt.Key == "Namespace").Value;
-            var actionNamespace = ((ControllerActionDescriptor)action).MethodInfo.DeclaringType.FullName;
+        private readonly RequestDelegate _next;
 
-            return dataTokenNamespace == actionNamespace;
+        public WsMiddleware(RequestDelegate next)
+        {
+            _next = next;
+        }
+
+        // dynamic invoke
+        public async Task InvokeAsync(HttpContext context, IServiceProvider services)
+        {
+            if (context.Request.Path.Equals("/connector/ws", StringComparison.OrdinalIgnoreCase))
+            {
+                if (context.WebSockets.IsWebSocketRequest)
+                {
+                }
+                else
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                }
+            }
+            else
+            {
+                await _next(context);
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ namespace MilkiBotFramework.Dispatching
     public interface IDispatcher
     {
         public IServiceProvider SingletonServiceProvider { get; set; }
+        Task InvokeRawMessageReceived(string rawMessage);
         event Func<MessageContext, Task>? ChannelMessageReceived;
         event Func<MessageContext, Task>? PrivateMessageReceived;
         event Func<MessageContext, Task>? SystemMessageReceived;
