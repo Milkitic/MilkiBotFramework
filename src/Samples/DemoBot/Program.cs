@@ -14,8 +14,21 @@ var bot = new AspnetcoreBotBuilder(args)
                 options.IncludeScopes = true;
                 //options.SingleLine = true;
                 options.TimestampFormat = "hh:mm:ss.ffzz ";
-            })
-            .AddFilter(_ => true);
+            });
+        builder.AddFilter((ns, level) =>
+        {
+#if !DEBUG
+            if (ns.StartsWith("Microsoft") && level < LogLevel.Warning)
+                return false;
+            if (level < LogLevel.Information)
+                return false;
+            return true;
+#else
+            if (ns.StartsWith("Microsoft") && level < LogLevel.Information)
+                return false;
+            return true;
+#endif
+        });
     })
     .Build();
 await bot.RunAsync();
