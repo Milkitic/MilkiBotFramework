@@ -83,7 +83,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp
 
         public static GoCqConnection Http(string callingUri, string serverBindUri)
         {
-            return new GoCqConnection(ConnectionType.Websocket, callingUri, serverBindUri);
+            return new GoCqConnection(ConnectionType.Http, callingUri, serverBindUri);
         }
     }
 }

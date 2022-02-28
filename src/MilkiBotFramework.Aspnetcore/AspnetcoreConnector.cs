@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using MilkiBotFramework.Connecting;
+using MilkiBotFramework.Utils;
 
 namespace MilkiBotFramework.Aspnetcore
 {
@@ -54,7 +55,8 @@ namespace MilkiBotFramework.Aspnetcore
                 return await _webSocketClientConnector.SendMessageAsync(message, state);
             }
 
-            throw new NotImplementedException();
+            var helper = HttpHelper.Default;
+            return helper.HttpPostJson(TargetUri + "/" + state, message);
         }
     }
 }

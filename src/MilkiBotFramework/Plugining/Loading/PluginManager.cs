@@ -280,7 +280,10 @@ namespace MilkiBotFramework.Plugining.Loading
                         ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
                         continue;
                     var instance = BaseServiceProvider.GetService(serviceDescriptor.ImplementationType);
-                    loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ImplementationType, instance);
+                    if (instance == null)
+                        loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ImplementationType, _ => null!);
+                    else
+                        loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ImplementationType, instance);
                 }
                 else
                 {
@@ -289,7 +292,10 @@ namespace MilkiBotFramework.Plugining.Loading
                         ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
                         continue;
                     var instance = BaseServiceProvider.GetService(serviceDescriptor.ServiceType);
-                    loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ServiceType, instance);
+                    if (instance == null)
+                        loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ServiceType, _ => null!);
+                    else
+                        loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ServiceType, instance);
                 }
             }
 

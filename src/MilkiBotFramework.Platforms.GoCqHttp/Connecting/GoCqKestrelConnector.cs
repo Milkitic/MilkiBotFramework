@@ -18,15 +18,15 @@ public sealed class GoCqKestrelConnector : AspnetcoreConnector, IGoCqConnector
 
     public async Task<GoCqApiResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params)
     {
-        var state = Guid.NewGuid().ToString("B");
-        var req = new GoCqRequest
-        {
-            Action = action,
-            Params = @params,
-            State = state
-        };
-        var reqJson = JsonSerializer.Serialize(req);
-        var str = await base.SendMessageAsync(reqJson, state);
+        //var state = Guid.NewGuid().ToString("B");
+        //var req = new GoCqRequest
+        //{
+        //    Action = action,
+        //    Params = @params,
+        //    State = state
+        //};
+        var reqJson = JsonSerializer.Serialize(@params);
+        var str = await base.SendMessageAsync(reqJson, action);
         return JsonSerializer.Deserialize<GoCqApiResponse<T>>(str)!;
     }
 
