@@ -28,7 +28,7 @@ namespace MilkiBotFramework.Aspnetcore
                 .AddControllersAsServices();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             _builder.Services.AddEndpointsApiExplorer();
-            _builder.Services.AddSwaggerGen();
+            //_builder.Services.AddSwaggerGen();
             base.ConfigServices(serviceCollection);
         }
 
@@ -43,11 +43,11 @@ namespace MilkiBotFramework.Aspnetcore
             base.ConfigureApp(serviceProvider);
 
             if (_app == null) return;
-            if (_app.Environment.IsDevelopment())
-            {
-                _app.UseSwagger();
-                _app.UseSwaggerUI();
-            }
+            //if (_app.Environment.IsDevelopment())
+            //{
+            //    _app.UseSwagger();
+            //    _app.UseSwaggerUI();
+            //}
 
             //_app.UseMiddleware<WsMiddleware>();
             _app.UseHttpsRedirection();
