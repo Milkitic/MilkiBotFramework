@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
 using MilkiBotFramework.Aspnetcore;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
@@ -30,7 +29,8 @@ public sealed class GoCqKestrelConnector : AspnetcoreConnector, IGoCqConnector
         return JsonSerializer.Deserialize<GoCqApiResponse<T>>(str)!;
     }
 
-    public GoCqKestrelConnector(WebSocketClientConnector webSocketClientConnector) : base(webSocketClientConnector)
+    public GoCqKestrelConnector(WebApplication webApplication, WebSocketClientConnector? webSocketClientConnector)
+        : base(webApplication, webSocketClientConnector)
     {
     }
 }

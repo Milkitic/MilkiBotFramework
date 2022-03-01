@@ -1,7 +1,4 @@
 ﻿using System.Reflection;
-using Microsoft.AspNetCore.Mvc.Abstractions;
-using Microsoft.AspNetCore.Mvc.ActionConstraints;
-using Microsoft.AspNetCore.Mvc.Controllers;
 using MilkiBotFramework.Connecting;
 
 namespace MilkiBotFramework.Aspnetcore
@@ -34,6 +31,7 @@ namespace MilkiBotFramework.Aspnetcore
 
         protected override IServiceProvider BuildCore(IServiceCollection services)
         {
+            services.AddSingleton(typeof(WebApplication), _ => _app!);
             _app = _builder.Build();
             return _app.Services;
         }
@@ -49,25 +47,21 @@ namespace MilkiBotFramework.Aspnetcore
             //    _app.UseSwaggerUI();
             //}
 
-            //_app.UseMiddleware<WsMiddleware>();
-            _app.UseHttpsRedirection();
-            _app.UseAuthorization(); 
-            
-            var webSocketOptions = new WebSocketOptions
+            var connector = serviceProvider.GetService<IConnector>();
+            if (connector!.ConnectionType == ConnectionType.ReverseWebsocket)
             {
-                KeepAliveInterval = TimeSpan.FromSeconds(2)
-            };
-            _app.UseWebSockets(webSocketOptions);
-
-            _app.MapControllers();
-
-            if (serviceProvider.GetService(typeof(IConnector)) is AspnetcoreConnector connector)
-            {
-                connector.WebApplication = _app;
+                _app.UseMiddleware<WsMiddleware>();
+                var webSocketOptions = new WebSocketOptions
+                {
+                    KeepAliveInterval = TimeSpan.FromSeconds(2)
+                };
+                _app.UseWebSockets(webSocketOptions);
             }
 
-            var bot = (AspnetcoreBot)serviceProvider.GetService(typeof(Bot))!;
-            bot.WebApplication = _app;
+            _app.UseHttpsRedirection();
+            _app.UseAuthorization();
+
+            _app.MapControllers();
         }
 
         protected override IServiceCollection GetServiceCollection()

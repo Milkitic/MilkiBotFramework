@@ -8,7 +8,7 @@ namespace MilkiBotFramework.Aspnetcore;
 
 public class AspnetcoreBot : Bot
 {
-    internal WebApplication WebApplication { get; set; }
+    private readonly WebApplication _webApplication;
 
     public AspnetcoreBot(IConnector connector,
         IContactsManager contactsManager,
@@ -17,7 +17,8 @@ public class AspnetcoreBot : Bot
         IServiceProvider serviceProvider,
         BotOptions options,
         BotTaskScheduler botTaskScheduler,
-        PluginManager pluginManager) : base(connector,
+        PluginManager pluginManager,
+        WebApplication webApplication) : base(connector,
         contactsManager,
         dispatcher,
         logger,
@@ -26,5 +27,6 @@ public class AspnetcoreBot : Bot
         botTaskScheduler,
         pluginManager)
     {
+        _webApplication = webApplication;
     }
 }

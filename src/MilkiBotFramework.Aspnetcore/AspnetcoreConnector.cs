@@ -7,13 +7,14 @@ namespace MilkiBotFramework.Aspnetcore
     public class AspnetcoreConnector : IConnector
     {
         private readonly WebSocketClientConnector? _webSocketClientConnector;
+        private readonly WebApplication _webApplication;
 
-        public AspnetcoreConnector(WebSocketClientConnector? webSocketClientConnector)
+        public AspnetcoreConnector(WebApplication webApplication, WebSocketClientConnector? webSocketClientConnector)
         {
             _webSocketClientConnector = webSocketClientConnector;
+            _webApplication = webApplication;
         }
 
-        internal WebApplication WebApplication { get; set; }
         public ConnectionType ConnectionType { get; set; }
         public string? TargetUri { get; set; }
         public string? BindingUri { get; set; }
@@ -40,7 +41,7 @@ namespace MilkiBotFramework.Aspnetcore
                 }
             }
 
-            await WebApplication.StartAsync();
+            await _webApplication.StartAsync();
         }
 
         public Task DisconnectAsync()
