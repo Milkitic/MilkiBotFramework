@@ -6,13 +6,13 @@ namespace MilkiBotFramework.Aspnetcore;
 
 public class AspnetcoreConnector : IConnector
 {
-    private readonly WebSocketClientConnector? _webSocketClientConnector;
+    protected readonly WebSocketClientConnector? WebSocketClientConnector;
     private readonly WebApplication _webApplication;
 
     public AspnetcoreConnector(WebApplication webApplication,
         WebSocketClientConnector? webSocketClientConnector)
     {
-        _webSocketClientConnector = webSocketClientConnector;
+        WebSocketClientConnector = webSocketClientConnector;
         _webApplication = webApplication;
     }
 
@@ -25,11 +25,17 @@ public class AspnetcoreConnector : IConnector
     public event Func<string, Task>? RawMessageReceived;
     public async Task ConnectAsync()
     {
-        if (_webSocketClientConnector != null)
+        if (WebSocketClientConnector != null)
         {
+            WebSocketClientConnector.RawMessageReceived += (s) =>
+            {
+                if (RawMessageReceived != null) return RawMessageReceived(s);
+                return Task.CompletedTask;
+            };
+
             try
             {
-                _webSocketClientConnector.ConnectAsync().Wait(3000);
+                WebSocketClientConnector.ConnectAsync().Wait(3000);
             }
             catch (Exception ex)
             {
@@ -52,9 +58,9 @@ public class AspnetcoreConnector : IConnector
 
     public async Task<string> SendMessageAsync(string message, string state)
     {
-        if (_webSocketClientConnector != null)
+        if (WebSocketClientConnector != null)
         {
-            return await _webSocketClientConnector.SendMessageAsync(message, state);
+            return await WebSocketClientConnector.SendMessageAsync(message, state);
         }
 
         throw new NotSupportedException();
