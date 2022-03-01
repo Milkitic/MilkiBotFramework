@@ -23,16 +23,9 @@ public sealed class GoCqKestrelConnector : AspnetcoreConnector, IGoCqConnector
     {
         if (WebSocketClientConnector != null)
         {
-            var state = Guid.NewGuid().ToString("B");
-            var req = new GoCqRequest
-            {
-                Action = action,
-                Params = @params,
-                State = state
-            };
-            var reqJson = JsonSerializer.Serialize(req);
-            var str = await WebSocketClientConnector.SendMessageAsync(reqJson, state);
-            return JsonSerializer.Deserialize<GoCqApiResponse<T>>(str);
+            if (WebSocketClientConnector is not GoCqClient goCqClient)
+                throw new ArgumentException(null, nameof(WebSocketClientConnector));
+            return await goCqClient.SendMessageAsync<T>(action, @params);
         }
 
         return await _lightHttpClient.HttpPost<GoCqApiResponse<T>>(TargetUri + "/" + action, @params);
