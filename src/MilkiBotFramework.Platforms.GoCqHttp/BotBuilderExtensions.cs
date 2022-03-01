@@ -19,7 +19,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp
             builder.UseConnector<GoCqKestrelConnector>(k =>
             {
                 k.TargetUri = connection.TargetUri!;
-                k.BindingUri = connection.ServerBindUri;
+                k.BindingPath = connection.ServerBindPath;
                 k.ConnectionType = connection.ConnectionType;
             });
 
@@ -60,30 +60,30 @@ namespace MilkiBotFramework.Platforms.GoCqHttp
 
     public class GoCqConnection
     {
-        private GoCqConnection(ConnectionType connectionType, string? targetUri, string? serverBindUri)
+        private GoCqConnection(ConnectionType connectionType, string? targetUri, string? serverBindPath)
         {
             ConnectionType = connectionType;
             TargetUri = targetUri;
-            ServerBindUri = serverBindUri;
+            ServerBindPath = serverBindPath;
         }
 
         public ConnectionType ConnectionType { get; private set; }
         public string? TargetUri { get; private set; }
-        public string? ServerBindUri { get; private set; }
+        public string? ServerBindPath { get; private set; }
 
         public static GoCqConnection Websocket(string callingUri)
         {
             return new GoCqConnection(ConnectionType.Websocket, callingUri, null);
         }
 
-        public static GoCqConnection ReverseWebsocket(string serverBindUri)
+        public static GoCqConnection ReverseWebsocket(string serverBindPath)
         {
-            return new GoCqConnection(ConnectionType.ReverseWebsocket, null, serverBindUri);
+            return new GoCqConnection(ConnectionType.ReverseWebsocket, null, serverBindPath);
         }
 
-        public static GoCqConnection Http(string callingUri, string serverBindUri)
+        public static GoCqConnection Http(string callingUri, string serverBindPath)
         {
-            return new GoCqConnection(ConnectionType.Http, callingUri, serverBindUri);
+            return new GoCqConnection(ConnectionType.Http, callingUri, serverBindPath);
         }
     }
 }

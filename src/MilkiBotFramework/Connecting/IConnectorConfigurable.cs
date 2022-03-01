@@ -7,7 +7,7 @@ public interface IConnectorConfigurable
 {
     public ConnectionType ConnectionType { get; set; }
     public string? TargetUri { get; set; }
-    public string? BindingUri { get; set; }
+    public string? BindingPath { get; set; }
     public TimeSpan ConnectionTimeout { get; set; }
 
     /// <summary>

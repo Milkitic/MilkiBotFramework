@@ -27,7 +27,7 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
 
     public ConnectionType ConnectionType { get; set; }
     public string? TargetUri { get; set; }
-    public string? BindingUri { get; set; }
+    public string? BindingPath { get; set; }
     public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
     /// <summary>
