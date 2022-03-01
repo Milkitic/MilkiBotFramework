@@ -32,7 +32,14 @@ public class HttpMiddleware
                 using var reader = new StreamReader(context.Request.Body, Encoding.UTF8, true, 1024, true);
                 var bodyStr = await reader.ReadToEndAsync();
                 //_logger.LogDebug("!!!POST STR: " + bodyStr);
-                await _dispatcher.InvokeRawMessageReceived(bodyStr);
+                try
+                {
+                    await _dispatcher.InvokeRawMessageReceived(bodyStr);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurs while executing dispatcher");
+                }
             }
             else
             {

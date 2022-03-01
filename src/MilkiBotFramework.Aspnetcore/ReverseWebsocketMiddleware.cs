@@ -9,14 +9,17 @@ public class ReverseWebsocketMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly IDispatcher _dispatcher;
+    private readonly ILogger<ReverseWebsocketMiddleware> _logger;
     private readonly string _path;
 
     public ReverseWebsocketMiddleware(RequestDelegate next,
         IConnector connector,
-        IDispatcher dispatcher)
+        IDispatcher dispatcher,
+        ILogger<ReverseWebsocketMiddleware> logger)
     {
         _next = next;
         _dispatcher = dispatcher;
+        _logger = logger;
         _path = connector.BindingPath!;
     }
 
@@ -107,7 +110,14 @@ public class ReverseWebsocketMiddleware
             }
 
             var message = Encoding.Default.GetString(actualBytes.Span);
-            await _dispatcher.InvokeRawMessageReceived(message);
+            try
+            {
+                await _dispatcher.InvokeRawMessageReceived(message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurs while executing dispatcher");
+            }
             // send by buffer sequence(rwlock)
             //await webSocket.SendAsync(
             //    new ArraySegment<byte>(buffer, 0, receiveResult.Count),

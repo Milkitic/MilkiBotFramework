@@ -192,11 +192,26 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     private static Action<ILoggingBuilder> CreateDefaultLoggerConfiguration()
     {
-        return k => k.AddSimpleConsole(options =>
-        {
-            options.IncludeScopes = true;
-            //options.SingleLine = true;
-            options.TimestampFormat = "hh:mm:ss.ffzz ";
-        });
+        return builder => builder
+            .AddSimpleConsole(options =>
+            {
+                options.IncludeScopes = true;
+                //options.SingleLine = true;
+                options.TimestampFormat = "hh:mm:ss.ffzz ";
+            })
+            .AddFilter((ns, level) =>
+            {
+#if !DEBUG
+                if (ns.StartsWith("Microsoft") && level < LogLevel.Warning)
+                    return false;
+                if (level < LogLevel.Information)
+                    return false;
+                return true;
+#else
+                if (ns.StartsWith("Microsoft") && level < LogLevel.Information)
+                    return false;
+                return true;
+#endif
+            });
     }
 }
