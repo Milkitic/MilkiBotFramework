@@ -1,17 +1,22 @@
 ﻿using System.Net.WebSockets;
 using System.Text;
 using MilkiBotFramework.Connecting;
+using MilkiBotFramework.Dispatching;
 
 namespace MilkiBotFramework.Aspnetcore;
 
 public class ReverseWebsocketMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly IDispatcher _dispatcher;
     private readonly string _path;
 
-    public ReverseWebsocketMiddleware(RequestDelegate next, IConnector connector)
+    public ReverseWebsocketMiddleware(RequestDelegate next,
+        IConnector connector,
+        IDispatcher dispatcher)
     {
         _next = next;
+        _dispatcher = dispatcher;
         _path = connector.BindingPath!;
     }
 
@@ -102,6 +107,7 @@ public class ReverseWebsocketMiddleware
             }
 
             var message = Encoding.Default.GetString(actualBytes.Span);
+            await _dispatcher.InvokeRawMessageReceived(message);
             // send by buffer sequence(rwlock)
             //await webSocket.SendAsync(
             //    new ArraySegment<byte>(buffer, 0, receiveResult.Count),

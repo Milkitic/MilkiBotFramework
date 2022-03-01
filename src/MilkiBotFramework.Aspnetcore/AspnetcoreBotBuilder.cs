@@ -52,6 +52,7 @@ namespace MilkiBotFramework.Aspnetcore
             var connector = serviceProvider.GetService<IConnector>();
             if (connector!.ConnectionType == ConnectionType.ReverseWebsocket)
             {
+                throw new NotSupportedException("Currently not support ReverseWebsocket");
                 _app.UseMiddleware<ReverseWebsocketMiddleware>();
                 var webSocketOptions = new WebSocketOptions
                 {
