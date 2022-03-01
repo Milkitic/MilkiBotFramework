@@ -3,9 +3,11 @@ using MilkiBotFramework;
 using MilkiBotFramework.Aspnetcore;
 using MilkiBotFramework.Platforms.GoCqHttp;
 
-var bot = new AspnetcoreBotBuilder(args)
+var bot =
+    new BotBuilder().UseGoCqHttp("http://127.0.0.1:5700")
+    //new AspnetcoreBotBuilder(args)
     //.UseGoCqHttp(GoCqConnection.Websocket("ws://127.0.0.1:6700"))
-    .UseGoCqHttp(GoCqConnection.Http("http://127.0.0.1:5700", ""))
+    //.UseGoCqHttp(GoCqConnection.Http("http://127.0.0.1:5700", ""))
     .ConfigureLogger(builder =>
     {
         builder

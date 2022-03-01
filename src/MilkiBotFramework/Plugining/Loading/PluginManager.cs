@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Dispatching;
+using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Plugining.Attributes;
@@ -24,6 +25,8 @@ namespace MilkiBotFramework.Plugining.Loading
     {
         private static readonly string[] DefaultAuthors = { "anonym" };
 
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceCollection _serviceCollection;
         private readonly IDispatcher _dispatcher;
         private readonly IMessageApi _messageApi;
         private readonly IRichMessageConverter _richMessageConverter;
@@ -34,36 +37,36 @@ namespace MilkiBotFramework.Plugining.Loading
         // sub directory per loader
         private readonly Dictionary<string, LoaderContext> _loaderContexts = new();
         private readonly HashSet<PluginDefinition> _plugins = new();
+        private readonly EventBus _eventBus;
 
         public PluginManager(IDispatcher dispatcher,
             IMessageApi messageApi,
             IRichMessageConverter richMessageConverter,
             ILogger<PluginManager> logger,
-            ICommandLineAnalyzer commandLineAnalyzer)
+            ICommandLineAnalyzer commandLineAnalyzer,
+            IServiceProvider serviceProvider,
+            IServiceCollection serviceCollection,
+            EventBus eventBus)
         {
+            _serviceProvider = serviceProvider;
+            _serviceCollection = serviceCollection;
             _dispatcher = dispatcher;
             _messageApi = messageApi;
             _richMessageConverter = richMessageConverter;
             _logger = logger;
             _commandLineAnalyzer = commandLineAnalyzer;
             _commandLineInjector = new CommandLineInjector(commandLineAnalyzer);
-            dispatcher.PrivateMessageReceived += Dispatcher_PrivateMessageReceived;
-            dispatcher.ChannelMessageReceived += Dispatcher_ChannelMessageReceived;
+            _eventBus = eventBus;
+            _eventBus.Subscribe<DispatchMessageEvent>(OnEventReceived);
+        }
+
+        private async Task OnEventReceived(DispatchMessageEvent e)
+        {
+            if (e.MessageType is MessageType.Private or MessageType.Channel)
+                await HandleMessage(e.MessageContext);
         }
 
         public string PluginBaseDirectory { get; internal set; }
-        public IServiceCollection BaseServiceCollection { get; internal set; }
-        public IServiceProvider BaseServiceProvider { get; internal set; }
-
-        private async Task Dispatcher_ChannelMessageReceived(MessageContext messageContext)
-        {
-            await HandleMessage(messageContext);
-        }
-
-        private async Task Dispatcher_PrivateMessageReceived(MessageContext messageContext)
-        {
-            await HandleMessage(messageContext);
-        }
 
         //todo: Same command; Same guid
         public async Task InitializeAllPlugins()
@@ -268,7 +271,7 @@ namespace MilkiBotFramework.Plugining.Loading
                 }
             }
 
-            var allTypes = BaseServiceCollection
+            var allTypes = _serviceCollection
                 .Where(o => o.Lifetime == ServiceLifetime.Singleton);
             foreach (var serviceDescriptor in allTypes)
             {
@@ -279,7 +282,7 @@ namespace MilkiBotFramework.Plugining.Loading
                         ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
                         ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
                         continue;
-                    var instance = BaseServiceProvider.GetService(serviceDescriptor.ImplementationType);
+                    var instance = _serviceProvider.GetService(serviceDescriptor.ImplementationType);
                     if (instance == null)
                         loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ImplementationType, _ => null!);
                     else
@@ -291,7 +294,7 @@ namespace MilkiBotFramework.Plugining.Loading
                         ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
                         ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
                         continue;
-                    var instance = BaseServiceProvider.GetService(serviceDescriptor.ServiceType);
+                    var instance = _serviceProvider.GetService(serviceDescriptor.ServiceType);
                     if (instance == null)
                         loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ServiceType, _ => null!);
                     else
@@ -299,8 +302,9 @@ namespace MilkiBotFramework.Plugining.Loading
                 }
             }
 
-            var bot = BaseServiceProvider.GetService<Bot>();
-            if (bot != null) loaderContext.ServiceCollection.AddLogging(o => bot.ConfigureLogger!(o));
+            var configLoggerProvider = _serviceProvider.GetService<ConfigLoggerProvider>();
+            if (configLoggerProvider != null)
+                loaderContext.ServiceCollection.AddLogging(o => configLoggerProvider.ConfigureLogger!(o));
 
             loaderContext.BuildServiceProvider();
             _loaderContexts.Add(loaderContext.Name, loaderContext);

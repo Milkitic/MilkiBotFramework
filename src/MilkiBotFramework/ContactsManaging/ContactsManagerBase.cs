@@ -4,10 +4,12 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
 using MilkiBotFramework.Dispatching;
+using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Tasking;
 
@@ -17,6 +19,7 @@ public abstract class ContactsManagerBase : IContactsManager
 {
     private readonly BotTaskScheduler _botTaskScheduler;
     private readonly ILogger _logger;
+    private readonly EventBus _eventBus;
     private IDispatcher? _dispatcher;
 
     protected readonly ConcurrentDictionary<string, ConcurrentDictionary<string, ChannelInfo>> SubChannelMapping = new();
@@ -26,10 +29,12 @@ public abstract class ContactsManagerBase : IContactsManager
     protected readonly ConcurrentDictionary<string, Avatar> UserAvatarMapping = new();
     protected readonly ConcurrentDictionary<string, Avatar> ChannelAvatarMapping = new();
 
-    public ContactsManagerBase(BotTaskScheduler botTaskScheduler, ILogger logger)
+    public ContactsManagerBase(BotTaskScheduler botTaskScheduler, ILogger logger, EventBus eventBus)
     {
         _botTaskScheduler = botTaskScheduler;
         _logger = logger;
+        _eventBus = eventBus;
+        _eventBus.Subscribe<DispatchMessageEvent>(OnEventReceived);
     }
 
     public void Initialize()
@@ -43,17 +48,6 @@ public abstract class ContactsManagerBase : IContactsManager
     private void RefreshContracts(TaskContext context, CancellationToken token)
     {
         _logger.LogInformation("Refreshed!");
-    }
-
-    public IDispatcher? Dispatcher
-    {
-        get => _dispatcher;
-        internal set
-        {
-            if (_dispatcher != null) _dispatcher.SystemMessageReceived -= Dispatcher_NoticeMessageReceived;
-            _dispatcher = value;
-            if (_dispatcher != null) _dispatcher.SystemMessageReceived += Dispatcher_NoticeMessageReceived;
-        }
     }
 
     public abstract Task<SelfInfoResult> TryGetSelfInfo();
@@ -155,8 +149,11 @@ public abstract class ContactsManagerBase : IContactsManager
         return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
     }
 
-    private async Task Dispatcher_NoticeMessageReceived(MessageContext messageContext)
+    private async Task OnEventReceived(DispatchMessageEvent e)
     {
+        if (e.MessageType != MessageType.Notice) return;
+
+        var messageContext = e.MessageContext;
         var updateResult = await UpdateMemberIfPossible(messageContext);
         if (updateResult.IsSuccess)
         {

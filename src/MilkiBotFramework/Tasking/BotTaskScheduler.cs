@@ -15,14 +15,14 @@ namespace MilkiBotFramework.Tasking
     public sealed class BotTaskScheduler : IAsyncDisposable
     {
         private readonly ILogger<BotTaskScheduler> _logger;
+        private readonly IServiceProvider _serviceProvider;
         private readonly Dictionary<Guid, TaskInstance> _tasks = new();
 
-        public BotTaskScheduler(ILogger<BotTaskScheduler> logger)
+        public BotTaskScheduler(ILogger<BotTaskScheduler> logger, IServiceProvider serviceProvider)
         {
             _logger = logger;
+            _serviceProvider = serviceProvider;
         }
-
-        public IServiceProvider? SingletonServiceProvider { get; internal set; }
 
         /// <summary>
         /// 新建一个任务
@@ -69,7 +69,7 @@ namespace MilkiBotFramework.Tasking
         {
             // loop implementation
             var taskOption = taskInstance.Option;
-            var loggerFactory = SingletonServiceProvider.GetService<ILoggerFactory>();
+            var loggerFactory = _serviceProvider.GetService<ILoggerFactory>();
             var logger = loggerFactory!.CreateLogger("EamTaskScheduler." + taskOption.Name);
             var cts = taskInstance.CancellationTokenSource;
             if (taskOption.TriggerOnStartup) Execute(null, DateTime.Now);

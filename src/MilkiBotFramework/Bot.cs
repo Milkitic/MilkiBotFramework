@@ -12,37 +12,41 @@ namespace MilkiBotFramework
 {
     public class Bot
     {
-        protected readonly PluginManager PluginManager;
-        protected readonly IContactsManager ContactsManager;
-        protected readonly ILogger Logger;
-        protected TaskCompletionSource? ConnectionTcs;
-        protected int ExitCode;
+        private int _exitCode;
+        private TaskCompletionSource? _connectionTcs;
 
-        public Bot(BotTaskScheduler botTaskScheduler, PluginManager pluginManager, IContactsManager contactsManager, IConnector connector, IDispatcher dispatcher, BotOptions options, ILogger<Bot> logger)
+        protected readonly IConnector Connector;
+        protected readonly IContactsManager ContactsManager;
+        protected readonly IDispatcher Dispatcher;
+        protected readonly ILogger Logger;
+        protected readonly IServiceProvider ServiceProvider;
+        protected readonly BotOptions Options;
+        protected readonly BotTaskScheduler BotTaskScheduler;
+        protected readonly PluginManager PluginManager;
+
+        public Bot(IConnector connector,
+            IContactsManager contactsManager,
+            IDispatcher dispatcher,
+            ILogger<Bot> logger,
+            IServiceProvider serviceProvider,
+            BotOptions options,
+            BotTaskScheduler botTaskScheduler,
+            PluginManager pluginManager)
         {
-            BotTaskScheduler = botTaskScheduler;
+            ServiceProvider = serviceProvider;
             Connector = connector;
             Dispatcher = dispatcher;
-            Options = options;
             PluginManager = pluginManager;
+            Options = options;
+            BotTaskScheduler = botTaskScheduler;
             ContactsManager = contactsManager;
             Logger = logger;
-            Current = this;
         }
-
-        public static Bot? Current { get; private set; }
-
-        public BotOptions Options { get; }
-        public IServiceProvider? SingletonServiceProvider { get; internal set; }
-        public BotTaskScheduler BotTaskScheduler { get; }
-        public IConnector Connector { get; }
-        public IDispatcher Dispatcher { get; }
-        public Action<ILoggingBuilder>? ConfigureLogger { get; set; }
 
         public void Run()
         {
-            if (ConnectionTcs != null) throw new InvalidOperationException();
-            ConnectionTcs = new TaskCompletionSource();
+            if (_connectionTcs != null) throw new InvalidOperationException();
+            _connectionTcs = new TaskCompletionSource();
             try
             {
                 try
@@ -67,16 +71,16 @@ namespace MilkiBotFramework
                 Logger.LogCritical(ex, "Error occurs while running");
             }
 
-            ConnectionTcs.Task.Wait();
+            _connectionTcs.Task.Wait();
         }
 
         public async Task<int> RunAsync()
         {
-            if (ConnectionTcs != null) throw new InvalidOperationException();
-            ConnectionTcs = new TaskCompletionSource();
+            if (_connectionTcs != null) throw new InvalidOperationException();
+            _connectionTcs = new TaskCompletionSource();
             try
             {
-                ExitCode = 0;
+                _exitCode = 0;
                 try
                 {
                     Connector.ConnectAsync().Wait(3000);
@@ -99,25 +103,25 @@ namespace MilkiBotFramework
                 Logger.LogCritical(ex, "Error occurs while running.");
             }
 
-            await ConnectionTcs.Task;
-            return ExitCode;
+            await _connectionTcs.Task;
+            return _exitCode;
         }
 
         public int Stop(int exitCode = 0)
         {
-            ExitCode = exitCode;
+            _exitCode = exitCode;
             Connector.DisconnectAsync().Wait();
-            ConnectionTcs?.SetResult();
-            ConnectionTcs = null;
+            _connectionTcs?.SetResult();
+            _connectionTcs = null;
             return exitCode;
         }
 
         public async Task<int> StopAsync(int exitCode = 0)
         {
-            ExitCode = exitCode;
+            _exitCode = exitCode;
             await Connector.DisconnectAsync();
-            ConnectionTcs?.SetResult();
-            ConnectionTcs = null;
+            _connectionTcs?.SetResult();
+            _connectionTcs = null;
             return exitCode;
         }
     }

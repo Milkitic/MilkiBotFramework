@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
+using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Plugining.Loading;
@@ -97,19 +98,20 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     public TBot Build()
     {
-        ConfigServices(GetServiceCollection());
-        var serviceProvider = BuildCore(GetServiceCollection());
+        var serviceCollection = GetServiceCollection();
+        ConfigServices(serviceCollection);
+        IServiceProvider? serviceProvider = null;
+        serviceCollection.AddSingleton(typeof(IServiceProvider), _ => serviceProvider!);
+        serviceProvider = BuildCore(serviceCollection);
         ConfigureApp(serviceProvider);
+
         // PluginManager
         var pluginManager = serviceProvider.GetService<PluginManager>()!;
         pluginManager.PluginBaseDirectory = _pluginBaseDir;
 
         // Bot
         var bot = (Bot)serviceProvider.GetService(typeof(Bot));
-        bot.SingletonServiceProvider = serviceProvider;
-        bot.ConfigureLogger = _configureLogger;
-        pluginManager.BaseServiceCollection = GetServiceCollection();
-        pluginManager.BaseServiceProvider = serviceProvider;
+        //bot.ConfigureLogger = _configureLogger;
         return (TBot)bot;
     }
 
@@ -131,17 +133,6 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         // Connector
         var connector = (IConnector)serviceProvider.GetService(typeof(IConnector));
         _configureConnector?.Invoke(connector);
-
-        // Dispatcher
-        var dispatcher = serviceProvider.GetService<IDispatcher>()!;
-        dispatcher.SingletonServiceProvider = serviceProvider;
-        // ContractsManager
-        var contractsManager = serviceProvider.GetService<IContactsManager>();
-        if (contractsManager is ContactsManagerBase cmb) cmb.Dispatcher = dispatcher;
-
-        // TaskScheduler
-        var taskScheduler = serviceProvider.GetService<BotTaskScheduler>()!;
-        taskScheduler.SingletonServiceProvider = serviceProvider;
     }
 
     protected virtual void ConfigServices(IServiceCollection serviceCollection)
@@ -153,6 +144,8 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
             .AddSingleton<ImageProcessor>()
             .AddSingleton<BotTaskScheduler>()
             .AddSingleton<PluginManager>()
+            .AddSingleton<EventBus>()
+            .AddSingleton(new ConfigLoggerProvider(_configureLogger))
             .AddSingleton(typeof(ICommandLineAnalyzer),
                 _commandAnalyzerType ?? typeof(CommandLineAnalyzer))
             .AddSingleton(typeof(IRichMessageConverter),
