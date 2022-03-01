@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
+using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 using MilkiBotFramework.Tasking;
@@ -19,8 +20,9 @@ public sealed class GoCqContactsManager : ContactsManagerBase
     public GoCqContactsManager(GoCqApi goCqApi,
         BotOptions botOptions,
         BotTaskScheduler botTaskScheduler,
-        ILogger<GoCqContactsManager> logger)
-        : base(botTaskScheduler, logger)
+        ILogger<GoCqContactsManager> logger,
+        EventBus eventBus)
+        : base(botTaskScheduler, logger, eventBus)
     {
         _goCqApi = goCqApi;
         _botOptions = botOptions;

@@ -25,7 +25,9 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
         _logger = logger;
     }
 
-    public string? ServerUri { get; set; }
+    public ConnectionType ConnectionType { get; set; }
+    public string? TargetUri { get; set; }
+    public string? BindingPath { get; set; }
     public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
     /// <summary>
@@ -46,9 +48,9 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
 
         await DisconnectAsync();
 
-        if (ServerUri == null) throw new ArgumentNullException(nameof(ServerUri));
+        if (TargetUri == null) throw new ArgumentNullException(nameof(TargetUri));
 
-        _client = new WebsocketClient(new Uri(ServerUri))
+        _client = new WebsocketClient(new Uri(TargetUri))
         {
             ErrorReconnectTimeout = ConnectionTimeout,
             MessageEncoding = Encoding,
@@ -63,7 +65,7 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
 
         try
         {
-            _logger.LogInformation($"Try connecting to websocket server {ServerUri}...");
+            _logger.LogInformation($"Try connecting to websocket server {TargetUri}...");
             await _client.Start();
             _logger.LogInformation($"Connected to websocket server.");
         }

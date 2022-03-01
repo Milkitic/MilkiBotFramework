@@ -6,6 +6,6 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 
 public interface IGoCqConnector
 {
-    Task<GoCqWsResponse<object>> SendMessageAsync(string action, IDictionary<string, object>? @params);
-    Task<GoCqWsResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params);
+    Task<GoCqApiResponse<object>> SendMessageAsync(string action, IDictionary<string, object>? @params);
+    Task<GoCqApiResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params);
 }

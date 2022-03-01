@@ -21,7 +21,9 @@ namespace MilkiBotFramework.Connecting
             _logger.LogInformation("StandardIoConnector for debugging usage!");
         }
 
-        public string ServerUri { get; set; }
+        public ConnectionType ConnectionType { get; set; }
+        public string TargetUri { get; set; }
+        public string? BindingPath { get; set; }
         public TimeSpan ConnectionTimeout { get; set; }
         public TimeSpan MessageTimeout { get; set; }
         public Encoding Encoding { get; set; }

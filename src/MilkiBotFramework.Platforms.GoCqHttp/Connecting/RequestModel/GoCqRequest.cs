@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel;
 
-public sealed class GoCqWsRequest
+public sealed class GoCqRequest
 {
     [JsonPropertyName("echo")]
     public string State { get; set; }

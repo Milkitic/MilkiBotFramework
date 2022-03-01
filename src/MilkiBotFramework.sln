@@ -21,6 +21,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTests", "Tests\UnitTest
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DemoPlugin", "Samples\DemoPlugin\DemoPlugin.csproj", "{66C06747-A27B-4AF2-822A-0DD41537BB5B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework.Aspnetcore", "MilkiBotFramework.Aspnetcore\MilkiBotFramework.Aspnetcore.csproj", "{19471383-C9B2-4F5A-AAE3-5C241D732681}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{66C06747-A27B-4AF2-822A-0DD41537BB5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{66C06747-A27B-4AF2-822A-0DD41537BB5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{66C06747-A27B-4AF2-822A-0DD41537BB5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19471383-C9B2-4F5A-AAE3-5C241D732681}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19471383-C9B2-4F5A-AAE3-5C241D732681}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19471383-C9B2-4F5A-AAE3-5C241D732681}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19471383-C9B2-4F5A-AAE3-5C241D732681}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

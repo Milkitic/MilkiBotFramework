@@ -12,38 +12,35 @@ namespace MilkiBotFramework
 {
     public class Bot
     {
-        private readonly PluginManager _pluginManager;
-        private readonly IContactsManager _contactsManager;
-        private readonly ILogger<Bot> _logger;
-        private TaskCompletionSource? _connectionTcs;
         private int _exitCode;
+        private TaskCompletionSource? _connectionTcs;
 
-        public Bot(BotTaskScheduler botTaskScheduler, PluginManager pluginManager, IContactsManager contactsManager, IConnector connector, IDispatcher dispatcher, BotOptions options, ILogger<Bot> logger)
+        protected readonly IConnector Connector;
+        protected readonly IContactsManager ContactsManager;
+        protected readonly IDispatcher Dispatcher;
+        protected readonly ILogger Logger;
+        protected readonly IServiceProvider ServiceProvider;
+        protected readonly BotOptions Options;
+        protected readonly BotTaskScheduler BotTaskScheduler;
+        protected readonly PluginManager PluginManager;
+
+        public Bot(IConnector connector,
+            IContactsManager contactsManager,
+            IDispatcher dispatcher,
+            ILogger<Bot> logger,
+            IServiceProvider serviceProvider,
+            BotOptions options,
+            BotTaskScheduler botTaskScheduler,
+            PluginManager pluginManager)
         {
-            BotTaskScheduler = botTaskScheduler;
+            ServiceProvider = serviceProvider;
             Connector = connector;
             Dispatcher = dispatcher;
+            PluginManager = pluginManager;
             Options = options;
-            _pluginManager = pluginManager;
-            _contactsManager = contactsManager;
-            _logger = logger;
-            Current = this;
-        }
-
-        public static Bot? Current { get; private set; }
-
-        public BotOptions Options { get; }
-        public IServiceProvider? SingletonServiceProvider { get; internal set; }
-        public BotTaskScheduler BotTaskScheduler { get; }
-        public IConnector Connector { get; }
-        public IDispatcher Dispatcher { get; }
-        internal BotBuilder Builder { get; set; }
-
-        public static Bot Create(Action<BotBuilder>? configureBot = null)
-        {
-            var builder = new BotBuilder();
-            configureBot?.Invoke(builder);
-            return builder.GetBotInstance();
+            BotTaskScheduler = botTaskScheduler;
+            ContactsManager = contactsManager;
+            Logger = logger;
         }
 
         public void Run()
@@ -56,17 +53,22 @@ namespace MilkiBotFramework
                 {
                     Connector.ConnectAsync().Wait(3000);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    if (ex is not TaskCanceledException &&
+                        ex.InnerException is not TaskCanceledException)
+                    {
+                        throw;
+                    }
                     // ignored
                 }
 
-                _pluginManager.InitializeAllPlugins().Wait();
-                _contactsManager.Initialize();
+                PluginManager.InitializeAllPlugins().Wait();
+                ContactsManager.Initialize();
             }
             catch (Exception ex)
             {
-                _logger.LogCritical(ex, "Error occurs while running");
+                Logger.LogCritical(ex, "Error occurs while running");
             }
 
             _connectionTcs.Task.Wait();
@@ -83,17 +85,22 @@ namespace MilkiBotFramework
                 {
                     Connector.ConnectAsync().Wait(3000);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    if (ex is not TaskCanceledException &&
+                        ex.InnerException is not TaskCanceledException)
+                    {
+                        throw;
+                    }
                     // ignored
                 }
 
-                await _pluginManager.InitializeAllPlugins();
-                _contactsManager.Initialize();
+                await PluginManager.InitializeAllPlugins();
+                ContactsManager.Initialize();
             }
             catch (Exception ex)
             {
-                _logger.LogCritical(ex, "Error occurs while running.");
+                Logger.LogCritical(ex, "Error occurs while running.");
             }
 
             await _connectionTcs.Task;

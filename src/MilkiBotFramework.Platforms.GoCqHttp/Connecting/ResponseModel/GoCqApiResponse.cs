@@ -2,7 +2,7 @@
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
 
-public sealed class GoCqWsResponse<T>
+public sealed class GoCqApiResponse<T>
 {
     [JsonPropertyName("echo")]
     public string State { get; set; }

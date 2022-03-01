@@ -14,10 +14,15 @@ public class GoCqApi : IMessageApi
 
     public GoCqApi(IConnector connector)
     {
-        if (connector is not IGoCqConnector goCqConnector)
+        if (connector is IGoCqConnector goCqWsConnector)
+        {
+            Connector = connector;
+            _goCqConnector = goCqWsConnector;
+        }
+        else
+        {
             throw new Exception("Except for IGoCqConnector, but actual is " + connector.GetType());
-        Connector = connector;
-        _goCqConnector = goCqConnector;
+        }
     }
 
     public IConnector Connector { get; }

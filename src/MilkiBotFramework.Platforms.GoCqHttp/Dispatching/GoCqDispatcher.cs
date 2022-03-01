@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
+using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 using MilkiBotFramework.Platforms.GoCqHttp.Messaging;
@@ -13,17 +14,13 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
 {
     public class GoCqDispatcher : DispatcherBase<GoCqMessageContext>
     {
-        private readonly GoCqApi _goCqApi;
-        private readonly IRichMessageConverter _richMessageConverter;
-
-        public GoCqDispatcher(GoCqApi goCqApi,
-            IContactsManager contactsManager,
-            IRichMessageConverter richMessageConverter,
-            ILogger<GoCqDispatcher> logger)
-            : base(goCqApi.Connector, contactsManager, logger)
+        public GoCqDispatcher(IContactsManager contactsManager,
+            ILogger<GoCqDispatcher> logger,
+            IServiceProvider serviceProvider,
+            EventBus eventBus,
+            GoCqApi goCqApi)
+            : base(goCqApi.Connector, contactsManager, logger, serviceProvider, eventBus)
         {
-            _goCqApi = goCqApi;
-            _richMessageConverter = richMessageConverter;
         }
 
         protected override bool TrySetTextMessage(GoCqMessageContext messageContext)

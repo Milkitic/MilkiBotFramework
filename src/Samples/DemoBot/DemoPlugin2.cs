@@ -16,23 +16,23 @@ public class DemoPlugin2 : BasicPlugin<GoCqMessageContext>
         _logger = logger;
     }
 
-    protected override async Task OnInitialized()
-    {
-        _logger.LogDebug(nameof(OnInitialized));
-    }
+    //protected override async Task OnInitialized()
+    //{
+    //    _logger.LogDebug(nameof(OnInitialized));
+    //}
 
-    protected override async Task OnUninitialized()
-    {
-        _logger.LogDebug(nameof(OnUninitialized));
-    }
+    //protected override async Task OnUninitialized()
+    //{
+    //    _logger.LogDebug(nameof(OnUninitialized));
+    //}
 
-    protected override async Task OnExecuting()
-    {
-        _logger.LogDebug(nameof(OnExecuting));
-    }
+    //protected override async Task OnExecuting()
+    //{
+    //    _logger.LogDebug(nameof(OnExecuting));
+    //}
 
-    protected override async Task OnExecuted()
-    {
-        _logger.LogDebug(nameof(OnExecuted));
-    }
+    //protected override async Task OnExecuted()
+    //{
+    //    _logger.LogDebug(nameof(OnExecuted));
+    //}
 }

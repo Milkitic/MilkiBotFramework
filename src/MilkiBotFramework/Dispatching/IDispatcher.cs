@@ -1,15 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
-using MilkiBotFramework.Messaging;
+﻿using System.Threading.Tasks;
 
 namespace MilkiBotFramework.Dispatching
 {
     public interface IDispatcher
     {
-        public IServiceProvider SingletonServiceProvider { get; set; }
-        event Func<MessageContext, Task>? ChannelMessageReceived;
-        event Func<MessageContext, Task>? PrivateMessageReceived;
-        event Func<MessageContext, Task>? SystemMessageReceived;
-        event Func<MessageContext, Task>? MetaMessageReceived;
+        Task InvokeRawMessageReceived(string rawMessage);
     }
 }

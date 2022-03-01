@@ -60,10 +60,10 @@ public class DemoPlugin : BasicPlugin
         yield return Reply("not this one!");
     }
 
-    protected override async Task OnInitialized() => _logger.LogDebug(nameof(OnInitialized));
-    protected override async Task OnUninitialized() => _logger.LogDebug(nameof(OnUninitialized));
-    protected override async Task OnExecuting() => _logger.LogDebug(nameof(OnExecuting));
-    protected override async Task OnExecuted() => _logger.LogDebug(nameof(OnExecuted));
+    //protected override async Task OnInitialized() => _logger.LogDebug(nameof(OnInitialized));
+    //protected override async Task OnUninitialized() => _logger.LogDebug(nameof(OnUninitialized));
+    //protected override async Task OnExecuting() => _logger.LogDebug(nameof(OnExecuting));
+    //protected override async Task OnExecuted() => _logger.LogDebug(nameof(OnExecuted));
 }
 
 public class BindingModel

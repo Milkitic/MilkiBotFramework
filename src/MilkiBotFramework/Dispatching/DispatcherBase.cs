@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
+using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.Dispatching;
@@ -13,22 +14,29 @@ namespace MilkiBotFramework.Dispatching;
 public abstract class DispatcherBase<TMessageContext> : IDispatcher
     where TMessageContext : MessageContext
 {
-    public event Func<TMessageContext, Task>? ChannelMessageReceived;
-    public event Func<TMessageContext, Task>? PrivateMessageReceived;
-    public event Func<TMessageContext, Task>? NoticeMessageReceived;
-    public event Func<TMessageContext, Task>? MetaMessageReceived;
-
     private readonly IConnector _connector;
     private readonly IContactsManager _contactsManager;
     private readonly ILogger _logger;
-    public IServiceProvider SingletonServiceProvider { get; set; }
+    private readonly IServiceProvider _serviceProvider;
+    private readonly EventBus _eventBus;
 
-    public DispatcherBase(IConnector connector, IContactsManager contactsManager, ILogger logger)
+    public DispatcherBase(IConnector connector,
+        IContactsManager contactsManager,
+        ILogger logger,
+        IServiceProvider serviceProvider,
+        EventBus eventBus)
     {
         _connector = connector;
         _contactsManager = contactsManager;
         _logger = logger;
+        _serviceProvider = serviceProvider;
+        _eventBus = eventBus;
         _connector.RawMessageReceived += Connector_RawMessageReceived;
+    }
+
+    public async Task InvokeRawMessageReceived(string rawMessage)
+    {
+        await Connector_RawMessageReceived(rawMessage);
     }
 
     private async Task Connector_RawMessageReceived(string rawMessage)
@@ -36,7 +44,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         try
         {
             var sw = Stopwatch.StartNew();
-            using var scope = SingletonServiceProvider.CreateScope();
+            using var scope = _serviceProvider.CreateScope();
             var messageContext = (TMessageContext)scope.ServiceProvider.GetService(typeof(TMessageContext))!;
             messageContext.RawTextMessage = rawMessage;
             await HandleMessageCore(messageContext);
@@ -66,32 +74,29 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         {
             case MessageType.Private:
                 var privateResult = await _contactsManager.TryGetPrivateInfoByMessageContext(messageIdentity);
-                if (privateResult.IsSuccess && PrivateMessageReceived != null)
+                if (privateResult.IsSuccess)
                 {
                     messageContext.PrivateInfo = privateResult.PrivateInfo;
-                    await PrivateMessageReceived.Invoke(messageContext);
                 }
                 break;
             case MessageType.Channel:
                 var channelResult =
                     await _contactsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.UserId);
-                if (channelResult.IsSuccess && ChannelMessageReceived != null)
+                if (channelResult.IsSuccess)
                 {
                     messageContext.ChannelInfo = channelResult.ChannelInfo;
                     messageContext.MemberInfo = channelResult.MemberInfo;
-                    await ChannelMessageReceived.Invoke(messageContext);
                 }
                 break;
             case MessageType.Notice:
-                if (NoticeMessageReceived != null) await NoticeMessageReceived.Invoke(messageContext);
                 break;
             case MessageType.Meta:
-                if (MetaMessageReceived != null) await MetaMessageReceived.Invoke(messageContext);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
 
+        await _eventBus.PublishAsync(new DispatchMessageEvent(messageContext, messageIdentity.MessageType));
         //_logger.LogDebug($"Received data: \r\n{messageContext}");
     }
 
@@ -100,28 +105,4 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
     protected abstract bool TryGetIdentityByRawMessage(TMessageContext messageContext,
         [NotNullWhen(true)] out MessageIdentity? messageIdentity,
         out string? strIdentity);
-
-    event Func<MessageContext, Task>? IDispatcher.ChannelMessageReceived
-    {
-        add => ChannelMessageReceived += value;
-        remove => ChannelMessageReceived -= value;
-    }
-
-    event Func<MessageContext, Task>? IDispatcher.PrivateMessageReceived
-    {
-        add => PrivateMessageReceived += value;
-        remove => PrivateMessageReceived -= value;
-    }
-
-    event Func<MessageContext, Task>? IDispatcher.SystemMessageReceived
-    {
-        add => NoticeMessageReceived += value;
-        remove => NoticeMessageReceived -= value;
-    }
-
-    event Func<MessageContext, Task>? IDispatcher.MetaMessageReceived
-    {
-        add => MetaMessageReceived += value;
-        remove => MetaMessageReceived -= value;
-    }
 }
