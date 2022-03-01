@@ -21,14 +21,11 @@ public sealed class GoCqKestrelConnector : AspnetcoreConnector, IGoCqConnector
 
     public async Task<GoCqApiResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params)
     {
-        if (WebSocketClientConnector != null)
-        {
-            if (WebSocketClientConnector is not GoCqClient goCqClient)
-                throw new ArgumentException(null, nameof(WebSocketClientConnector));
-            return await goCqClient.SendMessageAsync<T>(action, @params);
-        }
-
-        return await _lightHttpClient.HttpPost<GoCqApiResponse<T>>(TargetUri + "/" + action, @params);
+        if (WebSocketClientConnector == null)
+            return await _lightHttpClient.HttpPost<GoCqApiResponse<T>>(TargetUri + "/" + action, @params);
+        if (WebSocketClientConnector is not GoCqClient goCqClient)
+            throw new ArgumentException(null, nameof(WebSocketClientConnector));
+        return await goCqClient.SendMessageAsync<T>(action, @params);
     }
 
     public GoCqKestrelConnector(LightHttpClient lightHttpClient,
