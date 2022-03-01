@@ -2,62 +2,61 @@
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Utils;
 
-namespace MilkiBotFramework.Aspnetcore
+namespace MilkiBotFramework.Aspnetcore;
+
+public class AspnetcoreConnector : IConnector
 {
-    public class AspnetcoreConnector : IConnector
+    private readonly WebSocketClientConnector? _webSocketClientConnector;
+    private readonly WebApplication _webApplication;
+
+    public AspnetcoreConnector(WebApplication webApplication,
+        WebSocketClientConnector? webSocketClientConnector)
     {
-        private readonly WebSocketClientConnector? _webSocketClientConnector;
-        private readonly WebApplication _webApplication;
+        _webSocketClientConnector = webSocketClientConnector;
+        _webApplication = webApplication;
+    }
 
-        public AspnetcoreConnector(WebApplication webApplication, WebSocketClientConnector? webSocketClientConnector)
+    public ConnectionType ConnectionType { get; set; }
+    public string? TargetUri { get; set; }
+    public string? BindingPath { get; set; }
+    public TimeSpan ConnectionTimeout { get; set; }
+    public TimeSpan MessageTimeout { get; set; }
+    public Encoding? Encoding { get; set; }
+    public event Func<string, Task>? RawMessageReceived;
+    public async Task ConnectAsync()
+    {
+        if (_webSocketClientConnector != null)
         {
-            _webSocketClientConnector = webSocketClientConnector;
-            _webApplication = webApplication;
-        }
-
-        public ConnectionType ConnectionType { get; set; }
-        public string? TargetUri { get; set; }
-        public string? BindingPath { get; set; }
-        public TimeSpan ConnectionTimeout { get; set; }
-        public TimeSpan MessageTimeout { get; set; }
-        public Encoding? Encoding { get; set; }
-        public event Func<string, Task>? RawMessageReceived;
-        public async Task ConnectAsync()
-        {
-            if (_webSocketClientConnector != null)
+            try
             {
-                try
-                {
-                    _webSocketClientConnector.ConnectAsync().Wait(3000);
-                }
-                catch (Exception ex)
-                {
-                    if (ex is not TaskCanceledException &&
-                        ex.InnerException is not TaskCanceledException)
-                    {
-                        throw;
-                    }
-                    // ignored
-                }
+                _webSocketClientConnector.ConnectAsync().Wait(3000);
             }
-
-            await _webApplication.StartAsync();
-        }
-
-        public Task DisconnectAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<string> SendMessageAsync(string message, string state)
-        {
-            if (_webSocketClientConnector != null)
+            catch (Exception ex)
             {
-                return await _webSocketClientConnector.SendMessageAsync(message, state);
+                if (ex is not TaskCanceledException &&
+                    ex.InnerException is not TaskCanceledException)
+                {
+                    throw;
+                }
+                // ignored
             }
-
-            var helper = HttpHelper.Default;
-            return helper.HttpPostJson(TargetUri + "/" + state, message);
         }
+
+        await _webApplication.StartAsync();
+    }
+
+    public async Task DisconnectAsync()
+    {
+        await _webApplication.StopAsync();
+    }
+
+    public async Task<string> SendMessageAsync(string message, string state)
+    {
+        if (_webSocketClientConnector != null)
+        {
+            return await _webSocketClientConnector.SendMessageAsync(message, state);
+        }
+
+        throw new NotSupportedException();
     }
 }

@@ -5,11 +5,14 @@ using Microsoft.AspNetCore.Builder;
 using MilkiBotFramework.Aspnetcore;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
+using MilkiBotFramework.Utils;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 
 public sealed class GoCqKestrelConnector : AspnetcoreConnector, IGoCqConnector
 {
+    private readonly LightHttpClient _lightHttpClient;
+
     public Task<GoCqApiResponse<object>> SendMessageAsync(string action, IDictionary<string, object>? @params)
     {
         return SendMessageAsync<object>(action, @params);
@@ -17,20 +20,14 @@ public sealed class GoCqKestrelConnector : AspnetcoreConnector, IGoCqConnector
 
     public async Task<GoCqApiResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params)
     {
-        //var state = Guid.NewGuid().ToString("B");
-        //var req = new GoCqRequest
-        //{
-        //    Action = action,
-        //    Params = @params,
-        //    State = state
-        //};
-        var reqJson = JsonSerializer.Serialize(@params);
-        var str = await base.SendMessageAsync(reqJson, action);
-        return JsonSerializer.Deserialize<GoCqApiResponse<T>>(str)!;
+        return await _lightHttpClient.HttpPost<GoCqApiResponse<T>>(TargetUri + "/" + action, @params);
     }
-
-    public GoCqKestrelConnector(WebApplication webApplication, WebSocketClientConnector? webSocketClientConnector)
+    
+    public GoCqKestrelConnector(LightHttpClient lightHttpClient,
+        WebApplication webApplication,
+        WebSocketClientConnector? webSocketClientConnector)
         : base(webApplication, webSocketClientConnector)
     {
+        _lightHttpClient = lightHttpClient;
     }
 }

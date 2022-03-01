@@ -13,4 +13,10 @@
     <ProjectReference Include="..\..\MilkiBotFramework\MilkiBotFramework.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="passwords.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

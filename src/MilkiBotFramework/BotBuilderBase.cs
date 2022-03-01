@@ -19,6 +19,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     private readonly BotOptions _botOptions = new();
     private Action<ILoggingBuilder>? _configureLogger;
+    private Action<LightHttpClientCreationOptions>? _configureHttp;
     private Action<IConnectorConfigurable>? _configureConnector;
     private Type? _connectorType;
     private Type? _dispatcherType;
@@ -38,6 +39,12 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     public TBuilder ConfigureLogger(Action<ILoggingBuilder> configureLogger)
     {
         _configureLogger = configureLogger;
+        return (TBuilder)this;
+    }
+
+    public TBuilder ConfigureHttpClient(Action<LightHttpClientCreationOptions> configureHttp)
+    {
+        _configureHttp = configureHttp;
         return (TBuilder)this;
     }
 
@@ -138,13 +145,17 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     protected virtual void ConfigServices(IServiceCollection serviceCollection)
     {
         var configureLogger = _configureLogger ??= CreateDefaultLoggerConfiguration();
+        var configureHttp = _configureHttp ??= CreateDefaultHttpConfiguration();
+        var httpOptions = new LightHttpClientCreationOptions();
         serviceCollection
             .AddLogging(k => configureLogger(k))
             .AddSingleton(_botOptions)
-            .AddSingleton<ImageProcessor>()
+            .AddSingleton(httpOptions)
             .AddSingleton<BotTaskScheduler>()
-            .AddSingleton<PluginManager>()
             .AddSingleton<EventBus>()
+            .AddSingleton<ImageProcessor>()
+            .AddSingleton<LightHttpClient>()
+            .AddSingleton<PluginManager>()
             .AddSingleton(new ConfigLoggerProvider(_configureLogger))
             .AddSingleton(typeof(ICommandLineAnalyzer),
                 _commandAnalyzerType ?? typeof(CommandLineAnalyzer))
@@ -167,6 +178,11 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         }
 
         serviceCollection.AddSingleton(serviceCollection);
+    }
+
+    private Action<LightHttpClientCreationOptions> CreateDefaultHttpConfiguration()
+    {
+        return _ => { };
     }
 
     protected virtual IServiceCollection GetServiceCollection()
