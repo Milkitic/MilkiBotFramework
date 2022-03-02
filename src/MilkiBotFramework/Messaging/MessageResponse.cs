@@ -12,7 +12,7 @@ internal class MessageResponse : IResponse
     public bool IsHandled { get; set; }
     public bool IsForced { get; set; }
     public string? TryAt { get; set; }
-    public NextMessage NextMessage { get; init; }
+    public AsyncMessage? AsyncMessage { get; init; }
 
     public MessageResponse(string id, string? subId, IRichMessage autoMessage, MessageType messageType)
     {
@@ -32,4 +32,6 @@ internal class MessageResponse : IResponse
     {
         IsHandled = nextBlocked;
     }
+
+    IAsyncMessage? IResponse.AsyncMessage => AsyncMessage;
 }

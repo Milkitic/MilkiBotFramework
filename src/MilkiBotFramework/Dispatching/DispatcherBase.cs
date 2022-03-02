@@ -81,7 +81,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                 break;
             case MessageType.Channel:
                 var channelResult =
-                    await _contactsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.UserId);
+                    await _contactsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.MessageUserIdentity!.UserId);
                 if (channelResult.IsSuccess)
                 {
                     messageContext.ChannelInfo = channelResult.ChannelInfo;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -39,6 +40,8 @@ namespace MilkiBotFramework.Plugining.Loading
         private readonly Dictionary<string, LoaderContext> _loaderContexts = new();
         private readonly HashSet<PluginDefinition> _plugins = new();
         private readonly EventBus _eventBus;
+
+        private readonly ConcurrentDictionary<MessageUserIdentity, AsyncMessage> _asyncMessageDict = new();
 
         public PluginManager(IDispatcher dispatcher,
             IMessageApi messageApi,
@@ -461,6 +464,16 @@ namespace MilkiBotFramework.Plugining.Loading
 
         private async Task HandleMessage(MessageContext messageContext)
         {
+            if (messageContext.MessageUserIdentity != null &&
+                _asyncMessageDict.TryGetValue(messageContext.MessageUserIdentity, out var asyncMsg))
+            {
+                asyncMsg.SetMessage(new AsyncMessageResponse(messageContext.MessageId!,
+                    messageContext.TextMessage!,
+                    messageContext.ReceivedTime,
+                    s => _richMessageConverter.Decode(s.AsMemory())));
+                return;
+            }
+
             List<(IMessagePlugin plugin, bool dispose, PluginDefinition pluginDefinition, IServiceScope serviceScope)> plugins =
                 new();
             List<(ServicePlugin plugin, PluginDefinition pluginDefinition)> servicePlugins = new();
@@ -524,28 +537,48 @@ namespace MilkiBotFramework.Plugining.Loading
                 nextPlugins.Remove(pluginDefinition);
                 executedPlugins.Add(pluginDefinition);
 
-                await plugin.OnExecuting();
-                if (commandName != null &&
-                    pluginDefinition.Commands.TryGetValue(commandName.Value.ToString(), out var commandDefinition))
+                try
                 {
-                    var asyncEnumerable = _commandLineInjector.InjectParametersAndRunAsync(commandLineResult!,
-                        commandDefinition, plugin, messageContext, serviceScope.ServiceProvider);
-                    await foreach (var response in asyncEnumerable)
+                    await plugin.OnExecuting();
+                    if (commandName != null &&
+                        pluginDefinition.Commands.TryGetValue(commandName.Value.ToString(), out var commandDefinition))
                     {
-                        response?.Forced();
-                        await SendAndCheckResponse(response);
+                        var asyncEnumerable = _commandLineInjector.InjectParametersAndRunAsync(commandLineResult!,
+                            commandDefinition, plugin, messageContext, serviceScope.ServiceProvider);
+                        await foreach (var response in asyncEnumerable)
+                        {
+                            response?.Forced();
+                            await SendAndCheckResponse(response);
+                            if (handled) break;
+                        }
                     }
-                }
-                else
-                {
-                    var asyncEnumerable = pluginInstance.OnMessageReceived(messageContext);
-                    await foreach (var response in asyncEnumerable)
+                    else
                     {
-                        await SendAndCheckResponse(response);
+                        var asyncEnumerable = pluginInstance.OnMessageReceived(messageContext);
+                        await foreach (var response in asyncEnumerable)
+                        {
+                            await SendAndCheckResponse(response);
+                            if (handled) break;
+                        }
+                    }
+
+                    await plugin.OnExecuted();
+                }
+                catch (Exception ex)
+                {
+                    if (ex is AsyncMessageTimeoutException)
+                    {
+                        _logger.LogWarning("Async message timeout: " + pluginDefinition.Metadata.Name);
+                    }
+                    else
+                    {
+                        _logger.LogError(ex, "Error Occurs while executing plugin: " + pluginDefinition.Metadata.Name +
+                                             ". User input: " + message);
                     }
                 }
 
-                await plugin.OnExecuted();
+                if (messageContext.MessageUserIdentity != null)
+                    _asyncMessageDict.TryRemove(messageContext.MessageUserIdentity, out _);
 
                 if (handled) break;
             }
@@ -565,10 +598,16 @@ namespace MilkiBotFramework.Plugining.Loading
             async Task SendAndCheckResponse(IResponse? response)
             {
                 if (response == null) return;
-                handled = response.IsHandled;
                 foreach (var (svcPlugin, _) in servicePlugins.OrderBy(k => k.pluginDefinition.Index))
                 {
                     await svcPlugin.BeforeSend(response);
+                }
+
+                handled = response.IsHandled;
+
+                if (!handled && response.AsyncMessage is AsyncMessage asyncMessage)
+                {
+                    _asyncMessageDict.TryAdd(messageContext.MessageUserIdentity, asyncMessage);
                 }
 
                 if (response.Message == null) return;

@@ -70,7 +70,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
                     messageIdentity = new MessageIdentity(parsedObj.UserId, MessageType.Private);
 
                     messageContext.RawMessage = parsedObj;
-                    messageContext.UserId = parsedObj.UserId;
+                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageIdentity, parsedObj.UserId);
                     messageContext.ReceivedTime = parsedObj.Time;
                     messageContext.MessageId = parsedObj.MessageId;
                     return true;
@@ -82,7 +82,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
                     messageIdentity = new MessageIdentity(parsedObj.GroupId, MessageType.Channel);
 
                     messageContext.RawMessage = parsedObj;
-                    messageContext.UserId = parsedObj.UserId;
+                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageIdentity, parsedObj.UserId);
                     messageContext.ReceivedTime = parsedObj.Time;
                     messageContext.MessageId = parsedObj.MessageId;
                     return true;
@@ -94,7 +94,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
                     messageIdentity = new MessageIdentity(parsedObj.GuildId, parsedObj.ChannelId, MessageType.Channel);
 
                     messageContext.RawMessage = parsedObj;
-                    messageContext.UserId = parsedObj.UserId;
+                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageIdentity, parsedObj.UserId);
                     messageContext.ReceivedTime = parsedObj.Time;
                     messageContext.MessageId = parsedObj.MessageId;
                     return true;

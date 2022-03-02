@@ -12,6 +12,7 @@ public interface IResponse
     bool IsHandled { get; set; }
     bool IsForced { get; set; }
     string? TryAt { get; set; }
+    IAsyncMessage? AsyncMessage { get; }
 
     public IResponse Handled()
     {

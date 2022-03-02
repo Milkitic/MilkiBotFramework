@@ -4,7 +4,7 @@
 TODO: 
 - [x] 基本框架功能
 - [x] 命令解析，自动识别负数，自动合并多个argument
-- [ ] 简易session实现 (Reply并out一个IAsyncMessage)
+- [x] 简易session实现 (Reply并out一个IAsyncMessage)
 - [ ] 事件插件
 - [ ] 插件对应AssemblyLoaderConext的Unload，并且支持基于Github issue的热更新
 - [x] 在尽可能保持轻量的前提下，实现基于asp.net core+kestrel的统一单点webserver，支持自定义添加对应的Contoller。

@@ -57,7 +57,13 @@ public class DemoPlugin : BasicPlugin
         var message = context.TextMessage;
         var richMessage = context.GetRichMessage();
 
-        yield return Reply("not this one!");
+        yield return Reply("Not this one! Wait for ur next message!", out var nextMessage);
+        var richMsg = (await nextMessage.GetNextMessageAsync(5)).GetRichMessage();
+        yield return Reply("OK! your first message is: " + richMsg);
+        await Task.Delay(1000);
+        yield return Reply(" Wait for ur next message!", out nextMessage);
+        richMsg = (await nextMessage.GetNextMessageAsync(5)).GetRichMessage();
+        yield return Reply("OK! your second message is: " + richMsg);
     }
 
     //protected override async Task OnInitialized() => _logger.LogDebug(nameof(OnInitialized));

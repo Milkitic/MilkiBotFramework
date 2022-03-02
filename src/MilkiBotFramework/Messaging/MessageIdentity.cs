@@ -1,9 +1,34 @@
-﻿using MilkiBotFramework.Dispatching;
+﻿using System;
 
 namespace MilkiBotFramework.Messaging;
 
 public sealed class MessageIdentity
 {
+    public override bool Equals(object? obj)
+    {
+        return ReferenceEquals(this, obj) || obj is MessageIdentity other && Equals(other);
+    }
+
+    private bool Equals(MessageIdentity other)
+    {
+        return Id == other.Id && SubId == other.SubId && MessageType == other.MessageType;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Id, SubId, (int)MessageType);
+    }
+
+    public static bool operator ==(MessageIdentity? left, MessageIdentity? right)
+    {
+        return Equals(left, right);
+    }
+
+    public static bool operator !=(MessageIdentity? left, MessageIdentity? right)
+    {
+        return !Equals(left, right);
+    }
+
     public MessageIdentity(string id, MessageType messageType)
     {
         Id = id;
@@ -17,9 +42,9 @@ public sealed class MessageIdentity
         MessageType = messageType;
     }
 
-    public string? Id { get; set; }
-    public string? SubId { get; set; }
-    public MessageType MessageType { get; set; }
+    public string? Id { get; }
+    public string? SubId { get; }
+    public MessageType MessageType { get; }
 
     private MessageIdentity(MessageType messageType)
     {

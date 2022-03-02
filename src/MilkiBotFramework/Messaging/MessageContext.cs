@@ -28,7 +28,7 @@ public class MessageContext
     public string RawTextMessage { get; internal set; } = null!;
 
     public string? MessageId { get; set; }
-    public string? UserId { get; set; }
+    //public string? UserId { get; set; }
     public string? SelfId { get; set; }
     public virtual string? TextMessage { get; set; }
 
@@ -36,6 +36,7 @@ public class MessageContext
     public ChannelInfo? ChannelInfo { get; set; }
     public PrivateInfo? PrivateInfo { get; set; }
 
+    public MessageUserIdentity? MessageUserIdentity { get; set; }
     public MessageIdentity? MessageIdentity { get; set; }
     public MessageAuthority Authority =>
         MessageIdentity?.MessageType switch
