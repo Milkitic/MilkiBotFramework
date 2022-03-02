@@ -22,27 +22,27 @@ public class CommandLineInjector
     }
 
     public async IAsyncEnumerable<IResponse?> InjectParameters(string input,
-        PluginCommandDefinition commandDefinition,
+        CommandInfo commandInfo,
         PluginBase obj,
         MessageContext messageContext,
         IServiceProvider serviceProvider)
     {
         var success = _commandLineAnalyzer.TryAnalyze(input, out var result, out var ex);
         if (!success) throw ex!;
-        await foreach (var runResult in InjectParametersAndRunAsync(result!, commandDefinition, obj, messageContext, serviceProvider))
+        await foreach (var runResult in InjectParametersAndRunAsync(result!, commandInfo, obj, messageContext, serviceProvider))
         {
             yield return runResult;
         }
     }
 
     public async IAsyncEnumerable<IResponse?> InjectParametersAndRunAsync(CommandLineResult commandLineResult,
-        PluginCommandDefinition commandDefinition,
+        CommandInfo commandInfo,
         PluginBase obj,
         MessageContext messageContext,
         IServiceProvider serviceProvider)
     {
-        var parameterDefinitions = commandDefinition.ParameterDefinitions;
-        var parameterCount = parameterDefinitions.Count;
+        var parameterInfos = commandInfo.ParameterInfos;
+        var parameterCount = parameterInfos.Count;
 
         var parameters = parameterCount == 0
             ? Array.Empty<object?>()
@@ -61,7 +61,7 @@ public class CommandLineInjector
         int argIndex = 0;
         for (var i = 0; i < parameterCount; i++)
         {
-            var paramDef = parameterDefinitions[i];
+            var paramDef = parameterInfos[i];
 
             if (paramDef.IsServiceArgument)
             {
@@ -83,7 +83,7 @@ public class CommandLineInjector
                     modelBind = true;
 
                     // model binding
-                    var model = GetBindingModel(paramDef.ParameterType, commandDefinition, options, commandLineResult.Arguments);
+                    var model = GetBindingModel(paramDef.ParameterType, commandInfo, options, commandLineResult.Arguments);
                     parameters[i] = model;
                 }
                 else
@@ -114,8 +114,8 @@ public class CommandLineInjector
 
         if (obj == null) throw new ArgumentNullException(nameof(obj));
 
-        var method = commandDefinition.MethodInfo/* obj.GetType().GetMethod(commandDefinition.MethodInfo)*/;
-        var retType = commandDefinition.CommandReturnType;
+        var method = commandInfo.MethodInfo/* obj.GetType().GetMethod(commandInfo.MethodInfo)*/;
+        var retType = commandInfo.CommandReturnType;
         switch (retType)
         {
             case CommandReturnType.Void:
@@ -166,40 +166,40 @@ public class CommandLineInjector
     }
 
     private object? GetBindingModel(Type parameterType,
-        PluginCommandDefinition commandDefinition,
+        CommandInfo commandInfo,
         Dictionary<string, ReadOnlyMemory<char>?> options,
         List<ReadOnlyMemory<char>> arguments)
     {
-        ModelBindingDefinition modelBindingDefinition;
-        if (commandDefinition.ModelBindingDefinition == null)
+        ModelBindingInfo modelBindingInfo;
+        if (commandInfo.ModelBindingInfo == null)
         {
             var props = parameterType
                 .GetProperties(BindingFlags.Instance | BindingFlags.Public)
                 .Where(k => k.SetMethod is { IsPublic: true });
-            var parameterDefinitions = new List<ParameterDefinition>();
+            var parameterInfos = new List<CommandParameterInfo>();
             foreach (var propertyInfo in props)
             {
                 var targetType = propertyInfo.PropertyType;
                 var attrs = propertyInfo.GetCustomAttributes(false);
-                var parameterDefinition = GetParameterDefinition(attrs, targetType, propertyInfo);
-                if (parameterDefinition != null) parameterDefinitions.Add(parameterDefinition);
+                var parameterInfo = GetParameterInfo(attrs, targetType, propertyInfo);
+                if (parameterInfo != null) parameterInfos.Add(parameterInfo);
             }
 
-            modelBindingDefinition = new ModelBindingDefinition
+            modelBindingInfo = new ModelBindingInfo
             {
                 TargetType = parameterType,
-                ParameterDefinitions = parameterDefinitions
+                ParameterInfos = parameterInfos
             };
-            commandDefinition.ModelBindingDefinition = modelBindingDefinition;
+            commandInfo.ModelBindingInfo = modelBindingInfo;
         }
         else
         {
-            modelBindingDefinition = commandDefinition.ModelBindingDefinition;
+            modelBindingInfo = commandInfo.ModelBindingInfo;
         }
 
         var instance = Activator.CreateInstance(parameterType);
         int argIndex = 0;
-        foreach (var paramDef in modelBindingDefinition.ParameterDefinitions)
+        foreach (var paramDef in modelBindingInfo.ParameterInfos)
         {
             if (paramDef.IsArgument)
             {
@@ -216,11 +216,11 @@ public class CommandLineInjector
         return instance;
     }
 
-    private ParameterDefinition? GetParameterDefinition(object[] attrs,
+    private CommandParameterInfo? GetParameterInfo(object[] attrs,
         Type targetType,
         PropertyInfo property)
     {
-        var parameterDefinition = new ParameterDefinition
+        var parameterInfo = new CommandParameterInfo
         {
             ParameterName = property.Name!,
             ParameterType = targetType,
@@ -232,30 +232,30 @@ public class CommandLineInjector
         {
             if (attr is OptionAttribute option)
             {
-                parameterDefinition.Abbr = option.Abbreviate;
-                parameterDefinition.DefaultValue = option.DefaultValue;
-                parameterDefinition.Name = option.Name;
-                parameterDefinition.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
+                parameterInfo.Abbr = option.Abbreviate;
+                parameterInfo.DefaultValue = option.DefaultValue;
+                parameterInfo.Name = option.Name;
+                parameterInfo.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
                 isReady = true;
             }
             else if (attr is ArgumentAttribute argument)
             {
-                parameterDefinition.DefaultValue = argument.DefaultValue;
-                parameterDefinition.IsArgument = true;
-                parameterDefinition.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
+                parameterInfo.DefaultValue = argument.DefaultValue;
+                parameterInfo.IsArgument = true;
+                parameterInfo.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
                 isReady = true;
             }
             else if (attr is DescriptionAttribute description)
             {
-                parameterDefinition.Description = description.Description;
-                //parameterDefinition.HelpAuthority = help.Authority;
+                parameterInfo.Description = description.Description;
+                //parameterInfo.HelpAuthority = help.Authority;
             }
         }
 
-        return isReady ? parameterDefinition : null;
+        return isReady ? parameterInfo : null;
     }
 
-    private static object? GetArgumentValue(IReadOnlyList<ReadOnlyMemory<char>> arguments, ParameterDefinition paramDef,
+    private static object? GetArgumentValue(IReadOnlyList<ReadOnlyMemory<char>> arguments, CommandParameterInfo paramDef,
         ref int argIndex)
     {
         object? argValue;
@@ -280,7 +280,7 @@ public class CommandLineInjector
     }
 
     private static object? GetOptionValue(IReadOnlyDictionary<string, ReadOnlyMemory<char>?> options,
-        ParameterDefinition paramDef)
+        CommandParameterInfo paramDef)
     {
         object? optionValue;
         if (options.TryGetValue(paramDef.Name, out var value))

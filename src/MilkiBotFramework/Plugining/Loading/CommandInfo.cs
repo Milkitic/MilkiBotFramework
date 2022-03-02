@@ -4,32 +4,32 @@ using System.Reflection;
 
 namespace MilkiBotFramework.Plugining.Loading
 {
-    public sealed class PluginCommandDefinition
+    public sealed class CommandInfo
     {
-        public PluginCommandDefinition(string command,
+        public CommandInfo(string command,
             string description,
             MethodInfo methodInfo,
             CommandReturnType commandReturnType,
-            IReadOnlyList<ParameterDefinition> parameterDefinitions)
+            IReadOnlyList<CommandParameterInfo> parameterInfos)
         {
             Command = command;
             Description = description;
             MethodInfo = methodInfo;
             CommandReturnType = commandReturnType;
-            ParameterDefinitions = parameterDefinitions;
+            ParameterInfos = parameterInfos;
         }
 
         public string Command { get; }
         public string Description { get; }
         public MethodInfo MethodInfo { get; }
         public CommandReturnType CommandReturnType { get; }
-        public IReadOnlyList<ParameterDefinition> ParameterDefinitions { get; }
-        public ModelBindingDefinition? ModelBindingDefinition { get; internal set; }
+        public IReadOnlyList<CommandParameterInfo> ParameterInfos { get; }
+        public ModelBindingInfo? ModelBindingInfo { get; internal set; }
     }
 
-    public class ModelBindingDefinition
+    public class ModelBindingInfo
     {
         public Type TargetType { get; init; }
-        public List<ParameterDefinition> ParameterDefinitions { get; init; }
+        public List<CommandParameterInfo> ParameterInfos { get; init; }
     }
 }

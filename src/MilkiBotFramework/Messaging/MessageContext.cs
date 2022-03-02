@@ -28,8 +28,6 @@ public class MessageContext
     public string RawTextMessage { get; internal set; } = null!;
 
     public string? MessageId { get; set; }
-    //public string? UserId { get; set; }
-    public string? SelfId { get; set; }
     public virtual string? TextMessage { get; set; }
 
     public MemberInfo? MemberInfo { get; set; }
@@ -48,8 +46,8 @@ public class MessageContext
 
     public DateTimeOffset ReceivedTime { get; set; }
 
-    public IReadOnlyList<PluginDefinition> ExecutedPlugins { get; } = new List<PluginDefinition>();
-    public List<PluginDefinition> NextPlugins { get; } = new();
+    public IReadOnlyList<PluginInfo> ExecutedPlugins { get; } = new List<PluginInfo>();
+    public List<PluginInfo> NextPlugins { get; } = new();
     public CommandLineResult? CommandLineResult { get; internal set; }
 
     public bool ValidateAuthority(MessageAuthority requiredAuthority)

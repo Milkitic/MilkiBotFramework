@@ -18,10 +18,10 @@ using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Plugining.Attributes;
 using MilkiBotFramework.Plugining.CommandLine;
+using MilkiBotFramework.Plugining.Loading;
 using MilkiBotFramework.Utils;
-using MemberInfo = MilkiBotFramework.ContactsManaging.Models.MemberInfo;
 
-namespace MilkiBotFramework.Plugining.Loading
+namespace MilkiBotFramework.Plugining
 {
     public class PluginManager
     {
@@ -38,7 +38,7 @@ namespace MilkiBotFramework.Plugining.Loading
 
         // sub directory per loader
         private readonly Dictionary<string, LoaderContext> _loaderContexts = new();
-        private readonly HashSet<PluginDefinition> _plugins = new();
+        private readonly HashSet<PluginInfo> _plugins = new();
         private readonly EventBus _eventBus;
 
         private readonly ConcurrentDictionary<MessageUserIdentity, AsyncMessage> _asyncMessageDict = new();
@@ -103,17 +103,17 @@ namespace MilkiBotFramework.Plugining.Loading
 
                 foreach (var assemblyContext in loaderContext.AssemblyContexts.Values)
                 {
-                    foreach (var pluginDefinition in assemblyContext.PluginDefinitions
+                    foreach (var pluginInfo in assemblyContext.PluginInfos
                                  .Where(o => o.Lifetime == PluginLifetime.Singleton))
                     {
                         try
                         {
-                            var instance = (PluginBase)serviceProvider.GetService(pluginDefinition.Type);
-                            InitializePlugin(instance, pluginDefinition);
+                            var instance = (PluginBase)serviceProvider.GetService(pluginInfo.Type);
+                            InitializePlugin(instance, pluginInfo);
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, "Error while initializing plugin " + pluginDefinition.Metadata.Name);
+                            _logger.LogError(ex, "Error while initializing plugin " + pluginInfo.Metadata.Name);
                         }
                     }
                 }
@@ -195,17 +195,17 @@ namespace MilkiBotFramework.Plugining.Loading
                             var typeFullName = typeResult.TypeFullName!;
                             var baseType = typeResult.BaseType!;
                             string typeName = "";
-                            PluginDefinition? definition = null;
+                            PluginInfo? pluginInfo = null;
                             try
                             {
                                 var type = asm.GetType(typeFullName);
                                 if (type == null) throw new Exception("Can't resolve type: " + typeFullName);
 
                                 typeName = type.Name;
-                                definition = GetPluginDefinition(type, baseType);
-                                var metadata = definition.Metadata;
+                                pluginInfo = GetPluginInfo(type, baseType);
+                                var metadata = pluginInfo.Metadata;
 
-                                switch (definition.Lifetime)
+                                switch (pluginInfo.Lifetime)
                                 {
                                     case PluginLifetime.Singleton:
                                         loaderContext.ServiceCollection.AddSingleton(type);
@@ -223,8 +223,8 @@ namespace MilkiBotFramework.Plugining.Loading
                                 _logger.LogInformation($"Add plugin \"{metadata.Name}\": " +
                                                        $"Author={string.Join(",", metadata.Authors)}; " +
                                                        $"Version={metadata.Version}; " +
-                                                       $"Lifetime={definition.Lifetime} " +
-                                                       $"({definition.BaseType.Name})");
+                                                       $"Lifetime={pluginInfo.Lifetime} " +
+                                                       $"({pluginInfo.BaseType.Name})");
                                 isValid = true;
                             }
                             catch (Exception ex)
@@ -232,10 +232,10 @@ namespace MilkiBotFramework.Plugining.Loading
                                 _logger.LogError(ex, "Error occurs while loading plugin: " + typeName);
                             }
 
-                            if (definition != null)
+                            if (pluginInfo != null)
                             {
-                                asmContext.PluginDefinitions.Add(definition);
-                                _plugins.Add(definition);
+                                asmContext.PluginInfos.Add(pluginInfo);
+                                _plugins.Add(pluginInfo);
                             }
                         }
 
@@ -314,14 +314,14 @@ namespace MilkiBotFramework.Plugining.Loading
             _loaderContexts.Add(loaderContext.Name, loaderContext);
         }
 
-        private static void InitializePlugin(PluginBase instance, PluginDefinition pluginDefinition)
+        private static void InitializePlugin(PluginBase instance, PluginInfo pluginInfo)
         {
-            instance.Metadata = pluginDefinition.Metadata;
+            instance.Metadata = pluginInfo.Metadata;
             instance.IsInitialized = true;
             instance.OnInitialized();
         }
 
-        private PluginDefinition GetPluginDefinition(Type type, Type baseType)
+        private PluginInfo GetPluginInfo(Type type, Type baseType)
         {
             var lifetime = type.GetCustomAttribute<PluginLifetimeAttribute>()?.Lifetime ??
                            throw new ArgumentNullException(nameof(PluginLifetimeAttribute.Lifetime),
@@ -339,7 +339,7 @@ namespace MilkiBotFramework.Plugining.Loading
             var metadata = new PluginMetadata(Guid.Parse(guid), name, description, version, authors);
 
             var methodSets = new HashSet<string>();
-            var commands = new Dictionary<string, PluginCommandDefinition>();
+            var commands = new Dictionary<string, CommandInfo>();
             foreach (var methodInfo in type.GetMethods())
             {
                 if (methodSets.Contains(methodInfo.Name))
@@ -353,14 +353,14 @@ namespace MilkiBotFramework.Plugining.Loading
                 var command = commandHandlerAttribute.Command ?? methodInfo.Name.ToLower();
                 var methodDescription = methodInfo.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
 
-                var parameterDefinitions = new List<ParameterDefinition>();
+                var parameterInfos = new List<CommandParameterInfo>();
                 var parameters = methodInfo.GetParameters();
                 foreach (var parameter in parameters)
                 {
                     var targetType = parameter.ParameterType;
                     var attrs = parameter.GetCustomAttributes(false);
-                    var parameterDefinition = GetParameterDefinition(attrs, targetType, parameter);
-                    parameterDefinitions.Add(parameterDefinition);
+                    var parameterInfo = GetParameterInfo(attrs, targetType, parameter);
+                    parameterInfos.Add(parameterInfo);
                 }
 
                 CommandReturnType returnType;
@@ -397,27 +397,27 @@ namespace MilkiBotFramework.Plugining.Loading
                         returnType = CommandReturnType.Dynamic;
                 }
 
-                var commandDefinition = new PluginCommandDefinition(command, methodDescription, methodInfo, returnType,
-                    parameterDefinitions.ToArray());
+                var commandInfo = new CommandInfo(command, methodDescription, methodInfo, returnType,
+                    parameterInfos.ToArray());
 
-                commands.Add(command, commandDefinition);
+                commands.Add(command, commandInfo);
             }
 
-            return new PluginDefinition
+            return new PluginInfo
             {
                 Metadata = metadata,
                 BaseType = baseType,
                 Type = type,
                 Lifetime = lifetime,
                 Index = index,
-                Commands = new ReadOnlyDictionary<string, PluginCommandDefinition>(commands)
+                Commands = new ReadOnlyDictionary<string, CommandInfo>(commands)
             };
         }
 
-        private ParameterDefinition GetParameterDefinition(object[] attrs, Type targetType,
+        private CommandParameterInfo GetParameterInfo(object[] attrs, Type targetType,
             ParameterInfo parameter)
         {
-            var parameterDefinition = new ParameterDefinition
+            var parameterInfo = new CommandParameterInfo
             {
                 ParameterName = parameter.Name!,
                 ParameterType = targetType,
@@ -428,38 +428,38 @@ namespace MilkiBotFramework.Plugining.Loading
             {
                 if (attr is OptionAttribute option)
                 {
-                    parameterDefinition.Abbr = option.Abbreviate;
-                    parameterDefinition.DefaultValue = parameter.DefaultValue == DBNull.Value
+                    parameterInfo.Abbr = option.Abbreviate;
+                    parameterInfo.DefaultValue = parameter.DefaultValue == DBNull.Value
                         ? option.DefaultValue
                         : parameter.DefaultValue;
-                    parameterDefinition.Name = option.Name;
-                    parameterDefinition.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
+                    parameterInfo.Name = option.Name;
+                    parameterInfo.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
                     isReady = true;
                 }
                 else if (attr is ArgumentAttribute argument)
                 {
-                    parameterDefinition.DefaultValue = parameter.DefaultValue == DBNull.Value
+                    parameterInfo.DefaultValue = parameter.DefaultValue == DBNull.Value
                         ? argument.DefaultValue
                         : parameter.DefaultValue;
 
-                    parameterDefinition.IsArgument = true;
-                    parameterDefinition.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
+                    parameterInfo.IsArgument = true;
+                    parameterInfo.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
                     isReady = true;
                 }
                 else if (attr is DescriptionAttribute description)
                 {
-                    parameterDefinition.Description = description.Description;
-                    //parameterDefinition.HelpAuthority = help.Authority;
+                    parameterInfo.Description = description.Description;
+                    //parameterInfo.HelpAuthority = help.Authority;
                 }
             }
 
             if (!isReady)
             {
-                parameterDefinition.IsServiceArgument = true;
-                parameterDefinition.IsArgument = true;
+                parameterInfo.IsServiceArgument = true;
+                parameterInfo.IsArgument = true;
             }
 
-            return parameterDefinition;
+            return parameterInfo;
         }
 
         private async Task HandleMessage(MessageContext messageContext)
@@ -474,9 +474,9 @@ namespace MilkiBotFramework.Plugining.Loading
                 return;
             }
 
-            List<(IMessagePlugin plugin, bool dispose, PluginDefinition pluginDefinition, IServiceScope serviceScope)> plugins =
+            List<(IMessagePlugin plugin, bool dispose, PluginInfo pluginInfo, IServiceScope serviceScope)> plugins =
                 new();
-            List<(ServicePlugin plugin, PluginDefinition pluginDefinition)> servicePlugins = new();
+            List<(ServicePlugin plugin, PluginInfo pluginInfo)> servicePlugins = new();
             var scopes = new HashSet<IServiceScope>();
 
             foreach (var loaderContext in _loaderContexts.Values)
@@ -485,36 +485,36 @@ namespace MilkiBotFramework.Plugining.Loading
                 scopes.Add(serviceScope);
                 foreach (var assemblyContext in loaderContext.AssemblyContexts.Values)
                 {
-                    foreach (var pluginDefinition in assemblyContext.PluginDefinitions)
+                    foreach (var pluginInfo in assemblyContext.PluginInfos)
                     {
-                        var pluginInstance = serviceScope.ServiceProvider.GetService(pluginDefinition.Type)!;
-                        if (pluginDefinition.BaseType != StaticTypes.BasicPlugin &&
-                            pluginDefinition.BaseType != StaticTypes.BasicPlugin_)
+                        var pluginInstance = serviceScope.ServiceProvider.GetService(pluginInfo.Type)!;
+                        if (pluginInfo.BaseType != StaticTypes.BasicPlugin &&
+                            pluginInfo.BaseType != StaticTypes.BasicPlugin_)
                         {
-                            if (pluginDefinition.BaseType == StaticTypes.ServicePlugin)
-                                servicePlugins.Add(((ServicePlugin)pluginInstance, pluginDefinition));
+                            if (pluginInfo.BaseType == StaticTypes.ServicePlugin)
+                                servicePlugins.Add(((ServicePlugin)pluginInstance, pluginInfo));
                             continue;
                         }
 
                         var messagePlugin = (IMessagePlugin)pluginInstance;
-                        if (pluginDefinition.Lifetime != PluginLifetime.Singleton)
+                        if (pluginInfo.Lifetime != PluginLifetime.Singleton)
                         {
-                            InitializePlugin((PluginBase)pluginInstance, pluginDefinition);
-                            plugins.Add((messagePlugin, true, pluginDefinition, serviceScope));
+                            InitializePlugin((PluginBase)pluginInstance, pluginInfo);
+                            plugins.Add((messagePlugin, true, pluginInfo, serviceScope));
                         }
                         else
                         {
-                            plugins.Add((messagePlugin, false, pluginDefinition, serviceScope));
+                            plugins.Add((messagePlugin, false, pluginInfo, serviceScope));
                         }
                     }
                 }
             }
 
-            var nextPlugins = (List<PluginDefinition>)messageContext.NextPlugins;
-            var executedPlugins = (List<PluginDefinition>)messageContext.ExecutedPlugins;
+            var nextPlugins = (List<PluginInfo>)messageContext.NextPlugins;
+            var executedPlugins = (List<PluginInfo>)messageContext.ExecutedPlugins;
 
-            var orderedArray = plugins.OrderBy(k => k.pluginDefinition.Index).ToArray();
-            nextPlugins.AddRange(orderedArray.Select(k => k.pluginDefinition));
+            var orderedArray = plugins.OrderBy(k => k.pluginInfo.Index).ToArray();
+            nextPlugins.AddRange(orderedArray.Select(k => k.pluginInfo));
 
             var message = messageContext.TextMessage;
             var success = _commandLineAnalyzer.TryAnalyze(message, out var commandLineResult, out var exception);
@@ -528,23 +528,23 @@ namespace MilkiBotFramework.Plugining.Loading
                 _logger.LogWarning("Error occurs while analyzing command: " + (exception?.Message ?? "Unknown reason"));
 
             bool handled = false;
-            foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in orderedArray)
+            foreach (var (pluginInstance, dispose, pluginInfo, serviceScope) in orderedArray)
             {
                 var plugin = (PluginBase)pluginInstance;
-                if (!nextPlugins.Contains(pluginDefinition))
+                if (!nextPlugins.Contains(pluginInfo))
                     continue;
 
-                nextPlugins.Remove(pluginDefinition);
-                executedPlugins.Add(pluginDefinition);
+                nextPlugins.Remove(pluginInfo);
+                executedPlugins.Add(pluginInfo);
 
                 try
                 {
                     await plugin.OnExecuting();
                     if (commandName != null &&
-                        pluginDefinition.Commands.TryGetValue(commandName.Value.ToString(), out var commandDefinition))
+                        pluginInfo.Commands.TryGetValue(commandName.Value.ToString(), out var commandInfo))
                     {
                         var asyncEnumerable = _commandLineInjector.InjectParametersAndRunAsync(commandLineResult!,
-                            commandDefinition, plugin, messageContext, serviceScope.ServiceProvider);
+                            commandInfo, plugin, messageContext, serviceScope.ServiceProvider);
                         await foreach (var response in asyncEnumerable)
                         {
                             response?.Forced();
@@ -568,11 +568,11 @@ namespace MilkiBotFramework.Plugining.Loading
                 {
                     if (ex is AsyncMessageTimeoutException e)
                     {
-                        _logger.LogWarning(e.Message + ": " + pluginDefinition.Metadata.Name);
+                        _logger.LogWarning(e.Message + ": " + pluginInfo.Metadata.Name);
                     }
                     else
                     {
-                        _logger.LogError(ex, "Error Occurs while executing plugin: " + pluginDefinition.Metadata.Name +
+                        _logger.LogError(ex, "Error Occurs while executing plugin: " + pluginInfo.Metadata.Name +
                                              ". User input: " + message);
                     }
                 }
@@ -583,7 +583,7 @@ namespace MilkiBotFramework.Plugining.Loading
                 if (handled) break;
             }
 
-            foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in orderedArray)
+            foreach (var (pluginInstance, dispose, pluginInfo, serviceScope) in orderedArray)
             {
                 var plugin = (PluginBase)pluginInstance;
                 if (dispose)
@@ -598,7 +598,7 @@ namespace MilkiBotFramework.Plugining.Loading
             async Task SendAndCheckResponse(IResponse? response)
             {
                 if (response == null) return;
-                foreach (var (svcPlugin, _) in servicePlugins.OrderBy(k => k.pluginDefinition.Index))
+                foreach (var (svcPlugin, _) in servicePlugins.OrderBy(k => k.pluginInfo.Index))
                 {
                     await svcPlugin.BeforeSend(response);
                 }

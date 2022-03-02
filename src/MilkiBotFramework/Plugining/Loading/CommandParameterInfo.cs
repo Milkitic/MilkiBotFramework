@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace MilkiBotFramework.Plugining.Loading;
 
-public sealed class ParameterDefinition
+public sealed class CommandParameterInfo
 {
     public string Name { get; internal set; }
     public string ParameterName { get; internal set; }

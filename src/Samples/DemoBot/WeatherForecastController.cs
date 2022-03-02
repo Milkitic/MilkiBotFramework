@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Aspnetcore;
+using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Loading;
 
 namespace DemoBot

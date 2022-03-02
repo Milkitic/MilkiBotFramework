@@ -2,9 +2,9 @@
 
 namespace MilkiBotFramework.Plugining.Loading;
 
-internal class PluginDefinitionIndexComparer : IComparer<PluginDefinition>
+internal class PluginInfoIndexComparer : IComparer<PluginInfo>
 {
-    public int Compare(PluginDefinition? x, PluginDefinition? y)
+    public int Compare(PluginInfo? x, PluginInfo? y)
     {
         if (ReferenceEquals(x, y)) return 0;
         if (ReferenceEquals(null, y)) return 1;

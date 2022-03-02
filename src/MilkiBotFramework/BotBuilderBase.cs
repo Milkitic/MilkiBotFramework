@@ -6,6 +6,7 @@ using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
+using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Plugining.Loading;
 using MilkiBotFramework.Tasking;

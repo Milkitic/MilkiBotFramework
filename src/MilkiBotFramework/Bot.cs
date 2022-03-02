@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
+using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Loading;
 using MilkiBotFramework.Tasking;
 
