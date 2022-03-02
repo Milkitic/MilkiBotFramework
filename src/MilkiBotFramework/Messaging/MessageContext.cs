@@ -47,7 +47,7 @@ public class MessageContext
     public DateTimeOffset ReceivedTime { get; set; }
 
     public IReadOnlyList<PluginInfo> ExecutedPlugins { get; } = new List<PluginInfo>();
-    public List<PluginInfo> NextPlugins { get; } = new();
+    public List<PluginInfo> NextPlugins { get; internal set; } 
     public CommandLineResult? CommandLineResult { get; internal set; }
 
     public bool ValidateAuthority(MessageAuthority requiredAuthority)
