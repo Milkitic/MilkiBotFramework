@@ -67,13 +67,8 @@ public partial class PluginManager
                     }
                 }
 
-                if (failList.Count <= 0) continue;
+                if (failList.Count == 0) continue;
                 foreach (var pluginInfo in failList) assemblyContext.PluginInfos.Remove(pluginInfo);
-
-                if (assemblyContext.PluginInfos.Count == 0)
-                {
-
-                }
             }
         }
 
@@ -89,7 +84,7 @@ public partial class PluginManager
         var isRuntimeContext = contextName == null;
 
         var ctx = !isRuntimeContext
-            ? new AssemblyLoadContext(contextName, true)
+            ? new AssemblyLoadContext(contextName) // No need to hot unload.
             : AssemblyLoadContext.Default;
         var loaderContext = new LoaderContext
         {
