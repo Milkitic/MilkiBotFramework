@@ -10,5 +10,5 @@ public sealed class PluginDefinition
     public Type BaseType { get; init; }
     public PluginLifetime Lifetime { get; init; }
     public IReadOnlyDictionary<string, PluginCommandDefinition> Commands { get; init; }
-    public int Index { get; set; }
+    public int Index { get; init; }
 }

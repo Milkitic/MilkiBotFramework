@@ -8,7 +8,7 @@ namespace MilkiBotFramework.Plugining.Loading
     {
         public PluginCommandDefinition(string command,
             string description,
-            MethodInfo methodInfo, 
+            MethodInfo methodInfo,
             CommandReturnType commandReturnType,
             IReadOnlyList<ParameterDefinition> parameterDefinitions)
         {
@@ -22,9 +22,9 @@ namespace MilkiBotFramework.Plugining.Loading
         public string Command { get; }
         public string Description { get; }
         public MethodInfo MethodInfo { get; }
-        public CommandReturnType CommandReturnType { get; set; }
+        public CommandReturnType CommandReturnType { get; }
         public IReadOnlyList<ParameterDefinition> ParameterDefinitions { get; }
-        public ModelBindingDefinition? ModelBindingDefinition { get; set; }
+        public ModelBindingDefinition? ModelBindingDefinition { get; internal set; }
     }
 
     public class ModelBindingDefinition

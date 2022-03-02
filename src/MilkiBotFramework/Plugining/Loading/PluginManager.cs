@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -394,7 +395,7 @@ namespace MilkiBotFramework.Plugining.Loading
                 }
 
                 var commandDefinition = new PluginCommandDefinition(command, methodDescription, methodInfo, returnType,
-                    parameterDefinitions);
+                    parameterDefinitions.ToArray());
 
                 commands.Add(command, commandDefinition);
             }
@@ -406,7 +407,7 @@ namespace MilkiBotFramework.Plugining.Loading
                 Type = type,
                 Lifetime = lifetime,
                 Index = index,
-                Commands = commands
+                Commands = new ReadOnlyDictionary<string, PluginCommandDefinition>(commands)
             };
         }
 

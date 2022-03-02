@@ -17,5 +17,5 @@ public sealed class ParameterDefinition
 
     public object? DefaultValue { get; internal set; }
     public string? Description { get; internal set; }
-    public bool IsServiceArgument { get; set; }
+    public bool IsServiceArgument { get; internal set; }
 }
