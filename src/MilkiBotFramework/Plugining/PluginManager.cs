@@ -232,7 +232,7 @@ public partial class PluginManager
 
             if (!handled && response.AsyncMessage is AsyncMessage asyncMessage)
             {
-                _asyncMessageDict.TryAdd(messageContext.MessageUserIdentity, asyncMessage);
+                _asyncMessageDict.AddOrUpdate(messageContext.MessageUserIdentity, asyncMessage, (_, _) => asyncMessage);
             }
 
             if (response.Message == null) return;
