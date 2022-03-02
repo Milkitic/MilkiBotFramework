@@ -2,16 +2,17 @@
 using System.Threading.Tasks;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
-using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.ContactsManaging;
 
 public interface IContactsManager
 {
     void Initialize();
-    Task<SelfInfoResult> TryGetSelfInfo();
-    Task<ChannelInfoResult> TryGetChannelInfoByMessageContext(MessageIdentity messageIdentity, string userId);
-    Task<PrivateInfoResult> TryGetPrivateInfoByMessageContext(MessageIdentity messageIdentity);
-    IEnumerable<ChannelInfo> GetAllMainChannels();
+    Task<SelfInfoResult> TryGetOrUpdateSelfInfo();
+    Task<MemberInfoResult> TryGetOrAddMemberInfo(string channelId, string userId, string? subChannelId = null);
+    Task<ChannelInfoResult> TryGetOrAddChannelInfo(string channelId, string? subChannelId = null);
+    Task<PrivateInfoResult> TryGetOrAddPrivateInfo(string userId);
+    IEnumerable<ChannelInfo> GetAllChannels();
+    IEnumerable<MemberInfo> GetAllMembers(string channelId, string? subChannelId = null);
     IEnumerable<PrivateInfo> GetAllPrivates();
 }

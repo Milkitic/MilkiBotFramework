@@ -1,7 +1,9 @@
-﻿namespace MilkiBotFramework.ContactsManaging.Results;
+﻿using MilkiBotFramework.ContactsManaging.Models;
+
+namespace MilkiBotFramework.ContactsManaging.Results;
 
 public sealed class SelfInfoResult : ResultInfoBase
 {
-    public string UserId { get; init; }
-    public string? Nickname { get; init; }
+    public SelfInfo? SelfInfo { get; init; }
+    public static SelfInfoResult Fail { get; } = new();
 }

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
@@ -21,6 +20,8 @@ public abstract class ContactsManagerBase : IContactsManager
     private readonly ILogger _logger;
     private readonly EventBus _eventBus;
     private IDispatcher? _dispatcher;
+
+    protected SelfInfo? SelfInfo;
 
     protected readonly ConcurrentDictionary<string, ConcurrentDictionary<string, ChannelInfo>> SubChannelMapping = new();
     protected readonly ConcurrentDictionary<string, ChannelInfo> ChannelMapping = new();
@@ -50,103 +51,81 @@ public abstract class ContactsManagerBase : IContactsManager
         _logger.LogInformation("Refreshed!");
     }
 
-    public abstract Task<SelfInfoResult> TryGetSelfInfo();
+    public virtual Task<SelfInfoResult> TryGetOrUpdateSelfInfo()
+    {
+        if (SelfInfo == null) return Task.FromResult(SelfInfoResult.Fail);
+        return Task.FromResult(new SelfInfoResult { IsSuccess = true, SelfInfo = SelfInfo });
+    }
 
-    // todo: not a good design for public
-    public bool TryGetMemberInfo(string channelId, string userId, [NotNullWhen(true)] out MemberInfo? memberInfo, string? subChannelId = null)
+    public virtual Task<MemberInfoResult> TryGetOrAddMemberInfo(string channelId, string userId, string? subChannelId = null)
     {
         if (subChannelId == null)
         {
             if (ChannelMapping.TryGetValue(channelId, out var channelInfo) &&
-                channelInfo.Members.TryGetValue(userId, out memberInfo))
+                channelInfo.Members.TryGetValue(userId, out var memberInfo))
             {
-                return true;
+                return Task.FromResult(new MemberInfoResult
+                {
+                    IsSuccess = true,
+                    MemberInfo = memberInfo
+                });
             }
         }
         else
         {
             if (SubChannelMapping.TryGetValue(channelId, out var subChannels) &&
                 subChannels.TryGetValue(channelId, out var channelInfo) &&
-                channelInfo.Members.TryGetValue(userId, out memberInfo))
+                channelInfo.Members.TryGetValue(userId, out var memberInfo))
             {
-                return true;
+                return Task.FromResult(new MemberInfoResult
+                {
+                    IsSuccess = true,
+                    MemberInfo = memberInfo
+                });
             }
         }
 
-        memberInfo = null;
-        return false;
+        return Task.FromResult(MemberInfoResult.Fail);
     }
 
-    // todo: not a good design for public
-    public bool TryGetChannelInfo(string channelId,
-        [NotNullWhen(true)] out ChannelInfo? channelInfo,
-        string? subChannelId = null)
+    public virtual Task<ChannelInfoResult> TryGetOrAddChannelInfo(string channelId, string? subChannelId = null)
     {
-        if (subChannelId == null)
-            return ChannelMapping.TryGetValue(channelId, out channelInfo);
-
-        channelInfo = null;
-        return SubChannelMapping.TryGetValue(channelId, out var dict) &&
-               dict.TryGetValue(subChannelId, out channelInfo);
+        return GetChannelOrSubChannel(channelId, subChannelId, out var channelInfo)
+            ? Task.FromResult(new ChannelInfoResult
+            {
+                IsSuccess = true,
+                ChannelInfo = channelInfo
+            })
+            : Task.FromResult(ChannelInfoResult.Fail);
     }
 
-    // todo: not a good design for public
-    public bool TryGetPrivateInfo(string userId, [NotNullWhen(true)] out PrivateInfo? privateInfo)
+    public virtual Task<PrivateInfoResult> TryGetOrAddPrivateInfo(string userId)
     {
-        return PrivateMapping.TryGetValue(userId, out privateInfo);
-    }
-
-    public void AddMember(string channelId, MemberInfo member)
-    {
-        if (ChannelMapping.TryGetValue(channelId, out var channelInfo))
+        if (PrivateMapping.TryGetValue(userId, out var privateInfo))
         {
-            channelInfo.Members.AddOrUpdate(member.UserId, member, (id, instance) => member);
+            return Task.FromResult(new PrivateInfoResult
+            {
+                IsSuccess = true,
+                PrivateInfo = privateInfo
+            });
         }
-    }
 
-    public void RemoveMember(string channelId, string userId)
-    {
-    }
-
-    public void AddChannel(ChannelInfo channelInfo)
-    {
-        ChannelMapping.AddOrUpdate(channelInfo.ChannelId, channelInfo, (id, instance) => channelInfo);
-    }
-
-    public void RemoveChannel(string channelId)
-    {
-    }
-
-    public void AddSubChannel(string channelId, ChannelInfo subChannelInfo)
-    {
-    }
-
-    public void RemoveSubChannel(string channelId, string subChannelId)
-    {
-    }
-
-    public void AddPrivate(PrivateInfo privateInfo)
-    {
-        PrivateMapping.AddOrUpdate(privateInfo.UserId, privateInfo, (id, instance) => privateInfo);
-    }
-
-    public void RemovePrivate(string userId)
-    {
+        return Task.FromResult(PrivateInfoResult.Fail);
     }
 
     protected virtual Task<ContractUpdateResult> UpdateMemberIfPossible(MessageContext messageContext)
     {
-        return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
+        return Task.FromResult(ContractUpdateResult.Fail);
     }
 
     protected virtual Task<ContractUpdateResult> UpdateChannelsIfPossible(MessageContext messageContext)
     {
-        return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
+        return Task.FromResult(ContractUpdateResult.Fail);
     }
 
     protected virtual Task<ContractUpdateResult> UpdatePrivatesIfPossible(MessageContext messageContext)
     {
-        return Task.FromResult(new ContractUpdateResult(false, null, ContractUpdateType.Unspecified));
+        return Task.FromResult(ContractUpdateResult.Fail);
     }
 
     private async Task OnEventReceived(DispatchMessageEvent e)
@@ -175,15 +154,42 @@ public abstract class ContactsManagerBase : IContactsManager
         }
     }
 
-    public abstract Task<ChannelInfoResult> TryGetChannelInfoByMessageContext(MessageIdentity messageIdentity, string userId);
-    public abstract Task<PrivateInfoResult> TryGetPrivateInfoByMessageContext(MessageIdentity messageIdentity);
-    public IEnumerable<ChannelInfo> GetAllMainChannels()
+    public IEnumerable<ChannelInfo> GetAllChannels()
     {
         return ChannelMapping.Values;
+    }
+
+    public IEnumerable<MemberInfo> GetAllMembers(string channelId, string? subChannelId = null)
+    {
+        return GetChannelOrSubChannel(channelId, subChannelId, out var channelInfo)
+            ? channelInfo.Members.Values
+            : Array.Empty<MemberInfo>();
     }
 
     public IEnumerable<PrivateInfo> GetAllPrivates()
     {
         return PrivateMapping.Values;
+    }
+
+    private bool GetChannelOrSubChannel(string channelId, string? subChannelId, [NotNullWhen(true)] out ChannelInfo? channelInfo)
+    {
+        if (subChannelId == null)
+        {
+            if (ChannelMapping.TryGetValue(channelId, out channelInfo))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            if (SubChannelMapping.TryGetValue(channelId, out var dict) &&
+                dict.TryGetValue(subChannelId, out channelInfo))
+            {
+                return true;
+            }
+        }
+
+        channelInfo = null;
+        return false;
     }
 }

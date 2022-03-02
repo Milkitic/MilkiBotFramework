@@ -235,8 +235,7 @@ public partial class PluginManager
             var ns = serviceDescriptor.ServiceType.Namespace;
             if (serviceDescriptor.ImplementationType == serviceDescriptor.ServiceType)
             {
-                if (/*ns.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal) || */
-                    ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
+                if (ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
                     ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
                     continue;
                 var instance = _serviceProvider.GetService(serviceDescriptor.ImplementationType);
@@ -247,8 +246,7 @@ public partial class PluginManager
             }
             else
             {
-                if (/*ns.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal) ||*/
-                    ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
+                if (ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
                     ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
                     continue;
                 var instance = _serviceProvider.GetService(serviceDescriptor.ServiceType);

@@ -73,20 +73,27 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         switch (messageIdentity!.MessageType)
         {
             case MessageType.Private:
-                var privateResult = await _contactsManager.TryGetPrivateInfoByMessageContext(messageIdentity);
+                if (messageIdentity.Id == null) throw new ArgumentNullException(nameof(messageIdentity.Id));
+                var privateResult = await _contactsManager.TryGetOrAddPrivateInfo(messageIdentity.Id);
                 if (privateResult.IsSuccess)
-                {
                     messageContext.PrivateInfo = privateResult.PrivateInfo;
-                }
+                else
+                    _logger.LogWarning("Failed to fill PrivateInfo automatically. This may leads to further plugin errors.");
                 break;
             case MessageType.Channel:
-                var channelResult =
-                    await _contactsManager.TryGetChannelInfoByMessageContext(messageIdentity, messageContext.MessageUserIdentity!.UserId);
+                if (messageIdentity.Id == null) throw new ArgumentNullException(nameof(MessageIdentity.Id));
+                var userId = messageContext.MessageUserIdentity?.UserId;
+                if (userId == null) throw new ArgumentNullException(nameof(MessageUserIdentity.UserId));
+                var channelResult = await _contactsManager.TryGetOrAddChannelInfo(messageIdentity.Id, messageIdentity.SubId);
+                var memberResult = await _contactsManager.TryGetOrAddMemberInfo(messageIdentity.Id, userId);
                 if (channelResult.IsSuccess)
-                {
                     messageContext.ChannelInfo = channelResult.ChannelInfo;
-                    messageContext.MemberInfo = channelResult.MemberInfo;
-                }
+                else
+                    _logger.LogWarning("Failed to ChannelInfo automatically. This may leads to further plugin errors.");
+                if (memberResult.IsSuccess)
+                    messageContext.MemberInfo = memberResult.MemberInfo;
+                else
+                    _logger.LogWarning("Failed to MemberInfo automatically. This may leads to further plugin errors.");
                 break;
             case MessageType.Notice:
                 break;
@@ -97,7 +104,6 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         }
 
         await _eventBus.PublishAsync(new DispatchMessageEvent(messageContext, messageIdentity.MessageType));
-        //_logger.LogDebug($"Received data: \r\n{messageContext}");
     }
 
     protected abstract bool TrySetTextMessage(TMessageContext messageContext);

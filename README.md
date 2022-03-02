@@ -5,14 +5,14 @@ TODO:
 - [x] 基本框架功能
 - [x] 命令解析，自动识别负数，自动合并多个argument
 - [x] 简易session实现 (Reply并out一个IAsyncMessage)
-- [ ] 事件插件
-- [ ] 插件对应AssemblyLoaderConext的Unload，并且支持基于Github issue的热更新
+- [x] 事件插件
 - [x] 在尽可能保持轻量的前提下，实现基于asp.net core+kestrel的统一单点webserver，支持自定义添加对应的Contoller。
 - [x] 将现有static HttpHelper纳入生命周期管理内
 - [x] 为了支持插件的管理，需要在context内注入相关信息
-- [ ] 插件命令的权限(考虑其他插件要正确读取声明的权限)
-- [ ] 联系人相关功能完善（包括go-cq实现）
-- [ ] 插件的配置设置、数据库读写、资源分配的管理
 - [x] 插件应实现对于即将发送的消息过滤与控制（允许强制发送）
-- [ ] 部分绘制图像共享功能 (包含Maui/WPF绘制框架)
+- [ ] 联系人相关功能完善（包括go-cq实现）
+- [ ] 插件命令的权限(考虑其他插件要正确读取声明的权限)
+- [ ] 插件的配置设置、数据库读写、资源分配的管理
 - [ ] 支持reverse-ws
+- [ ] 部分绘制图像共享功能 (包含Maui/WPF绘制框架)
+- [ ] 支持基于Github issue的热更新
