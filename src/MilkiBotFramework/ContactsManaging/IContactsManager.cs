@@ -7,7 +7,7 @@ namespace MilkiBotFramework.ContactsManaging;
 
 public interface IContactsManager
 {
-    void Initialize();
+    void InitializeTasks();
     Task<SelfInfoResult> TryGetOrUpdateSelfInfo();
     Task<MemberInfoResult> TryGetOrAddMemberInfo(string channelId, string userId, string? subChannelId = null);
     Task<ChannelInfoResult> TryGetOrAddChannelInfo(string channelId, string? subChannelId = null);

@@ -31,6 +31,6 @@ namespace MilkiBotFramework.Tasking
         /// <summary>
         /// 执行操作回调
         /// </summary>
-        public TaskExecutionHandler Handler { get; set; }
+        public TaskExecutionHandler? Handler { get; set; }
     }
 }

@@ -38,17 +38,12 @@ public abstract class ContactsManagerBase : IContactsManager
         _eventBus.Subscribe<DispatchMessageEvent>(OnEventReceived);
     }
 
-    public void Initialize()
+    public void InitializeTasks()
     {
         _botTaskScheduler.AddTask("RefreshContractsTask", builder => builder
             .ByInterval(TimeSpan.FromMinutes(5))
             .AtStartup()
             .Do(RefreshContracts));
-    }
-
-    private void RefreshContracts(TaskContext context, CancellationToken token)
-    {
-        _logger.LogInformation("Refreshed!");
     }
 
     public virtual Task<SelfInfoResult> TryGetOrUpdateSelfInfo()
@@ -113,47 +108,6 @@ public abstract class ContactsManagerBase : IContactsManager
         return Task.FromResult(PrivateInfoResult.Fail);
     }
 
-    protected virtual Task<ContractUpdateResult> UpdateMemberIfPossible(MessageContext messageContext)
-    {
-        return Task.FromResult(ContractUpdateResult.Fail);
-    }
-
-    protected virtual Task<ContractUpdateResult> UpdateChannelsIfPossible(MessageContext messageContext)
-    {
-        return Task.FromResult(ContractUpdateResult.Fail);
-    }
-
-    protected virtual Task<ContractUpdateResult> UpdatePrivatesIfPossible(MessageContext messageContext)
-    {
-        return Task.FromResult(ContractUpdateResult.Fail);
-    }
-
-    private async Task OnEventReceived(DispatchMessageEvent e)
-    {
-        if (e.MessageType != MessageType.Notice) return;
-
-        var messageContext = e.MessageContext;
-        var updateResult = await UpdateMemberIfPossible(messageContext);
-        if (updateResult.IsSuccess)
-        {
-            _logger.LogInformation("Member " + updateResult.ContractUpdateType + ": " + updateResult.Id);
-            return;
-        }
-
-        updateResult = await UpdateChannelsIfPossible(messageContext);
-        if (updateResult.IsSuccess)
-        {
-            _logger.LogInformation("Channel " + updateResult.ContractUpdateType + ": " + updateResult.Id);
-            return;
-        }
-
-        updateResult = await UpdatePrivatesIfPossible(messageContext);
-        if (updateResult.IsSuccess)
-        {
-            _logger.LogInformation("Private " + updateResult.ContractUpdateType + ": " + updateResult.Id);
-        }
-    }
-
     public IEnumerable<ChannelInfo> GetAllChannels()
     {
         return ChannelMapping.Values;
@@ -169,6 +123,70 @@ public abstract class ContactsManagerBase : IContactsManager
     public IEnumerable<PrivateInfo> GetAllPrivates()
     {
         return PrivateMapping.Values;
+    }
+
+    protected abstract bool GetContractUpdateInfo(MessageContext messageContext, out ContractUpdateInfo? updateInfo);
+
+    protected abstract void GetContractsCore(
+        out Dictionary<ChannelInfo, List<MemberInfo>> channels,
+        out Dictionary<ChannelInfo, List<MemberInfo>> subChannels,
+        out List<PrivateInfo> privates);
+
+    private void OnEventReceived(DispatchMessageEvent e)
+    {
+        if (e.MessageType != MessageType.Notice) return;
+
+        var messageContext = e.MessageContext;
+        var success = GetContractUpdateInfo(messageContext, out var contractUpdateInfo);
+        if (!success) return;
+
+        switch (contractUpdateInfo!.ContractUpdateRole)
+        {
+            case ContractUpdateRole.Channel:
+                TryUpdateChannel(contractUpdateInfo);
+                break;
+            case ContractUpdateRole.SubChannel:
+                TryUpdateSubChannel(contractUpdateInfo);
+                break;
+            case ContractUpdateRole.Member:
+                TryUpdateMember(contractUpdateInfo);
+                break;
+            case ContractUpdateRole.Private:
+                TryUpdatePrivate(contractUpdateInfo);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+    }
+
+    private void TryUpdateMember(ContractUpdateInfo updateInfo)
+    {
+        // todo
+        _logger.LogInformation("Member " + updateInfo.ContractUpdateType + ": " + updateInfo.Id);
+    }
+
+    private void TryUpdateChannel(ContractUpdateInfo updateInfo)
+    {
+        // todo
+        _logger.LogInformation("Channel " + updateInfo.ContractUpdateType + ": " + updateInfo.Id);
+    }
+
+    private void TryUpdateSubChannel(ContractUpdateInfo updateInfo)
+    {
+        // todo
+        _logger.LogInformation("SubChannel " + updateInfo.ContractUpdateType + ": " + updateInfo.Id);
+    }
+
+    private void TryUpdatePrivate(ContractUpdateInfo updateInfo)
+    {
+        // todo
+        _logger.LogInformation("Private " + updateInfo.ContractUpdateType + ": " + updateInfo.Id);
+    }
+
+    private void RefreshContracts(TaskContext context, CancellationToken token)
+    {
+        GetContractsCore(out var channels, out var subChannels, out var privates);
+        _logger.LogInformation("Refreshed!");
     }
 
     private bool GetChannelOrSubChannel(string channelId, string? subChannelId, [NotNullWhen(true)] out ChannelInfo? channelInfo)

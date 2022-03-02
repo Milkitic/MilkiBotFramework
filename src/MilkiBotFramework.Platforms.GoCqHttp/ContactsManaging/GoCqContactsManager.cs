@@ -1,9 +1,12 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
 using MilkiBotFramework.Event;
+using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
 using MilkiBotFramework.Tasking;
@@ -137,5 +140,19 @@ public sealed class GoCqContactsManager : ContactsManagerBase
             _logger.LogWarning("获取私聊用户信息时API返回错误：" + ex.Message);
             return PrivateInfoResult.Fail;
         }
+    }
+
+    protected override bool GetContractUpdateInfo(MessageContext messageContext, [NotNullWhen(true)] out ContractUpdateInfo? updateInfo)
+    {
+        // todo
+        updateInfo = null;
+        return false;
+    }
+
+    protected override void GetContractsCore(out Dictionary<ChannelInfo, List<MemberInfo>> channels,
+        out Dictionary<ChannelInfo, List<MemberInfo>> subChannels,
+        out List<PrivateInfo> privates)
+    {
+        throw new System.NotImplementedException();
     }
 }

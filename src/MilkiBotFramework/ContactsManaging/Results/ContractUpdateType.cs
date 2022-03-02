@@ -2,5 +2,5 @@
 
 public enum ContractUpdateType
 {
-    Unspecified, Changed, Added, Removed
+    Changed, Added, Removed
 }

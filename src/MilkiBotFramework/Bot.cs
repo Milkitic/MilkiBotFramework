@@ -65,7 +65,7 @@ namespace MilkiBotFramework
                 }
 
                 PluginManager.InitializeAllPlugins().Wait();
-                ContactsManager.Initialize();
+                ContactsManager.InitializeTasks();
             }
             catch (Exception ex)
             {
@@ -97,7 +97,7 @@ namespace MilkiBotFramework
                 }
 
                 await PluginManager.InitializeAllPlugins();
-                ContactsManager.Initialize();
+                ContactsManager.InitializeTasks();
             }
             catch (Exception ex)
             {
