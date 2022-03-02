@@ -54,6 +54,6 @@ internal class AsyncMessage : IAsyncMessage
             throw new AsyncMessageTimeoutException("Async message timeout after " + dueTime.TotalSeconds + "s");
         }
 
-        return Response;
+        return Response!;
     }
 }

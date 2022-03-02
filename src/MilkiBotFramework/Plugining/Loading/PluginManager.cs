@@ -566,9 +566,9 @@ namespace MilkiBotFramework.Plugining.Loading
                 }
                 catch (Exception ex)
                 {
-                    if (ex is AsyncMessageTimeoutException)
+                    if (ex is AsyncMessageTimeoutException e)
                     {
-                        _logger.LogWarning("Async message timeout: " + pluginDefinition.Metadata.Name);
+                        _logger.LogWarning(e.Message + ": " + pluginDefinition.Metadata.Name);
                     }
                     else
                     {
