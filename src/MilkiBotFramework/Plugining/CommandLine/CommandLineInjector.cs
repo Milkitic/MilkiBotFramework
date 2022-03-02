@@ -185,11 +185,7 @@ public class CommandLineInjector
                 if (parameterInfo != null) parameterInfos.Add(parameterInfo);
             }
 
-            modelBindingInfo = new ModelBindingInfo
-            {
-                TargetType = parameterType,
-                ParameterInfos = parameterInfos
-            };
+            modelBindingInfo = new ModelBindingInfo(parameterType,parameterInfos);
             commandInfo.ModelBindingInfo = modelBindingInfo;
         }
         else

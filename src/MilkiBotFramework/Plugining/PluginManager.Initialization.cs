@@ -68,10 +68,7 @@ public partial class PluginManager
                 }
 
                 if (failList.Count <= 0) continue;
-                foreach (var pluginInfo in failList)
-                {
-                    assemblyContext.PluginInfos.Remove(pluginInfo);
-                }
+                foreach (var pluginInfo in failList) assemblyContext.PluginInfos.Remove(pluginInfo);
 
                 if (assemblyContext.PluginInfos.Count == 0)
                 {
@@ -372,15 +369,7 @@ public partial class PluginManager
             commands.Add(command, commandInfo);
         }
 
-        return new PluginInfo
-        {
-            Metadata = metadata,
-            BaseType = baseType,
-            Type = type,
-            Lifetime = lifetime,
-            Index = index,
-            Commands = new ReadOnlyDictionary<string, CommandInfo>(commands)
-        };
+        return new PluginInfo(metadata, type, baseType, lifetime, commands, index);
     }
 
     private CommandParameterInfo GetParameterInfo(object[] attrs, Type targetType,

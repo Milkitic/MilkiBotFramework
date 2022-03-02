@@ -13,5 +13,9 @@ public sealed class PluginIdentifierAttribute : Attribute
 
     public string Guid { get; }
     public string? Name { get; }
+
+    /// <summary>
+    /// 插件优先级，越小则优先级越高
+    /// </summary>
     public int Index { get; init; }
 }

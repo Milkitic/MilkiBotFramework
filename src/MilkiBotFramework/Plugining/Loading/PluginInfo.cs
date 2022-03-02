@@ -5,10 +5,25 @@ namespace MilkiBotFramework.Plugining.Loading;
 
 public sealed class PluginInfo
 {
-    public PluginMetadata Metadata { get; init; }
-    public Type Type { get; init; }
-    public Type BaseType { get; init; }
-    public PluginLifetime Lifetime { get; init; }
-    public IReadOnlyDictionary<string, CommandInfo> Commands { get; init; }
-    public int Index { get; init; }
+    public PluginInfo(PluginMetadata metadata, 
+        Type type, 
+        Type baseType,
+        PluginLifetime lifetime,
+        IReadOnlyDictionary<string, CommandInfo> commands,
+        int index)
+    {
+        Metadata = metadata;
+        Type = type;
+        BaseType = baseType;
+        Lifetime = lifetime;
+        Commands = commands;
+        Index = index;
+    }
+
+    public PluginMetadata Metadata { get; }
+    public Type Type { get; }
+    public Type BaseType { get; }
+    public PluginLifetime Lifetime { get; }
+    public IReadOnlyDictionary<string, CommandInfo> Commands { get; }
+    public int Index { get; }
 }
