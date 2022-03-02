@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Plugining.CommandLine;
+using MilkiBotFramework.Plugining.Loading;
 
 namespace MilkiBotFramework.Messaging;
 
@@ -44,6 +46,10 @@ public class MessageContext
         };
 
     public DateTimeOffset ReceivedTime { get; set; }
+
+    public IReadOnlyList<PluginDefinition> ExecutedPlugins { get; } = new List<PluginDefinition>();
+    public List<PluginDefinition> NextPlugins { get; } = new();
+    public CommandLineResult? CommandLineResult { get; internal set; }
 
     public bool ValidateAuthority(MessageAuthority requiredAuthority)
     {

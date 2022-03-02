@@ -37,7 +37,7 @@ namespace UnitTests
             var str1 = _lines.ToUrlParamString();
             var str2 = LightHttpClient.BuildQueries(_lines);
 
-            Assert.Equal(str1, str2);
+            Assert.Equal(str1, str2, StringComparer.OrdinalIgnoreCase);
         }
     }
 

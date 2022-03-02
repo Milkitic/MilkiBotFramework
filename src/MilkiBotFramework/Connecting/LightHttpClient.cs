@@ -256,9 +256,15 @@ public class LightHttpClient
         {
             if (i > 0) sb.Append('&');
 
-            WriteEncoded(sb, key);
+            if (key.Length < 65520)
+                sb.Append(Uri.EscapeDataString(key));
+            else
+                WriteEncoded(sb, key);
             sb.Append('=');
-            WriteEncoded(sb, value);
+            if (value.Length < 65520)
+                sb.Append(Uri.EscapeDataString(value));
+            else
+                WriteEncoded(sb, value);
             i++;
         }
 

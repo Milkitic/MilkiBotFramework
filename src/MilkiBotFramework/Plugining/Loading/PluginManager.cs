@@ -460,14 +460,6 @@ namespace MilkiBotFramework.Plugining.Loading
 
         private async Task HandleMessage(MessageContext messageContext)
         {
-            var message = messageContext.TextMessage;
-            var success = _commandLineAnalyzer.TryAnalyze(message, out var commandLineResult, out var exception);
-            ReadOnlyMemory<char>? commandName = null;
-            if (success)
-                commandName = commandLineResult?.Command;
-            else if (exception != null)
-                _logger.LogWarning("Error occurs while analyzing command: " + (exception?.Message ?? "Unknown reason"));
-
             List<(IMessagePlugin plugin, bool dispose, PluginDefinition pluginDefinition, IServiceScope serviceScope)> plugins =
                 new();
             List<(ServicePlugin plugin, PluginDefinition pluginDefinition)> servicePlugins = new();
@@ -504,11 +496,33 @@ namespace MilkiBotFramework.Plugining.Loading
                 }
             }
 
+            var nextPlugins = (List<PluginDefinition>)messageContext.NextPlugins;
+            var executedPlugins = (List<PluginDefinition>)messageContext.ExecutedPlugins;
+
+            var orderedArray = plugins.OrderBy(k => k.pluginDefinition.Index).ToArray();
+            nextPlugins.AddRange(orderedArray.Select(k => k.pluginDefinition));
+
+            var message = messageContext.TextMessage;
+            var success = _commandLineAnalyzer.TryAnalyze(message, out var commandLineResult, out var exception);
+            ReadOnlyMemory<char>? commandName = null;
+            if (success)
+            {
+                commandName = commandLineResult?.Command;
+                messageContext.CommandLineResult = commandLineResult!;
+            }
+            else if (exception != null)
+                _logger.LogWarning("Error occurs while analyzing command: " + (exception?.Message ?? "Unknown reason"));
+
             bool handled = false;
-            foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in
-                     plugins.OrderBy(k => k.pluginDefinition.Index))
+            foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in orderedArray)
             {
                 var plugin = (PluginBase)pluginInstance;
+                if (!nextPlugins.Contains(pluginDefinition))
+                    continue;
+
+                nextPlugins.Remove(pluginDefinition);
+                executedPlugins.Add(pluginDefinition);
+
                 await plugin.OnExecuting();
                 if (commandName != null &&
                     pluginDefinition.Commands.TryGetValue(commandName.Value.ToString(), out var commandDefinition))
@@ -535,7 +549,7 @@ namespace MilkiBotFramework.Plugining.Loading
                 if (handled) break;
             }
 
-            foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in plugins)
+            foreach (var (pluginInstance, dispose, pluginDefinition, serviceScope) in orderedArray)
             {
                 var plugin = (PluginBase)pluginInstance;
                 if (dispose)
