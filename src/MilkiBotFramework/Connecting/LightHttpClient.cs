@@ -30,15 +30,16 @@ public class LightHttpClient
         {
             _httpClient?.Dispose();
         };
+        _httpClient = null!;
     }
 
-    private static HttpClient _httpClient = null!;
+    private static HttpClient _httpClient;
     private readonly LightHttpClientCreationOptions _clientCreationOptions;
 
     public LightHttpClient(LightHttpClientCreationOptions clientCreationOptions)
     {
         _clientCreationOptions = clientCreationOptions;
-        if (_httpClient != null) return;
+        if (_httpClient != null!) return;
         HttpMessageHandler handler;
         if (clientCreationOptions.ProxyUrl != null)
         {
@@ -113,26 +114,23 @@ public class LightHttpClient
         return await SendAsync<T>(url, null, content, headers, RequestMethod.Put);
     }
 
-    public async Task<(byte[], ImageType)> GetImageBytesFromUrlAsync(string url)
+    public async Task<(byte[], ImageType)> GetImageBytesFromUrlAsync(string uri)
     {
-        var uri = new Uri(Uri.EscapeUriString(url));
         byte[] urlContents = await _httpClient.GetByteArrayAsync(uri);
         var type = ImageHelper.GetKnownImageType(urlContents);
         return (urlContents, type);
     }
 
-    public async Task<(Image, ImageType)> GetImageFromUrlAsync(string url)
+    public async Task<(Image, ImageType)> GetImageFromUrlAsync(string uri)
     {
-        var uri = new Uri(Uri.EscapeUriString(url));
         byte[] urlContents = await _httpClient.GetByteArrayAsync(uri);
         var type = ImageHelper.GetKnownImageType(urlContents);
         var ms = new MemoryStream(urlContents);
         return (await Image.LoadAsync(ms), type);
     }
 
-    public async Task<string> SaveImageFromUrlAsync(string url, string saveDir, string filename)
+    public async Task<string> SaveImageFromUrlAsync(string uri, string saveDir, string filename)
     {
-        var uri = new Uri(Uri.EscapeUriString(url));
         byte[] urlContents = await _httpClient.GetByteArrayAsync(uri);
         var type = ImageHelper.GetKnownImageType(urlContents);
         string ext = type switch
@@ -192,7 +190,8 @@ public class LightHttpClient
 
             try
             {
-                context.RequestUri = response.RequestMessage.RequestUri.ToString();
+                if (response.RequestMessage is { RequestUri: { } })
+                    context.RequestUri = response.RequestMessage.RequestUri.ToString();
                 response.EnsureSuccessStatusCode();
 
                 await using var responseStream = await response.Content.ReadAsStreamAsync();

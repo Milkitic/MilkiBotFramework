@@ -74,5 +74,23 @@ namespace UnitTests
 
             Assert.Equal(json1, json2);
         }
+
+        [Theory]
+        [InlineData("/test -test -3+-3 asdf 24123 -haha")]
+        public void TestNe(string command)
+        {
+            var a = new StreamCommandLineAnalyzer();
+            a.TryAnalyze(command, out var result, out _);
+            var b = new CommandLineAnalyzer();
+            b.TryAnalyze(command, out var result2, out _);
+
+            var json1 = result.ToString();
+            var json2 = result2.ToString();
+
+            _outputHelper.WriteLine("result1: " + json1);
+            _outputHelper.WriteLine("result2: " + json2);
+
+            Assert.NotEqual(json1, json2);
+        }
     }
 }

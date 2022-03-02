@@ -29,7 +29,8 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
         memory = memory[1..];
 
         int index = 0;
-        int? argStartIndex = null;
+        int? simpleArgStart = null;
+        int? simpleArgEnd = null;
         int count = 0;
 
         var authority = CommandLineAuthority.Public;
@@ -92,18 +93,31 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
             }
         }
 
+        var simpleArgs = simpleArgStart != null
+            ? simpleArgEnd == null
+                ? memory[simpleArgStart.Value..].TrimEnd()
+                : memory.Slice(simpleArgStart.Value, simpleArgEnd.Value - simpleArgStart.Value).TrimEnd()
+            : string.Empty.AsMemory();
+
         result = new CommandLineResult(authority,
             command,
             options,
             arguments,
-            argStartIndex != null ? memory[argStartIndex.Value..].Trim() : string.Empty.AsMemory());
+            simpleArgs);
         exception = null;
         return command != null;
 
         void AddOperation(ReadOnlyMemory<char> currentWord, bool isEnd = false)
         {
-            if (OptionFlags.Contains(currentWord.Span[0])) // Option key
+            var containsOptionFlag = OptionFlags.Contains(currentWord.Span[0]);
+            if (containsOptionFlag &&
+                currentWord.Length > 1 && !IsNumber(currentWord.Span[1])) // Option key
             {
+                if (simpleArgStart.HasValue && simpleArgEnd == null)
+                {
+                    simpleArgEnd = index - 1;
+                }
+
                 if (command == null)
                     throw new CommandLineException("Command should be declared before any options.");
 
@@ -115,17 +129,14 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
                 else
                     currentOption = currentWord[1..];
             }
-            else if (command == null)
+            else if (!containsOptionFlag && command == null)
             {
                 if (currentWord.Span.SequenceEqual("root"))
                     authority = CommandLineAuthority.Root;
                 else if (currentWord.Span.SequenceEqual("sudo"))
                     authority = CommandLineAuthority.Admin;
                 else
-                {
                     command = currentWord;
-                    argStartIndex = currentWord.Length;
-                }
             }
             else if (currentOption != null) // Option value
             {
@@ -135,7 +146,14 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
             else // Argument
             {
                 arguments.Add(currentWord);
+                simpleArgStart ??= index;
             }
         }
+    }
+
+    private static bool IsNumber(char c)
+    {
+        var i = (int)c;
+        return i is >= 48 and <= 57;
     }
 }
