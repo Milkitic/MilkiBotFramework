@@ -10,7 +10,7 @@ internal class MessageResponse : IResponse
     public IRichMessage? Message { get; set; }
     public bool TryReply { get; set; }
     public bool IsHandled { get; set; }
-    public bool IsForced { get; set; }
+    public bool? IsForced { get; set; }
     public string? TryAt { get; set; }
     public AsyncMessage? AsyncMessage { get; init; }
 

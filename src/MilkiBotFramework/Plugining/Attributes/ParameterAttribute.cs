@@ -1,4 +1,5 @@
 ﻿using System;
+using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining.Loading;
 
 namespace MilkiBotFramework.Plugining.Attributes;
@@ -7,6 +8,7 @@ public abstract class ParameterAttribute : Attribute
 {
     private Type? _converter;
     public object? DefaultValue { get; set; } = DBNull.Value;
+    public MessageAuthority Authority { get; set; } = MessageAuthority.Public;
 
     public Type? Converter
     {

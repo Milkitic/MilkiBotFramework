@@ -26,7 +26,7 @@ public partial class PluginManager
     private readonly IRichMessageConverter _richMessageConverter;
     private readonly ILogger<PluginManager> _logger;
     private readonly ICommandLineAnalyzer _commandLineAnalyzer;
-    private readonly CommandLineInjector _commandLineInjector;
+    private readonly CommandInjector _commandInjector;
 
     // sub directory per loader
     private readonly Dictionary<string, LoaderContext> _loaderContexts = new();
@@ -51,7 +51,8 @@ public partial class PluginManager
         _richMessageConverter = richMessageConverter;
         _logger = logger;
         _commandLineAnalyzer = commandLineAnalyzer;
-        _commandLineInjector = new CommandLineInjector(commandLineAnalyzer);
+        _commandInjector = new CommandInjector(commandLineAnalyzer,
+            (ILogger<CommandInjector>)serviceProvider.GetService(typeof(Logger<CommandInjector>))!);
         _eventBus = eventBus;
         _eventBus.Subscribe<DispatchMessageEvent>(OnEventReceived);
     }
@@ -176,13 +177,41 @@ public partial class PluginManager
                 await pluginInstance.OnExecuting();
                 if (commandName != null && pluginInfo.Commands.TryGetValue(commandName, out var commandInfo))
                 {
-                    var asyncEnumerable = _commandLineInjector.InjectParametersAndRunAsync(commandLineResult!,
-                        commandInfo, pluginInstance, messageContext, serviceProvider);
-                    await foreach (var response in asyncEnumerable)
+                    try
                     {
-                        response?.Forced();
-                        await SendAndCheckResponse(pluginInfo, response);
-                        if (handled) break;
+                        var asyncEnumerable = _commandInjector.InjectParametersAndRunAsync(commandLineResult!,
+                            commandInfo, pluginInstance, messageContext, serviceProvider);
+                        await foreach (var response in asyncEnumerable)
+                        {
+                            if (response is { IsForced: null }) response.Forced();
+                            await SendAndCheckResponse(pluginInfo, response);
+                            if (handled) break;
+                        }
+                    }
+                    catch (BindingException ex)
+                    {
+                        var errMsg = $"Command binding failed ({ex.BindingFailureType}). " +
+                                     $"Command={ex.BindingSource.CommandInfo.Command};";
+                        if (ex.BindingSource.ParameterInfo != null)
+                            errMsg += $" Parameter={ex.BindingSource.ParameterInfo.Name}";
+                        _logger.LogWarning(ex, errMsg);
+
+                        var messagePlugin = (IMessagePlugin)pluginInstance;
+                        var response = await messagePlugin.OnBindingFailed(ex, messageContext);
+                        if (response == null!)
+                        {
+                            foreach (var serviceExecutionInfo in serviceExecutionInfos)
+                            {
+                                var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
+                                var result = await servicePlugin.OnBindingFailed(ex, messageContext);
+                                await SendAndCheckResponse(pluginInfo, result);
+                                if (handled) break;
+                            }
+                        }
+                        else
+                        {
+                            await SendAndCheckResponse(pluginInfo, response);
+                        }
                     }
                 }
                 else

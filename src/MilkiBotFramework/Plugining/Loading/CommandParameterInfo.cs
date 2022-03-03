@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Reflection;
+using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.Plugining.Loading;
 
 public sealed class CommandParameterInfo
 {
+    public MessageAuthority Authority { get; internal set; }
     public string Name { get; internal set; }
     public string ParameterName { get; internal set; }
     public Type ParameterType { get; internal set; }

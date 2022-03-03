@@ -36,23 +36,11 @@ public class MessageContext
     public MessageUserIdentity? MessageUserIdentity { get; set; }
     public MessageIdentity? MessageIdentity { get; set; }
     public MessageAuthority Authority { get; set; }
-    //MessageIdentity?.MessageType switch
-    //{
-    //    MessageType.Private => PrivateInfo!.Authority,
-    //    MessageType.Channel => MemberInfo!.Authority,
-    //    _ => MessageAuthority.Unspecified
-    //};
-
     public DateTimeOffset ReceivedTime { get; set; }
 
     public IReadOnlyList<PluginInfo> ExecutedPlugins { get; } = new List<PluginInfo>();
     public List<PluginInfo> NextPlugins { get; internal set; }
     public CommandLineResult? CommandLineResult { get; internal set; }
-
-    public bool ValidateAuthority(MessageAuthority requiredAuthority)
-    {
-        return Authority >= requiredAuthority;
-    }
 
     public RichMessage GetRichMessage()
     {

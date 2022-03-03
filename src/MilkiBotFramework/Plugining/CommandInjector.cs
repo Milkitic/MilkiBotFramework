@@ -4,21 +4,23 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining.Attributes;
+using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Plugining.Loading;
 
-namespace MilkiBotFramework.Plugining.CommandLine;
+namespace MilkiBotFramework.Plugining;
 
-public class CommandLineInjector
+public class CommandInjector
 {
-    private static readonly Type _typeString = typeof(string);
-
     private readonly ICommandLineAnalyzer _commandLineAnalyzer;
+    private readonly ILogger<CommandInjector> _logger;
 
-    public CommandLineInjector(ICommandLineAnalyzer commandLineAnalyzer)
+    public CommandInjector(ICommandLineAnalyzer commandLineAnalyzer, ILogger<CommandInjector> logger)
     {
         _commandLineAnalyzer = commandLineAnalyzer;
+        _logger = logger;
     }
 
     public async IAsyncEnumerable<IResponse?> InjectParameters(string input,
@@ -41,6 +43,24 @@ public class CommandLineInjector
         MessageContext messageContext,
         IServiceProvider serviceProvider)
     {
+        if (obj == null) throw new ArgumentNullException(nameof(obj));
+        if (commandInfo.Authority > messageContext.Authority)
+        {
+            throw new BindingException(
+                "The specified command needs a higher authority. Current: " + messageContext.Authority +
+                "; Desired: " + commandInfo.Authority,
+                new BindingSource(commandInfo, null), BindingFailureType.AuthenticationFailed);
+        }
+
+        if (messageContext.MessageIdentity == null ||
+            !commandInfo.MessageType.HasFlag(messageContext.MessageIdentity.MessageType))
+        {
+            throw new BindingException(
+                "The specified command only supports message type: " + commandInfo.MessageType +
+                "; Current: " + messageContext.MessageIdentity?.MessageType,
+                new BindingSource(commandInfo, null), BindingFailureType.MessageTypeFailed);
+        }
+
         var parameterInfos = commandInfo.ParameterInfos;
         var parameterCount = parameterInfos.Count;
 
@@ -75,15 +95,17 @@ public class CommandLineInjector
                 if (result == null)
                 {
                     if (modelBind)
-                        throw new ArgumentException(
-                            $"Could not resolve type {paramDef.ParameterType}. Only one model binding declaration is supported.");
+                        throw new BindingException(
+                            $"Could not resolve type {paramDef.ParameterType}. Only one model binding declaration is supported.",
+                            new BindingSource(commandInfo, paramDef), BindingFailureType.CannotResolve);
                     if (paramBind)
-                        throw new ArgumentException(
-                            $"Could not resolve type {paramDef.ParameterType}. Combination of model binding and parameter binding is not supported.");
+                        throw new BindingException(
+                            $"Could not resolve type {paramDef.ParameterType}. Combination of model binding and parameter binding is not supported.",
+                            new BindingSource(commandInfo, paramDef), BindingFailureType.CannotResolve);
                     modelBind = true;
 
                     // model binding
-                    var model = GetBindingModel(paramDef.ParameterType, commandInfo, options, commandLineResult.Arguments);
+                    var model = GetBindingModel(paramDef.ParameterType, messageContext, commandInfo, options, commandLineResult.Arguments);
                     parameters[i] = model;
                 }
                 else
@@ -94,27 +116,27 @@ public class CommandLineInjector
             else
             {
                 if (modelBind)
-                    throw new ArgumentException(
-                        $"Could not resolve type {paramDef.ParameterType}. Combination of model binding and parameter binding is not supported.");
+                    throw new BindingException(
+                        $"Could not resolve type {paramDef.ParameterType}. Combination of model binding and parameter binding is not supported.",
+                        new BindingSource(commandInfo, paramDef), BindingFailureType.CannotResolve);
                 paramBind = true;
 
                 // parameter binding
                 if (paramDef.IsArgument)
                 {
-                    var argValue = GetArgumentValue(commandLineResult.Arguments, paramDef, ref argIndex);
+                    var argValue = GetArgumentValue(commandInfo, messageContext, commandLineResult.Arguments, paramDef, ref argIndex);
                     parameters[i] = argValue;
                 }
                 else
                 {
-                    var optionValue = GetOptionValue(options, paramDef);
+                    var optionValue = GetOptionValue(commandInfo, messageContext, options, paramDef);
                     parameters[i] = optionValue;
                 }
             }
         }
 
-        if (obj == null) throw new ArgumentNullException(nameof(obj));
 
-        var method = commandInfo.MethodInfo/* obj.GetType().GetMethod(commandInfo.MethodInfo)*/;
+        var method = commandInfo.MethodInfo;
         var retType = commandInfo.CommandReturnType;
         switch (retType)
         {
@@ -156,16 +178,35 @@ public class CommandLineInjector
                         yield return response;
                     yield break;
                 }
-            case CommandReturnType.Dynamic:
+            case CommandReturnType.Task_:
+                {
+                    var task = (Task)method.Invoke(obj, parameters)!;
+                    await task.ConfigureAwait(false);
+                    _logger.LogWarning($"No response will generated because the command \"" + commandInfo.Command +
+                                       "\" was defined as an unknown return type: " + commandInfo.MethodInfo.ReturnType);
+                    yield break;
+                }
+            case CommandReturnType.ValueTask_:
+                {
+                    var valueTask = (dynamic)method.Invoke(obj, parameters)!; // Will lead to performance issue!!
+                    await valueTask.ConfigureAwait(false);
+                    _logger.LogWarning($"No response will generated because the command \"" + commandInfo.Command +
+                                       "\" was defined as an unknown return type: " + commandInfo.MethodInfo.ReturnType);
+                    yield break;
+                }
+            case CommandReturnType.Unknown:
             default:
-                throw new ArgumentOutOfRangeException(nameof(retType), retType, $"Unknown return type of method \"{method.Name}\"");
+                {
+                    method.Invoke(obj, parameters);
+                    _logger.LogWarning($"No response will generated because the command \"" + commandInfo.Command +
+                                       "\" was defined as an unknown return type: " + commandInfo.MethodInfo.ReturnType);
+                    yield break;
+                }
         }
-
-        throw new NotImplementedException();
-        yield break;
     }
 
     private object? GetBindingModel(Type parameterType,
+        MessageContext messageContext,
         CommandInfo commandInfo,
         Dictionary<string, ReadOnlyMemory<char>?> options,
         List<ReadOnlyMemory<char>> arguments)
@@ -185,7 +226,7 @@ public class CommandLineInjector
                 if (parameterInfo != null) parameterInfos.Add(parameterInfo);
             }
 
-            modelBindingInfo = new ModelBindingInfo(parameterType,parameterInfos);
+            modelBindingInfo = new ModelBindingInfo(parameterType, parameterInfos);
             commandInfo.ModelBindingInfo = modelBindingInfo;
         }
         else
@@ -199,12 +240,12 @@ public class CommandLineInjector
         {
             if (paramDef.IsArgument)
             {
-                var argValue = GetArgumentValue(arguments, paramDef, ref argIndex);
+                var argValue = GetArgumentValue(commandInfo, messageContext, arguments, paramDef, ref argIndex);
                 paramDef.PropertyInfo.SetValue(instance, argValue);
             }
             else
             {
-                var optionValue = GetOptionValue(options, paramDef);
+                var optionValue = GetOptionValue(commandInfo, messageContext, options, paramDef);
                 paramDef.PropertyInfo.SetValue(instance, optionValue);
             }
         }
@@ -251,7 +292,10 @@ public class CommandLineInjector
         return isReady ? parameterInfo : null;
     }
 
-    private static object? GetArgumentValue(IReadOnlyList<ReadOnlyMemory<char>> arguments, CommandParameterInfo paramDef,
+    private static object? GetArgumentValue(CommandInfo commandInfo,
+        MessageContext messageContext,
+        IReadOnlyList<ReadOnlyMemory<char>> arguments,
+        CommandParameterInfo paramDef,
         ref int argIndex)
     {
         object? argValue;
@@ -259,42 +303,98 @@ public class CommandLineInjector
         {
             if (paramDef.DefaultValue == DBNull.Value)
             {
-                throw new Exception("The specified argument is not found in the input command.");
+                throw new BindingException("The specified argument is not found in the input command.",
+                    new BindingSource(commandInfo, paramDef), BindingFailureType.Mismatch);
             }
 
-            argValue = paramDef.DefaultValue is string && paramDef.ParameterType != _typeString
-                ? paramDef.ValueConverter.Convert(paramDef.ParameterType, ((string)paramDef.DefaultValue).AsMemory())
-                : paramDef.DefaultValue;
+            try
+            {
+                argValue = paramDef.DefaultValue is string && paramDef.ParameterType != StaticTypes.String
+                    ? paramDef.ValueConverter.Convert(paramDef.ParameterType, ((string)paramDef.DefaultValue).AsMemory())
+                    : paramDef.DefaultValue;
+            }
+            catch (Exception ex)
+            {
+                throw new BindingException("Convert error",
+                    new BindingSource(commandInfo, paramDef), BindingFailureType.ConvertError, ex);
+            }
         }
         else
         {
-            var currentArgument = arguments[argIndex++];
-            argValue = paramDef.ValueConverter.Convert(paramDef.ParameterType, currentArgument);
+            try
+            {
+                var currentArgument = arguments[argIndex++];
+                argValue = paramDef.ValueConverter.Convert(paramDef.ParameterType, currentArgument);
+            }
+            catch (Exception ex)
+            {
+                throw new BindingException("Convert error",
+                    new BindingSource(commandInfo, paramDef), BindingFailureType.ConvertError, ex);
+            }
+
+            // todo: equality helper
+            if (argValue == paramDef.DefaultValue) return argValue;
+            if (paramDef.Authority > messageContext.Authority)
+            {
+                throw new BindingException(
+                    "The specified argument needs a higher authority to change the default value. Current: " + messageContext.Authority +
+                    "; Desired: " + commandInfo.Authority,
+                    new BindingSource(commandInfo, null), BindingFailureType.AuthenticationFailed);
+            }
         }
 
         return argValue;
     }
 
-    private static object? GetOptionValue(IReadOnlyDictionary<string, ReadOnlyMemory<char>?> options,
+    private static object? GetOptionValue(CommandInfo commandInfo,
+        MessageContext messageContext,
+        IReadOnlyDictionary<string, ReadOnlyMemory<char>?> options,
         CommandParameterInfo paramDef)
     {
         object? optionValue;
         if (options.TryGetValue(paramDef.Name, out var value))
         {
-            optionValue = value == null
+            try
+            {
+                optionValue = value == null
                 ? true
                 : paramDef.ValueConverter.Convert(paramDef.ParameterType, value.Value);
+            }
+            catch (Exception ex)
+            {
+                throw new BindingException("Convert error",
+                    new BindingSource(commandInfo, paramDef), BindingFailureType.ConvertError, ex);
+            }
+
+            // todo: equality helper
+            if (optionValue == paramDef.DefaultValue) return optionValue;
+            if (paramDef.Authority > messageContext.Authority)
+            {
+                throw new BindingException(
+                    "The specified option needs a higher authority to change the default value. Current: " + messageContext.Authority +
+                    "; Desired: " + commandInfo.Authority,
+                    new BindingSource(commandInfo, null), BindingFailureType.AuthenticationFailed);
+            }
         }
         else
         {
             if (paramDef.DefaultValue == DBNull.Value)
             {
-                throw new Exception("The specified option is not found in the input command.");
+                throw new BindingException("The specified option is not found in the input command.",
+                    new BindingSource(commandInfo, paramDef), BindingFailureType.Mismatch);
             }
 
-            optionValue = paramDef.DefaultValue is string && paramDef.ParameterType != _typeString
+            try
+            {
+                optionValue = paramDef.DefaultValue is string && paramDef.ParameterType != StaticTypes.String
                 ? paramDef.ValueConverter.Convert(paramDef.ParameterType, ((string)paramDef.DefaultValue).AsMemory())
                 : paramDef.DefaultValue;
+            }
+            catch (Exception ex)
+            {
+                throw new BindingException("Convert error",
+                    new BindingSource(commandInfo, paramDef), BindingFailureType.ConvertError, ex);
+            }
         }
 
         return optionValue;

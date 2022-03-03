@@ -23,6 +23,15 @@ public class DemoPlugin : BasicPlugin
         _pluginManager = pluginManager;
     }
 
+    [CommandHandler("hello")]
+    public IResponse EchoRoot1([Argument(Authority = MessageAuthority.Admin)] string content = "world")
+    {
+        return Reply("hello " + content);
+    }
+
+    [CommandHandler(Authority = MessageAuthority.Admin)]
+    public IResponse EchoRoot([Argument] string content) => Reply(content);
+
     [CommandHandler]
     public IResponse Echo([Argument] string content) => Reply(content);
 

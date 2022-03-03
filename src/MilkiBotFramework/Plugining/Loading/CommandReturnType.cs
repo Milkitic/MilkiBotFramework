@@ -10,5 +10,7 @@ public enum CommandReturnType
     ValueTask_IResponse,
     IEnumerable_IResponse,
     IAsyncEnumerable_IResponse,
-    Dynamic
+    Task_, 
+    ValueTask_,
+    Unknown
 }

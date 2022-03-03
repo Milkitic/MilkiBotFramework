@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
+using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 
@@ -18,18 +19,21 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
     private readonly IContactsManager _contactsManager;
     private readonly ILogger _logger;
     private readonly IServiceProvider _serviceProvider;
+    private readonly BotOptions _botOptions;
     private readonly EventBus _eventBus;
 
     public DispatcherBase(IConnector connector,
         IContactsManager contactsManager,
         ILogger logger,
         IServiceProvider serviceProvider,
+        BotOptions botOptions,
         EventBus eventBus)
     {
         _connector = connector;
         _contactsManager = contactsManager;
         _logger = logger;
         _serviceProvider = serviceProvider;
+        _botOptions = botOptions;
         _eventBus = eventBus;
         _connector.RawMessageReceived += Connector_RawMessageReceived;
     }
@@ -76,7 +80,13 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                 if (messageIdentity.Id == null) throw new ArgumentNullException(nameof(messageIdentity.Id));
                 var privateResult = await _contactsManager.TryGetOrAddPrivateInfo(messageIdentity.Id);
                 if (privateResult.IsSuccess)
+                {
+                    if (_botOptions.RootAccounts.Contains(messageIdentity.Id))
+                        messageContext.Authority = MessageAuthority.Root;
+                    else
+                        messageContext.Authority = MessageAuthority.Public;
                     messageContext.PrivateInfo = privateResult.PrivateInfo;
+                }
                 else
                     _logger.LogWarning("Failed to fill PrivateInfo automatically. This may leads to further plugin errors.");
                 break;
@@ -91,7 +101,18 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                 else
                     _logger.LogWarning("Failed to ChannelInfo automatically. This may leads to further plugin errors.");
                 if (memberResult.IsSuccess)
+                {
+                    if (_botOptions.RootAccounts.Contains(userId))
+                        messageContext.Authority = MessageAuthority.Root;
+                    else if (memberResult.MemberInfo!.MemberRole is MemberRole.Admin)
+                        messageContext.Authority = MessageAuthority.Admin;
+                    else if (memberResult.MemberInfo!.MemberRole is MemberRole.SubAdmin)
+                        messageContext.Authority = MessageAuthority.SubAdmin;
+                    else
+                        messageContext.Authority = MessageAuthority.Public;
+
                     messageContext.MemberInfo = memberResult.MemberInfo;
+                }
                 else
                     _logger.LogWarning("Failed to MemberInfo automatically. This may leads to further plugin errors.");
                 break;

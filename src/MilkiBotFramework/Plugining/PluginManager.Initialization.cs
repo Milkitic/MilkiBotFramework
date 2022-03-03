@@ -350,13 +350,14 @@ public partial class PluginManager
                              retType.GenericTypeArguments[0] == StaticTypes.IResponse)
                         returnType = CommandReturnType.IAsyncEnumerable_IResponse;
                     else
-                        returnType = CommandReturnType.Dynamic;
+                        returnType = CommandReturnType.Unknown;
                 }
                 else
-                    returnType = CommandReturnType.Dynamic;
+                    returnType = CommandReturnType.Unknown;
             }
 
             var commandInfo = new CommandInfo(command, methodDescription, methodInfo, returnType,
+                commandHandlerAttribute.Authority, commandHandlerAttribute.AllowedMessageType, 
                 parameterInfos.ToArray());
 
             commands.Add(command, commandInfo);
@@ -385,6 +386,7 @@ public partial class PluginManager
                     : parameter.DefaultValue;
                 parameterInfo.Name = option.Name;
                 parameterInfo.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
+                parameterInfo.Authority = option.Authority;
                 isReady = true;
             }
             else if (attr is ArgumentAttribute argument)
@@ -395,6 +397,7 @@ public partial class PluginManager
 
                 parameterInfo.IsArgument = true;
                 parameterInfo.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
+                parameterInfo.Authority = argument.Authority;
                 isReady = true;
             }
             else if (attr is DescriptionAttribute description)

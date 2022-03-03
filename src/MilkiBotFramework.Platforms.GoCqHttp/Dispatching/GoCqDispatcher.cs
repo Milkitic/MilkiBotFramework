@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Event;
@@ -14,12 +15,13 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
 {
     public class GoCqDispatcher : DispatcherBase<GoCqMessageContext>
     {
-        public GoCqDispatcher(IContactsManager contactsManager,
+        public GoCqDispatcher(IConnector connector,
+            IContactsManager contactsManager,
             ILogger<GoCqDispatcher> logger,
             IServiceProvider serviceProvider,
-            EventBus eventBus,
-            GoCqApi goCqApi)
-            : base(goCqApi.Connector, contactsManager, logger, serviceProvider, eventBus)
+            BotOptions botOptions,
+            EventBus eventBus)
+            : base(connector, contactsManager, logger, serviceProvider, botOptions, eventBus)
         {
         }
 
