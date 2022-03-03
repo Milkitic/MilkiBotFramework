@@ -1,8 +1,10 @@
-﻿namespace MilkiBotFramework.Messaging.RichMessages;
+﻿using System.Threading.Tasks;
+
+namespace MilkiBotFramework.Messaging.RichMessages;
 
 public class Voice : IRichMessage
 {
     public Voice(string path) => Path = path;
     public string Path { get; set; }
-    public virtual string Encode() => "[Voice]";
+    public virtual async ValueTask<string> EncodeAsync() => "[Voice]";
 }

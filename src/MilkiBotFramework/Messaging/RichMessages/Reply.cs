@@ -1,8 +1,10 @@
-﻿namespace MilkiBotFramework.Messaging.RichMessages;
+﻿using System.Threading.Tasks;
+
+namespace MilkiBotFramework.Messaging.RichMessages;
 
 public class Reply : IRichMessage
 {
     public Reply(string messageId) => MessageId = messageId;
     public string MessageId { get; set; }
-    public virtual string Encode() => $"[Reply {MessageId}]";
+    public virtual async ValueTask<string> EncodeAsync() => $"[Reply {MessageId}]";
 }

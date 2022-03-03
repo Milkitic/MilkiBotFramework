@@ -1,10 +1,13 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace MilkiBotFramework.Messaging.RichMessages
 {
-    public sealed class RichMessage : IRichMessage, IEnumerable<IRichMessage>
+    public sealed class RichMessage : IRichMessage, IEnumerable<IRichMessage>, IDisposable, IAsyncDisposable
     {
         public List<IRichMessage> RichMessages { get; } = new();
 
@@ -21,9 +24,15 @@ namespace MilkiBotFramework.Messaging.RichMessages
             RichMessages.AddRange(richMessages);
         }
 
-        public string Encode()
+        public async ValueTask<string> EncodeAsync()
         {
-            return string.Join("", RichMessages.Select(k => k.Encode()));
+            var sb = new StringBuilder();
+            foreach (var richMessage in RichMessages)
+            {
+                sb.Append(await richMessage.EncodeAsync());
+            }
+
+            return sb.ToString();
         }
 
         public IEnumerator<IRichMessage> GetEnumerator()
@@ -39,7 +48,7 @@ namespace MilkiBotFramework.Messaging.RichMessages
 
             yield return richMessage;
         }
-        
+
         public override string ToString()
         {
             return string.Join("", RichMessages.Select(k => k.ToString()));
@@ -56,6 +65,24 @@ namespace MilkiBotFramework.Messaging.RichMessages
                        (RichMessages[0] is At at && at.UserId == userId ||
                         RichMessages[0] is RichMessage rich && rich.FirstIsAt(userId));
 
+        }
+
+        public void Dispose()
+        {
+            foreach (var richMessage in this)
+            {
+                if (richMessage is IDisposable d) d.Dispose();
+                else if (richMessage is IAsyncDisposable ad) ad.DisposeAsync().AsTask().Wait();
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            foreach (var richMessage in this)
+            {
+                if (richMessage is IDisposable d) d.Dispose();
+                else if (richMessage is IAsyncDisposable ad) await ad.DisposeAsync();
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
@@ -38,6 +39,6 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
         }
 
         public override string ToString() => $"[回复]";
-        public string Encode() => $"[CQ:reply,id={MessageId}]";
+        public async ValueTask<string> EncodeAsync() => $"[CQ:reply,id={MessageId}]";
     }
 }

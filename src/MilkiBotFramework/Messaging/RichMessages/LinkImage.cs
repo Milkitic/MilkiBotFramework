@@ -20,5 +20,5 @@ public class LinkImage : IRichMessage
         return new MemoryImage(bitmap, imageType);
     }
 
-    public virtual string Encode() => $"[Image: {Uri}]";
+    public virtual async ValueTask<string> EncodeAsync() => $"[Image: {Uri}]";
 }

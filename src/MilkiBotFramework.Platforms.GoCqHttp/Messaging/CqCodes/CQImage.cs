@@ -111,7 +111,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 
         public override string ToString() => "[图片]";
 
-        public string Encode()
+        public async ValueTask<string> EncodeAsync()
         {
             for (int i = 0; i < 2; i++)
             {
@@ -125,7 +125,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
                     return $"[CQ:image,file={DownloadUri}]";
 
                 if (i == 0)
-                    EnsureImageBytesAndCaches().Wait();
+                    await EnsureImageBytesAndCaches();
             }
 
             throw new Exception("There is no image to encode.");

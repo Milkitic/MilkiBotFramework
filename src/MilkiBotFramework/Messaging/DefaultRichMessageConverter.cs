@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Threading.Tasks;
 using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Messaging;
 
 public class DefaultRichMessageConverter : IRichMessageConverter
 {
-    public string Encode(IRichMessage message)
+    public async ValueTask<string> EncodeAsync(IRichMessage message)
     {
-        return message.Encode();
+        return await message.EncodeAsync();
     }
 
     public RichMessage Decode(ReadOnlyMemory<char> message)

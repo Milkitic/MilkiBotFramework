@@ -83,13 +83,13 @@ public class CQRecord : IRichMessage
 
     public override string ToString() => "[语音]";
 
-    public string Encode()
+    public async ValueTask<string> EncodeAsync()
     {
         for (int i = 0; i < 2; i++)
         {
             if (RecordFileBytes != null)
             {
-                using var ms = new MemoryStream(RecordFileBytes);
+                await using var ms = new MemoryStream(RecordFileBytes);
                 return $"[CQ:record,file=base64://{EncodingHelper.EncodeFileToBase64(ms)}]";
             }
 
@@ -97,7 +97,7 @@ public class CQRecord : IRichMessage
                 return $"[CQ:record,file={DownloadUri}]";
 
             if (i == 0)
-                EnsureRecordBytesAndCaches().Wait();
+                await EnsureRecordBytesAndCaches();
         }
 
         throw new Exception("There is no record to encode.");

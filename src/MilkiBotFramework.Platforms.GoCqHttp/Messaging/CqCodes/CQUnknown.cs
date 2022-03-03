@@ -1,4 +1,5 @@
-﻿using MilkiBotFramework.Messaging.RichMessages;
+﻿using System.Threading.Tasks;
+using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {
@@ -14,6 +15,6 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
         }
 
         public override string ToString() => $"[不支持的消息:{Type}]";
-        public string Encode() => Content;
+        public async ValueTask<string> EncodeAsync() => Content;
     }
 }

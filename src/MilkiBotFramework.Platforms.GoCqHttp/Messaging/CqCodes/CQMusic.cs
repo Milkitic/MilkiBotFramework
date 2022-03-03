@@ -1,4 +1,5 @@
-﻿using MilkiBotFramework.Messaging.RichMessages;
+﻿using System.Threading.Tasks;
+using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {
@@ -51,7 +52,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 
         public override string ToString() => "[音乐自定义分享]";
 
-        public string Encode() =>
+        public async ValueTask<string> EncodeAsync() =>
             string.Format("[CQ:music,type=custom,url={0},audio={1},title={2},content={3},image={4}]",
                 LinkUrl, AudioUrl, Title, Content, ImageUrl);
     }

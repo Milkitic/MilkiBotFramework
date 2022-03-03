@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using MilkiBotFramework.Imaging;
 using SixLabors.ImageSharp;
 
@@ -15,5 +16,5 @@ public class MemoryImage : IRichMessage, IDisposable
     public Image ImageSource { get; set; }
     public ImageType ImageType { get; }
     public void Dispose() => ImageSource?.Dispose();
-    public virtual string Encode() => "[Image]";
+    public virtual async ValueTask<string> EncodeAsync() => "[Image]";
 }

@@ -93,21 +93,29 @@ public partial class PluginManager
         async Task SendAndCheckResponse(PluginInfo pluginInfo, IResponse? response)
         {
             if (response == null) return;
-            foreach (var serviceExecutionInfo in serviceExecutionInfos)
+            try
             {
-                var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
-                var result = await servicePlugin.BeforeSend(pluginInfo, response);
-                if (!result)
+                foreach (var serviceExecutionInfo in serviceExecutionInfos)
                 {
-                    response.IsHandled = true;
-                    return;
+                    var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
+                    var result = await servicePlugin.BeforeSend(pluginInfo, response);
+                    if (!result)
+                    {
+                        response.IsHandled = true;
+                        return;
+                    }
                 }
+
+                handled = response.IsHandled;
+
+                if (response.Message == null) return;
+                await AutoReply(messageContext, response);
             }
-
-            handled = response.IsHandled;
-
-            if (response.Message == null) return;
-            await AutoReply(messageContext, response);
+            finally
+            {
+                if (response.Message is IDisposable d) d.Dispose();
+                else if (response.Message is IAsyncDisposable ad) await ad.DisposeAsync();
+            }
         }
     }
 
@@ -223,26 +231,34 @@ public partial class PluginManager
         async Task SendAndCheckResponse(PluginInfo pluginInfo, IResponse? response)
         {
             if (response == null) return;
-            foreach (var serviceExecutionInfo in serviceExecutionInfos)
+            try
             {
-                var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
-                var result = await servicePlugin.BeforeSend(pluginInfo, response);
-                if (!result)
+                foreach (var serviceExecutionInfo in serviceExecutionInfos)
                 {
-                    response.IsHandled = true;
-                    return;
+                    var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
+                    var result = await servicePlugin.BeforeSend(pluginInfo, response);
+                    if (!result)
+                    {
+                        response.IsHandled = true;
+                        return;
+                    }
                 }
+
+                handled = response.IsHandled;
+
+                if (!handled && response.AsyncMessage is AsyncMessage asyncMessage)
+                {
+                    _asyncMessageDict.AddOrUpdate(messageContext.MessageUserIdentity, asyncMessage, (_, _) => asyncMessage);
+                }
+
+                if (response.Message == null) return;
+                await AutoReply(messageContext, response);
             }
-
-            handled = response.IsHandled;
-
-            if (!handled && response.AsyncMessage is AsyncMessage asyncMessage)
+            finally
             {
-                _asyncMessageDict.AddOrUpdate(messageContext.MessageUserIdentity, asyncMessage, (_, _) => asyncMessage);
+                if (response.Message is IDisposable d) d.Dispose();
+                else if (response.Message is IAsyncDisposable ad) await ad.DisposeAsync();
             }
-
-            if (response.Message == null) return;
-            await AutoReply(messageContext, response);
         }
     }
 
@@ -260,7 +276,7 @@ public partial class PluginManager
                     new RichMessage(new Reply(messageContext.MessageId!), response.Message);
             }
 
-            var plainMessage = _richMessageConverter.Encode(response.Message);
+            var plainMessage = await _richMessageConverter.EncodeAsync(response.Message);
 
             if (identity != null &&
                 identity != MessageIdentity.MetaMessage &&
@@ -287,7 +303,7 @@ public partial class PluginManager
                     new RichMessage(new At(response.TryAt), response.Message);
             }
 
-            var plainMessage = _richMessageConverter.Encode(response.Message);
+            var plainMessage = await _richMessageConverter.EncodeAsync(response.Message);
             if (response.MessageType == MessageType.Private)
                 await _messageApi.SendPrivateMessageAsync(response.Id!, plainMessage);
             else if (response.MessageType == MessageType.Channel)

@@ -1,6 +1,8 @@
-﻿namespace MilkiBotFramework.Messaging.RichMessages;
+﻿using System.Threading.Tasks;
+
+namespace MilkiBotFramework.Messaging.RichMessages;
 
 public interface IRichMessage
 {
-    string Encode();
+    ValueTask<string> EncodeAsync();
 }

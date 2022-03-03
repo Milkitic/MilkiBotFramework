@@ -1,4 +1,5 @@
-﻿using MilkiBotFramework.Messaging.RichMessages;
+﻿using System.Threading.Tasks;
+using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {
@@ -13,6 +14,6 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 
         public static CQDice Instance { get; } = new();
         public override string ToString() => "[掷色子]";
-        public string Encode() => "[CQ:dice]";
+        public async ValueTask<string> EncodeAsync() => "[CQ:dice]";
     }
 }

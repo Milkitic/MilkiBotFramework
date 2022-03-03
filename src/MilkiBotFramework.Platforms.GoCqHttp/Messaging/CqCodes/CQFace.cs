@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
@@ -25,7 +26,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
             FaceId = faceId;
         }
 
-        public string Encode() => $"[CQ:face,id={FaceId}]";
+        public async ValueTask<string> EncodeAsync() => $"[CQ:face,id={FaceId}]";
 
         public override string ToString() => $"[表情{FaceId}]";
 

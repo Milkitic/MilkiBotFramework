@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
@@ -36,6 +37,6 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
         }
 
         public override string ToString() => "@" + (UserId == "-1" ? "<全体成员>" : UserId);
-        public override string Encode() => $"[CQ:at,qq={UserId}]";
+        public override async ValueTask<string> EncodeAsync() => $"[CQ:at,qq={UserId}]";
     }
 }

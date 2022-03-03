@@ -1,4 +1,5 @@
-﻿using MilkiBotFramework.Messaging.RichMessages;
+﻿using System.Threading.Tasks;
+using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {
@@ -13,6 +14,6 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 
         public static CQRps Instance { get; } = new();
         public override string ToString() => "[猜拳]";
-        public string Encode() => "[CQ:rps]";
+        public async ValueTask<string> EncodeAsync() => "[CQ:rps]";
     }
 }

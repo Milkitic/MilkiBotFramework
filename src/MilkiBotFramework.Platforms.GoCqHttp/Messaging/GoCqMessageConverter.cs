@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using MilkiBotFramework.Imaging;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
@@ -17,49 +18,49 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 
 public class GoCqMessageConverter : IRichMessageConverter
 {
-    public string Encode(IRichMessage message)
+    public async ValueTask<string> EncodeAsync(IRichMessage message)
     {
         if (message is RichMessage rich)
         {
             var sb = new StringBuilder();
             foreach (var subMessage in rich.RichMessages)
-                sb.Append(Encode(subMessage));
+                sb.Append(await EncodeAsync(subMessage));
             return sb.ToString();
         }
 
         if (message is At at)
-            return new CQAt(at.UserId).Encode();
+            return await new CQAt(at.UserId).EncodeAsync();
         if (message is Reply reply)
-            return new CQReply(reply.MessageId).Encode();
+            return await new CQReply(reply.MessageId).EncodeAsync();
         if (message is FileImage fileImage)
-            return CQImage.FromBytes(File.ReadAllBytes(fileImage.Path)).Encode();
+            return await CQImage.FromBytes(File.ReadAllBytes(fileImage.Path)).EncodeAsync();
         if (message is LinkImage linkImage)
-            return CQImage.FromUri(linkImage.Uri).Encode();
+            return await CQImage.FromUri(linkImage.Uri).EncodeAsync();
         if (message is MemoryImage memImage)
         {
-            using var ms = new MemoryStream();
+            await using var ms = new MemoryStream();
             switch (memImage.ImageType)
             {
                 case ImageType.Jpeg:
-                    memImage.ImageSource.Save(ms, new JpegEncoder());
+                    await memImage.ImageSource.SaveAsync(ms, new JpegEncoder());
                     break;
                 case ImageType.Bmp:
-                    memImage.ImageSource.Save(ms, new BmpEncoder());
+                    await memImage.ImageSource.SaveAsync(ms, new BmpEncoder());
                     break;
                 case ImageType.Gif:
-                    memImage.ImageSource.Save(ms, new GifEncoder());
+                    await memImage.ImageSource.SaveAsync(ms, new GifEncoder());
                     break;
                 case ImageType.Png:
-                    memImage.ImageSource.Save(ms, new PngEncoder());
+                    await memImage.ImageSource.SaveAsync(ms, new PngEncoder());
                     break;
                 case ImageType.Unknown:
                 default:
                     throw new ArgumentOutOfRangeException();
             }
 
-            return CQImage.FromBytes(ms.ToArray()).Encode();
+            return await CQImage.FromBytes(ms.ToArray()).EncodeAsync();
         }
-        return message.Encode();
+        return await message.EncodeAsync();
     }
 
     public RichMessage Decode(ReadOnlyMemory<char> message)

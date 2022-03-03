@@ -1,4 +1,5 @@
-﻿using MilkiBotFramework.Messaging.RichMessages;
+﻿using System.Threading.Tasks;
+using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {
@@ -44,7 +45,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 
         public override string ToString() => "[链接分享]";
 
-        public string Encode() =>
+        public async ValueTask<string> EncodeAsync() =>
             string.Format("[CQ:share,url={0},title={1},content={2},image={3}]",
                 LinkUrl, Title, Content, ImageUrl);
     }
