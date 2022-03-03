@@ -184,6 +184,28 @@ public abstract class ContactsManagerBase : IContactsManager
         _logger.LogInformation("Private " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id);
     }
 
+    private bool GetChannelOrSubChannel(string channelId, string? subChannelId, [NotNullWhen(true)] out ChannelInfo? channelInfo)
+    {
+        if (subChannelId == null)
+        {
+            if (ChannelMapping.TryGetValue(channelId, out channelInfo))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            if (SubChannelMapping.TryGetValue(channelId, out var dict) &&
+                dict.TryGetValue(subChannelId, out channelInfo))
+            {
+                return true;
+            }
+        }
+
+        channelInfo = null;
+        return false;
+    }
+
     private void RefreshContacts(TaskContext context, CancellationToken token)
     {
         GetContactsCore(out var channels,
@@ -265,28 +287,58 @@ public abstract class ContactsManagerBase : IContactsManager
                 logger.LogInformation($"Changed channel {exist} name from: " + oldInfo.Name + " to " + newInfo.Name);
                 oldInfo.Name = newInfo.Name;
             }
+
+            RefreshMembers(newInfo, oldInfo.Members, newInfo.Members, logger);
         }
     }
 
-    private bool GetChannelOrSubChannel(string channelId, string? subChannelId, [NotNullWhen(true)] out ChannelInfo? channelInfo)
+    private void RefreshMembers(ChannelInfo channel,
+        ConcurrentDictionary<string, MemberInfo> oldMemberDict,
+        ConcurrentDictionary<string, MemberInfo> newMemberDict,
+        ILogger logger)
     {
-        if (subChannelId == null)
+        var newMembers = newMemberDict.Keys.ToHashSet();
+        var oldMembers = oldMemberDict.Keys.ToHashSet();
+
+        var adds = newMembers.Where(k => !oldMembers.Contains(k));
+        var exists = newMembers.Where(k => oldMembers.Contains(k)).ToArray();
+        var removes = oldMembers.Except(exists);
+
+        var channelId = channel.ChannelId;
+        foreach (var add in adds)
         {
-            if (ChannelMapping.TryGetValue(channelId, out channelInfo))
-            {
-                return true;
-            }
-        }
-        else
-        {
-            if (SubChannelMapping.TryGetValue(channelId, out var dict) &&
-                dict.TryGetValue(subChannelId, out channelInfo))
-            {
-                return true;
-            }
+            channel.Members.TryAdd(add, newMemberDict[add]);
+            logger.LogInformation($"Add channel {channelId} member: " + add);
         }
 
-        channelInfo = null;
-        return false;
+        foreach (var remove in removes)
+        {
+            channel.Members.TryRemove(remove, out _);
+            logger.LogInformation($"Remove channel {channelId} member: " + remove);
+        }
+
+        foreach (var exist in exists)
+        {
+            var oldInfo = oldMemberDict[exist];
+            var newInfo = newMemberDict[exist];
+            if (oldInfo.Nickname != newInfo.Nickname)
+            {
+                logger.LogInformation($"Changed channel {channelId} member {exist} nickname from: " +
+                                      oldInfo.Nickname + " to " + newInfo.Nickname);
+                oldInfo.Nickname = newInfo.Nickname;
+            }
+            if (oldInfo.Card != newInfo.Card)
+            {
+                logger.LogInformation($"Changed channel {channelId} member {exist} card from: " +
+                                      oldInfo.Card + " to " + newInfo.Card);
+                oldInfo.Card = newInfo.Card;
+            }
+            if (oldInfo.MemberRole != newInfo.MemberRole)
+            {
+                logger.LogInformation($"Changed channel {channelId} member {exist} role from: " +
+                                      oldInfo.MemberRole + " to " + newInfo.MemberRole);
+                oldInfo.MemberRole = newInfo.MemberRole;
+            }
+        }
     }
 }
