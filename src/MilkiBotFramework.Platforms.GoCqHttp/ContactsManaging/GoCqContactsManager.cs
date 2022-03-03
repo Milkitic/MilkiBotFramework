@@ -142,14 +142,14 @@ public sealed class GoCqContactsManager : ContactsManagerBase
         }
     }
 
-    protected override bool GetContractUpdateInfo(MessageContext messageContext, [NotNullWhen(true)] out ContractUpdateInfo? updateInfo)
+    protected override bool GetContactsUpdateInfo(MessageContext messageContext, [NotNullWhen(true)] out ContactsUpdateInfo? updateInfo)
     {
         // todo
         updateInfo = null;
         return false;
     }
 
-    protected override void GetContractsCore(out Dictionary<ChannelInfo, List<MemberInfo>> channels,
+    protected override void GetContactsCore(out Dictionary<ChannelInfo, List<MemberInfo>> channels,
         out Dictionary<ChannelInfo, List<MemberInfo>> subChannels,
         out List<PrivateInfo> privates)
     {

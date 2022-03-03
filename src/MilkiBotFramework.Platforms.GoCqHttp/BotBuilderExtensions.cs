@@ -40,7 +40,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp
                 .UseDispatcher<GoCqDispatcher>()
                 .UseCommandLineAnalyzer<CommandLineAnalyzer>(new GoCqParameterConverter())
                 .UseRichMessageConverter<GoCqMessageConverter>()
-                .UseContractsManager<GoCqContactsManager>()
+                .UseContactsManager<GoCqContactsManager>()
                 .UseMessageApi<GoCqApi>();
         }
 
@@ -53,7 +53,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp
                 .UseDispatcher<GoCqDispatcher>()
                 .UseCommandLineAnalyzer<CommandLineAnalyzer>(new GoCqParameterConverter())
                 .UseRichMessageConverter<GoCqMessageConverter>()
-                .UseContractsManager<GoCqContactsManager>()
+                .UseContactsManager<GoCqContactsManager>()
                 .UseMessageApi<GoCqApi>();
         }
     }

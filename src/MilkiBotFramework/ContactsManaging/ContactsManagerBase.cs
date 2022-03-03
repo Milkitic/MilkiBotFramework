@@ -40,10 +40,10 @@ public abstract class ContactsManagerBase : IContactsManager
 
     public void InitializeTasks()
     {
-        _botTaskScheduler.AddTask("RefreshContractsTask", builder => builder
+        _botTaskScheduler.AddTask("RefreshContactsTask", builder => builder
             .ByInterval(TimeSpan.FromMinutes(5))
             .AtStartup()
-            .Do(RefreshContracts));
+            .Do(RefreshContacts));
     }
 
     public virtual Task<SelfInfoResult> TryGetOrUpdateSelfInfo()
@@ -125,9 +125,9 @@ public abstract class ContactsManagerBase : IContactsManager
         return PrivateMapping.Values;
     }
 
-    protected abstract bool GetContractUpdateInfo(MessageContext messageContext, out ContractUpdateInfo? updateInfo);
+    protected abstract bool GetContactsUpdateInfo(MessageContext messageContext, out ContactsUpdateInfo? updateInfo);
 
-    protected abstract void GetContractsCore(
+    protected abstract void GetContactsCore(
         out Dictionary<ChannelInfo, List<MemberInfo>> channels,
         out Dictionary<ChannelInfo, List<MemberInfo>> subChannels,
         out List<PrivateInfo> privates);
@@ -137,55 +137,55 @@ public abstract class ContactsManagerBase : IContactsManager
         if (e.MessageType != MessageType.Notice) return;
 
         var messageContext = e.MessageContext;
-        var success = GetContractUpdateInfo(messageContext, out var contractUpdateInfo);
+        var success = GetContactsUpdateInfo(messageContext, out var contactsUpdateInfo);
         if (!success) return;
 
-        switch (contractUpdateInfo!.ContractUpdateRole)
+        switch (contactsUpdateInfo!.ContactsUpdateRole)
         {
-            case ContractUpdateRole.Channel:
-                TryUpdateChannel(contractUpdateInfo);
+            case ContactsUpdateRole.Channel:
+                TryUpdateChannel(contactsUpdateInfo);
                 break;
-            case ContractUpdateRole.SubChannel:
-                TryUpdateSubChannel(contractUpdateInfo);
+            case ContactsUpdateRole.SubChannel:
+                TryUpdateSubChannel(contactsUpdateInfo);
                 break;
-            case ContractUpdateRole.Member:
-                TryUpdateMember(contractUpdateInfo);
+            case ContactsUpdateRole.Member:
+                TryUpdateMember(contactsUpdateInfo);
                 break;
-            case ContractUpdateRole.Private:
-                TryUpdatePrivate(contractUpdateInfo);
+            case ContactsUpdateRole.Private:
+                TryUpdatePrivate(contactsUpdateInfo);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
 
-    private void TryUpdateMember(ContractUpdateInfo updateInfo)
+    private void TryUpdateMember(ContactsUpdateInfo updateInfo)
     {
         // todo
-        _logger.LogInformation("Member " + updateInfo.ContractUpdateType + ": " + updateInfo.Id);
+        _logger.LogInformation("Member " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id);
     }
 
-    private void TryUpdateChannel(ContractUpdateInfo updateInfo)
+    private void TryUpdateChannel(ContactsUpdateInfo updateInfo)
     {
         // todo
-        _logger.LogInformation("Channel " + updateInfo.ContractUpdateType + ": " + updateInfo.Id);
+        _logger.LogInformation("Channel " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id);
     }
 
-    private void TryUpdateSubChannel(ContractUpdateInfo updateInfo)
+    private void TryUpdateSubChannel(ContactsUpdateInfo updateInfo)
     {
         // todo
-        _logger.LogInformation("SubChannel " + updateInfo.ContractUpdateType + ": " + updateInfo.Id);
+        _logger.LogInformation("SubChannel " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id);
     }
 
-    private void TryUpdatePrivate(ContractUpdateInfo updateInfo)
+    private void TryUpdatePrivate(ContactsUpdateInfo updateInfo)
     {
         // todo
-        _logger.LogInformation("Private " + updateInfo.ContractUpdateType + ": " + updateInfo.Id);
+        _logger.LogInformation("Private " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id);
     }
 
-    private void RefreshContracts(TaskContext context, CancellationToken token)
+    private void RefreshContacts(TaskContext context, CancellationToken token)
     {
-        GetContractsCore(out var channels, out var subChannels, out var privates);
+        GetContactsCore(out var channels, out var subChannels, out var privates);
         _logger.LogInformation("Refreshed!");
     }
 

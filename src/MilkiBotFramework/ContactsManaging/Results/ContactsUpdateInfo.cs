@@ -1,8 +1,8 @@
 ﻿namespace MilkiBotFramework.ContactsManaging.Results;
 
-public sealed class ContractUpdateInfo 
+public sealed class ContactsUpdateInfo 
 {
-    public ContractUpdateInfo(string? id)
+    public ContactsUpdateInfo(string? id)
     {
         Id = id;
     }
@@ -11,6 +11,6 @@ public sealed class ContractUpdateInfo
     public string? SubId { get; init; }
     public string? Card { get; init; }
     public string? NickName { get; init; }
-    public ContractUpdateRole ContractUpdateRole { get; init; }
-    public ContractUpdateType ContractUpdateType { get; init; }
+    public ContactsUpdateRole ContactsUpdateRole { get; init; }
+    public ContactsUpdateType ContactsUpdateType { get; init; }
 }

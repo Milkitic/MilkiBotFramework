@@ -154,7 +154,7 @@ public class GoCqApi : IMessageApi
 
     #endregion
 
-    #region Contracts info
+    #region Contacts info
 
     public async Task<StrangerInfo> GetStrangerInfo(long userId, bool noCache = false)
     {

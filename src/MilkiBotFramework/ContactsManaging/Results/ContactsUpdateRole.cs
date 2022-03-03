@@ -1,6 +1,6 @@
 ﻿namespace MilkiBotFramework.ContactsManaging.Results;
 
-public enum ContractUpdateRole
+public enum ContactsUpdateRole
 {
     Channel, SubChannel, Member, Private
 }

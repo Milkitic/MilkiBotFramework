@@ -25,7 +25,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     private Type? _connectorType;
     private Type? _dispatcherType;
     private Type? _messageApiType;
-    private Type? _contractsManagerType;
+    private Type? _contactsManagerType;
     private string _pluginBaseDir = "./plugins";
     private Type? _commandAnalyzerType;
     private IParameterConverter? _defaultConverter;
@@ -67,9 +67,9 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         return UseConnector<T>(connector => connector.TargetUri = uri);
     }
 
-    public TBuilder UseContractsManager<T>() where T : IContactsManager
+    public TBuilder UseContactsManager<T>() where T : IContactsManager
     {
-        _contractsManagerType = typeof(T);
+        _contactsManagerType = typeof(T);
         return (TBuilder)this;
     }
 
@@ -169,8 +169,8 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
                 _dispatcherType ?? throw new ArgumentNullException(nameof(IDispatcher),
                     "The IDispatcher implementation is not specified."))
             .AddSingleton(typeof(IContactsManager),
-                _contractsManagerType ?? throw new ArgumentNullException(nameof(IContactsManager),
-                    "The IContractsManager implementation is not specified."))
+                _contactsManagerType ?? throw new ArgumentNullException(nameof(IContactsManager),
+                    "The IContactsManager implementation is not specified."))
             .AddSingleton(typeof(Bot), typeof(TBot));
         if (_messageApiType != null)
         {

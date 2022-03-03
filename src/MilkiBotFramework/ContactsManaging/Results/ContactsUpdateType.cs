@@ -1,6 +1,6 @@
 ﻿namespace MilkiBotFramework.ContactsManaging.Results;
 
-public enum ContractUpdateType
+public enum ContactsUpdateType
 {
     Changed, Added, Removed
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging.Models;
@@ -47,7 +46,7 @@ public class MessageContext
     public DateTimeOffset ReceivedTime { get; set; }
 
     public IReadOnlyList<PluginInfo> ExecutedPlugins { get; } = new List<PluginInfo>();
-    public List<PluginInfo> NextPlugins { get; internal set; } 
+    public List<PluginInfo> NextPlugins { get; internal set; }
     public CommandLineResult? CommandLineResult { get; internal set; }
 
     public bool ValidateAuthority(MessageAuthority requiredAuthority)
