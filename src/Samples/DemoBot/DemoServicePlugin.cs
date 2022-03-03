@@ -1,11 +1,9 @@
 ﻿using System.ComponentModel;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Attributes;
-using MilkiBotFramework.Plugining.Loading;
 
 namespace DemoBot;
 

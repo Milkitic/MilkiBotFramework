@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Attributes;
-using MilkiBotFramework.Plugining.Loading;
 
 namespace DemoBot;
 
@@ -23,6 +22,9 @@ public class DemoPlugin : BasicPlugin
         _richMessageConverter = richMessageConverter;
         _pluginManager = pluginManager;
     }
+
+    [CommandHandler]
+    public IResponse Echo([Argument] string content) => Reply(content);
 
     [CommandHandler("sign")]
     [Description("Echo all of your contents.")]
