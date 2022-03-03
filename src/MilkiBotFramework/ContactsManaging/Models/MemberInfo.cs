@@ -1,6 +1,4 @@
-﻿using MilkiBotFramework.Messaging;
-
-namespace MilkiBotFramework.ContactsManaging.Models;
+﻿namespace MilkiBotFramework.ContactsManaging.Models;
 
 public sealed class MemberInfo
 {
@@ -13,5 +11,4 @@ public sealed class MemberInfo
     public string? Card { get; set; }
     public string? Nickname { get; set; }
     public MemberRole MemberRole { get; set; }
-    public MessageAuthority Authority { get; set; }
 }

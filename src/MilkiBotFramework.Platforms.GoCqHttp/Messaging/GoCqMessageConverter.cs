@@ -1,11 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using MilkiBotFramework.Imaging;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes;
 using MilkiBotFramework.Platforms.GoCqHttp.Utils;
+using SixLabors.ImageSharp.Formats.Bmp;
+using SixLabors.ImageSharp.Formats.Gif;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 
@@ -25,6 +31,34 @@ public class GoCqMessageConverter : IRichMessageConverter
             return new CQAt(at.UserId).Encode();
         if (message is Reply reply)
             return new CQReply(reply.MessageId).Encode();
+        if (message is FileImage fileImage)
+            return CQImage.FromBytes(File.ReadAllBytes(fileImage.Path)).Encode();
+        if (message is LinkImage linkImage)
+            return CQImage.FromUri(linkImage.Uri).Encode();
+        if (message is MemoryImage memImage)
+        {
+            using var ms = new MemoryStream();
+            switch (memImage.ImageType)
+            {
+                case ImageType.Jpeg:
+                    memImage.ImageSource.Save(ms, new JpegEncoder());
+                    break;
+                case ImageType.Bmp:
+                    memImage.ImageSource.Save(ms, new BmpEncoder());
+                    break;
+                case ImageType.Gif:
+                    memImage.ImageSource.Save(ms, new GifEncoder());
+                    break;
+                case ImageType.Png:
+                    memImage.ImageSource.Save(ms, new PngEncoder());
+                    break;
+                case ImageType.Unknown:
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            return CQImage.FromBytes(ms.ToArray()).Encode();
+        }
         return message.Encode();
     }
 
@@ -70,14 +104,21 @@ public class GoCqMessageConverter : IRichMessageConverter
         var i = subSpan.IndexOf(',');
         var type = i > 0 ? subSpan.Slice(0, i).ToString() : subSpan.ToString();
 
-        return type switch
+        switch (type)
         {
-            "image" => CQImage.Parse(message),
-            "face" => CQFace.Parse(message),
-            "at" => CQAt.Parse(message),
-            "reply" => CQReply.Parse(message),
-            _ => new CQUnknown(type, message.ToString())
-        };
+            case "image":
+                var image = CQImage.Parse(message);
+                if (image.DownloadUri != null) return new LinkImage(image.DownloadUri);
+                return image;
+            case "face":
+                return CQFace.Parse(message);
+            case "at":
+                return new At(CQAt.Parse(message).UserId);
+            case "reply":
+                return new Reply(CQReply.Parse(message).MessageId);
+            default:
+                return new CQUnknown(type, message.ToString());
+        }
     }
 
     private static void FillRawRanges(ReadOnlyMemory<char> message, List<(int index, int count, bool isRaw)> ranges)

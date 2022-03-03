@@ -70,7 +70,7 @@ namespace MilkiBotFramework.Tasking
             // loop implementation
             var taskOption = taskInstance.Option;
             var loggerFactory = _serviceProvider.GetService<ILoggerFactory>();
-            var logger = loggerFactory!.CreateLogger("EamTaskScheduler." + taskOption.Name);
+            var logger = loggerFactory!.CreateLogger("BotTaskScheduler." + taskOption.Name);
             var cts = taskInstance.CancellationTokenSource;
             if (taskOption.TriggerOnStartup) Execute(null, DateTime.Now);
             while (!cts.IsCancellationRequested)
@@ -93,7 +93,7 @@ namespace MilkiBotFramework.Tasking
                 Task.Run(() => Execute(trigger, nextTime), cts.Token);
             }
 
-            void Execute(Trigger t, DateTime triggerTime)
+            void Execute(Trigger? t, DateTime triggerTime)
             {
                 try
                 {
@@ -102,6 +102,7 @@ namespace MilkiBotFramework.Tasking
                     {
                         TaskId = taskOption.Id,
                         TaskName = taskOption.Name,
+                        Logger = logger,
                         Trigger = t,
                         TriggerTime = triggerTime,
                         IsStartupTrigger = t == null,

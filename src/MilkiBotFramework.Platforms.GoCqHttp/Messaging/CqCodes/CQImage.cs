@@ -172,9 +172,9 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
             LocalGoFilename = Path.GetRandomFileName();
         }
 
-        private CQImage(byte[] recordFileBytes)
+        private CQImage(byte[] imageFileBytes)
         {
-            ImageFileBytes = recordFileBytes;
+            ImageFileBytes = imageFileBytes;
             LocalGoFilename = Path.GetRandomFileName();
         }
         private CQImage(string localGoFilename)

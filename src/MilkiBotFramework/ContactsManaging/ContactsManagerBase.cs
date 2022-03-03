@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -128,9 +129,9 @@ public abstract class ContactsManagerBase : IContactsManager
     protected abstract bool GetContactsUpdateInfo(MessageContext messageContext, out ContactsUpdateInfo? updateInfo);
 
     protected abstract void GetContactsCore(
-        out Dictionary<ChannelInfo, List<MemberInfo>> channels,
-        out Dictionary<ChannelInfo, List<MemberInfo>> subChannels,
-        out List<PrivateInfo> privates);
+        out Dictionary<string, ChannelInfo> channels,
+        out Dictionary<string, ChannelInfo> subChannels,
+        out Dictionary<string, PrivateInfo> privates);
 
     private void OnEventReceived(DispatchMessageEvent e)
     {
@@ -185,8 +186,86 @@ public abstract class ContactsManagerBase : IContactsManager
 
     private void RefreshContacts(TaskContext context, CancellationToken token)
     {
-        GetContactsCore(out var channels, out var subChannels, out var privates);
-        _logger.LogInformation("Refreshed!");
+        GetContactsCore(out var channels,
+            out var subChannels,
+            out var privates);
+
+        RefreshChannels(channels, context.Logger);
+        RefreshPrivates(privates, context.Logger);
+        // todo subchannels
+    }
+
+    private void RefreshPrivates(Dictionary<string, PrivateInfo> privates, ILogger logger)
+    {
+        var newPrivates = privates.Keys.ToHashSet();
+        var oldPrivates = PrivateMapping.Keys.ToHashSet();
+
+        var adds = newPrivates.Where(k => !oldPrivates.Contains(k));
+        var exists = newPrivates.Where(k => oldPrivates.Contains(k)).ToArray();
+        var removes = oldPrivates.Except(exists);
+
+        foreach (var add in adds)
+        {
+            PrivateMapping.TryAdd(add, privates[add]);
+            logger.LogInformation("Added private: " + add);
+        }
+
+        foreach (var remove in removes)
+        {
+            PrivateMapping.TryRemove(remove, out _);
+            logger.LogInformation("Removed private: " + remove);
+        }
+
+        foreach (var exist in exists)
+        {
+            var oldInfo = PrivateMapping[exist];
+            var newInfo = privates[exist];
+            if (oldInfo.Nickname != newInfo.Nickname)
+            {
+                logger.LogInformation($"Changed private {exist} nickname from: " + oldInfo.Nickname + " to " +
+                                      newInfo.Nickname);
+                oldInfo.Nickname = newInfo.Nickname;
+            }
+            if (oldInfo.Remark != newInfo.Remark)
+            {
+                logger.LogInformation($"Changed private {exist} remark from: " + oldInfo.Remark + " to " +
+                                      newInfo.Remark);
+                oldInfo.Remark = newInfo.Remark;
+            }
+        }
+    }
+
+    private void RefreshChannels(Dictionary<string, ChannelInfo> channels, ILogger logger)
+    {
+        var newChannels = channels.Keys.ToHashSet();
+        var oldChannels = ChannelMapping.Keys.ToHashSet();
+
+        var adds = newChannels.Where(k => !oldChannels.Contains(k));
+        var exists = newChannels.Where(k => oldChannels.Contains(k)).ToArray();
+        var removes = oldChannels.Except(exists);
+
+        foreach (var add in adds)
+        {
+            ChannelMapping.TryAdd(add, channels[add]);
+            logger.LogInformation("Add channel and members: " + add);
+        }
+
+        foreach (var remove in removes)
+        {
+            ChannelMapping.TryRemove(remove, out _);
+            logger.LogInformation("Remove channel and members: " + remove);
+        }
+
+        foreach (var exist in exists)
+        {
+            var oldInfo = ChannelMapping[exist];
+            var newInfo = channels[exist];
+            if (oldInfo.Name != newInfo.Name)
+            {
+                logger.LogInformation($"Changed channel {exist} name from: " + oldInfo.Name + " to " + newInfo.Name);
+                oldInfo.Name = newInfo.Name;
+            }
+        }
     }
 
     private bool GetChannelOrSubChannel(string channelId, string? subChannelId, [NotNullWhen(true)] out ChannelInfo? channelInfo)

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using MilkiBotFramework.Platforms.GoCqHttp.Internal;
 
@@ -8,7 +7,8 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel
     public class GroupInfo
     {
         [JsonPropertyName("group_id")]
-        public long GroupId { get; set; }
+        [JsonConverter(typeof(Int64ToStringConverter))]
+        public string GroupId { get; set; }
 
         [JsonPropertyName("group_name")]
         public string GroupName { get; set; }
@@ -28,10 +28,5 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel
 
         [JsonPropertyName("max_member_count")]
         public int MaxMemberCount { get; set; }
-
-        [JsonIgnore]
-        public List<GroupMember> Members { get; set; }
-        //[JsonIgnore]
-        //public long SubId { get; set; }
     }
 }

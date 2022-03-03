@@ -19,6 +19,7 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
     private readonly AsyncLock _asyncLock = new();
     private WebsocketClient? _client;
     private readonly ConcurrentDictionary<string, WebsocketRequestSession> _sessions = new();
+    private bool _isConnected = false;
 
     public WebSocketClientConnector(ILogger<WebSocketClientConnector> logger)
     {
@@ -56,18 +57,29 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
             MessageEncoding = Encoding,
         };
         _client.ReconnectionHappened.Subscribe(info =>
-            _logger.LogInformation($"Reconnection happened, type: {info.Type}")
-        );
+        {
+            _isConnected = true;
+            if (info.Type == ReconnectionType.Initial)
+                _logger.LogInformation("Connected to websocket server.");
+            else
+                _logger.LogInformation("Reconnected to websocket server.");
+        });
         _client.DisconnectionHappened.Subscribe(info =>
-            _logger.LogWarning($"Disconnection happened, type: {info.Type}")
-        );
+        {
+            var action = _isConnected ? "Disconnected from" : "Cannot connect to";
+            _isConnected = false;
+            if (info.Exception != null)
+                _logger.LogWarning($"{action} the websocket server: {info.Exception.Message}");
+            else
+                _logger.LogWarning($"{action} the websocket server: {info.Type}");
+        });
         _client.MessageReceived.Subscribe(async msg => await OnMessageReceived(msg));
 
         try
         {
-            _logger.LogInformation($"Try connecting to websocket server {TargetUri}...");
+            _logger.LogInformation($"Starting managed websocket connection to {TargetUri}...");
             await _client.Start();
-            _logger.LogInformation($"Connected to websocket server.");
+            //_logger.LogInformation($"Connected to websocket server.");
         }
         catch (Exception e)
         {
@@ -95,6 +107,8 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
         if (_client == null)
             throw new ArgumentNullException(nameof(_client),
                 "WebsocketClient is not ready. Try to connect before sending message.");
+        //if (!_isConnected)
+        //    throw new Exception("WebsocketClient is not connected.");
 
         var tcs = new TaskCompletionSource();
         using var cts = new CancellationTokenSource(MessageTimeout);

@@ -1,6 +1,4 @@
-﻿using MilkiBotFramework.Messaging;
-
-namespace MilkiBotFramework.ContactsManaging.Models;
+﻿namespace MilkiBotFramework.ContactsManaging.Models;
 
 public sealed class PrivateInfo
 {
@@ -13,5 +11,4 @@ public sealed class PrivateInfo
     public string? Remark { get; set; }
     public string? Nickname { get; set; }
     public Avatar? Avatar { get; set; }
-    public MessageAuthority Authority { get; set; }
 }

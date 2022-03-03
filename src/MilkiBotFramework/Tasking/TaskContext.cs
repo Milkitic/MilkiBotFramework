@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 
 namespace MilkiBotFramework.Tasking
 {
@@ -22,7 +23,7 @@ namespace MilkiBotFramework.Tasking
         /// 本次任务执行的触发器
         /// <para>当Startup触发时为null。</para>
         /// </summary>
-        public Trigger Trigger { get; init; }
+        public Trigger? Trigger { get; init; }
 
         /// <summary>
         /// 是否是Startup触发
@@ -49,5 +50,7 @@ namespace MilkiBotFramework.Tasking
         /// 以触发器为单位，下次执行的时间列表
         /// </summary>
         public IReadOnlyList<DateTime> NextTriggerTimes { get; init; }
+
+        public ILogger Logger { get; set; }
     }
 }

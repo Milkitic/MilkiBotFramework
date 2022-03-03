@@ -35,13 +35,13 @@ public class MessageContext
 
     public MessageUserIdentity? MessageUserIdentity { get; set; }
     public MessageIdentity? MessageIdentity { get; set; }
-    public MessageAuthority Authority =>
-        MessageIdentity?.MessageType switch
-        {
-            MessageType.Private => PrivateInfo!.Authority,
-            MessageType.Channel => MemberInfo!.Authority,
-            _ => MessageAuthority.Unspecified
-        };
+    public MessageAuthority Authority { get; set; }
+    //MessageIdentity?.MessageType switch
+    //{
+    //    MessageType.Private => PrivateInfo!.Authority,
+    //    MessageType.Channel => MemberInfo!.Authority,
+    //    _ => MessageAuthority.Unspecified
+    //};
 
     public DateTimeOffset ReceivedTime { get; set; }
 

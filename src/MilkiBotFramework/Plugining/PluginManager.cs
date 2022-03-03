@@ -119,7 +119,13 @@ public partial class PluginManager
             asyncMsg.SetMessage(new AsyncMessageResponse(messageContext.MessageId!,
                 messageContext.TextMessage!,
                 messageContext.ReceivedTime,
-                s => _richMessageConverter.Decode(s.AsMemory())));
+                s => _richMessageConverter.Decode(s.AsMemory()),
+                s =>
+                {
+                    _commandLineAnalyzer.TryAnalyze(s, out var result, out var ex);
+                    if (ex != null) throw ex;
+                    return result;
+                }));
             return;
         }
 

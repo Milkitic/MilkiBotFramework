@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContactsManaging;
@@ -149,10 +151,48 @@ public sealed class GoCqContactsManager : ContactsManagerBase
         return false;
     }
 
-    protected override void GetContactsCore(out Dictionary<ChannelInfo, List<MemberInfo>> channels,
-        out Dictionary<ChannelInfo, List<MemberInfo>> subChannels,
-        out List<PrivateInfo> privates)
+    protected override void GetContactsCore(
+        out Dictionary<string, ChannelInfo> channels,
+        out Dictionary<string, ChannelInfo> subChannels,
+        out Dictionary<string, PrivateInfo> privates)
     {
-        throw new System.NotImplementedException();
+        var friends = _goCqApi.GetFriends().Result;
+        privates = friends.Select(k => new PrivateInfo(k.UserId)
+        {
+            Nickname = k.Nickname,
+            Remark = k.Remark,
+        }).ToDictionary(k => k.UserId, k => k);
+        channels = new Dictionary<string, ChannelInfo>();
+        subChannels = new Dictionary<string, ChannelInfo>();
+
+        var allGroups = _goCqApi.GetGroups().Result;
+        foreach (var groupInfo in allGroups)
+        {
+            var allMembers = _goCqApi.GetFuzzyGroupMembers(Convert.ToInt64(groupInfo.GroupId)).Result;
+            var channelInfo = new ChannelInfo(groupInfo.GroupId)
+            {
+                Name = groupInfo.GroupName,
+            };
+            foreach (var groupMember in allMembers)
+            {
+                var memberInfo = new MemberInfo(groupMember.UserId)
+                {
+                    Card = groupMember.Card,
+                    MemberRole = groupMember.Role switch
+                    {
+                        "owner" => MemberRole.Owner,
+                        "admin" => MemberRole.Admin,
+                        "member" => MemberRole.Member,
+                        _ => MemberRole.Member
+                    },
+                    Nickname = groupMember.Nickname
+                };
+                channelInfo.Members.TryAdd(memberInfo.UserId, memberInfo);
+            }
+
+            channels.Add(channelInfo.ChannelId, channelInfo);
+        }
+
+        //todo: guild
     }
 }

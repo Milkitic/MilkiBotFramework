@@ -60,12 +60,12 @@ public class GoCqApi : IMessageApi
 
     public async Task<LoginInfo> GetLoginInfo()
     {
-        return await RequestAsync<LoginInfo>(Actions.GetLoginInfo, null);
+        return await RequestAsync<LoginInfo>(Actions.GetLoginInfo, null).ConfigureAwait(false);
     }
 
     public async Task<GuildServiceProfile> GetGuildServiceProfile()
     {
-        return await RequestAsync<GuildServiceProfile>(Actions.GetGuildServiceProfile, null);
+        return await RequestAsync<GuildServiceProfile>(Actions.GetGuildServiceProfile, null).ConfigureAwait(false);
     }
 
     #endregion
@@ -83,7 +83,7 @@ public class GoCqApi : IMessageApi
         {
             { "message_id", messageId },
         };
-        var response = await RequestAsync<GetMsgResponse>(Actions.GetMsg, parameters);
+        var response = await RequestAsync<GetMsgResponse>(Actions.GetMsg, parameters).ConfigureAwait(false);
         return response;
     }
 
@@ -97,7 +97,7 @@ public class GoCqApi : IMessageApi
         {
             { "message_id", messageId }
         };
-        await RequestAsync(Actions.DeleteMsg, parameters);
+        await RequestAsync(Actions.DeleteMsg, parameters).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -120,7 +120,7 @@ public class GoCqApi : IMessageApi
             { "auto_escape", autoEscape }
         };
         if (groupId != null) parameters.Add("group_id", groupId);
-        var response = await RequestAsync<MsgResponse>(Actions.SendPrivateMsg, parameters);
+        var response = await RequestAsync<MsgResponse>(Actions.SendPrivateMsg, parameters).ConfigureAwait(false);
         return response.MessageId;
     }
 
@@ -137,7 +137,7 @@ public class GoCqApi : IMessageApi
             { "group_id", messageId },
             { "message", message }
         };
-        var response = await RequestAsync<MsgResponse>(Actions.SendGroupMsg, parameters);
+        var response = await RequestAsync<MsgResponse>(Actions.SendGroupMsg, parameters).ConfigureAwait(false);
         return response.MessageId;
     }
 
@@ -149,7 +149,7 @@ public class GoCqApi : IMessageApi
             { "channel_id", subChannelId },
             { "message", message },
         };
-        return (await RequestAsync<MsgResponse>(Actions.SendGuildChannelMsg, parameters)).MessageId;
+        return (await RequestAsync<MsgResponse>(Actions.SendGuildChannelMsg, parameters).ConfigureAwait(false)).MessageId;
     }
 
     #endregion
@@ -163,17 +163,17 @@ public class GoCqApi : IMessageApi
             { "user_id", userId },
             { "no_cache", noCache }
         };
-        return await RequestAsync<StrangerInfo>(Actions.GetStrangerInfo, parameters);
+        return await RequestAsync<StrangerInfo>(Actions.GetStrangerInfo, parameters).ConfigureAwait(false);
     }
 
     public async Task<List<FriendInfo>> GetFriends()
     {
-        return await RequestAsync<List<FriendInfo>>(Actions.GetFriendList, null);
+        return await RequestAsync<List<FriendInfo>>(Actions.GetFriendList, null).ConfigureAwait(false);
     }
 
     public async Task<List<GroupInfo>> GetGroups()
     {
-        return await RequestAsync<List<GroupInfo>>(Actions.GetGroupList, null);
+        return await RequestAsync<List<GroupInfo>>(Actions.GetGroupList, null).ConfigureAwait(false);
     }
 
     public async Task<GroupInfo> GetGroupInfo(long groupId)
@@ -182,7 +182,7 @@ public class GoCqApi : IMessageApi
         {
             { "group_id", groupId }
         };
-        return await RequestAsync<GroupInfo>(Actions.GetGroupInfo, parameters);
+        return await RequestAsync<GroupInfo>(Actions.GetGroupInfo, parameters).ConfigureAwait(false);
     }
 
     public async Task<List<GroupMember>> GetFuzzyGroupMembers(long groupId)
@@ -191,7 +191,7 @@ public class GoCqApi : IMessageApi
         {
             { "group_id", groupId }
         };
-        return await RequestAsync<List<GroupMember>>(Actions.GetGroupMemberList, parameters);
+        return await RequestAsync<List<GroupMember>>(Actions.GetGroupMemberList, parameters).ConfigureAwait(false);
     }
 
     public async Task<GroupMember> GetGroupMemberDetail(long groupId, long userId, bool noCache = false)
@@ -203,12 +203,12 @@ public class GoCqApi : IMessageApi
             { "no_cache", noCache }
         };
 
-        return await RequestAsync<GroupMember>(Actions.GetGroupMemberInfo, parameters);
+        return await RequestAsync<GroupMember>(Actions.GetGroupMemberInfo, parameters).ConfigureAwait(false);
     }
 
     public async Task<List<GuildBrief>> GetGuilds()
     {
-        return await RequestAsync<List<GuildBrief>>(Actions.GetGuildList, null);
+        return await RequestAsync<List<GuildBrief>>(Actions.GetGuildList, null).ConfigureAwait(false);
     }
 
     public async Task<GuildInfo> GetGuildMetaByGuest(long guildId)
@@ -217,7 +217,7 @@ public class GoCqApi : IMessageApi
         {
             { "guild_id", guildId.ToString() } // temporary str
         };
-        return await RequestAsync<GuildInfo>(Actions.GetGuildMetaByGuest, parameters);
+        return await RequestAsync<GuildInfo>(Actions.GetGuildMetaByGuest, parameters).ConfigureAwait(false);
     }
 
     public async Task<List<SubChannelInfo>> GetGuildChannelList(long guildId)
@@ -226,7 +226,7 @@ public class GoCqApi : IMessageApi
         {
             { "guild_id", guildId.ToString() } // temporary str
         };
-        return await RequestAsync<List<SubChannelInfo>>(Actions.GetGuildChannelList, parameters);
+        return await RequestAsync<List<SubChannelInfo>>(Actions.GetGuildChannelList, parameters).ConfigureAwait(false);
     }
 
     public async Task<GetGuildMembersResponse> GetGuildMembers(long guildId)
@@ -235,7 +235,7 @@ public class GoCqApi : IMessageApi
         {
             { "guild_id", guildId.ToString() } // temporary str
         };
-        return await RequestAsync<GetGuildMembersResponse>(Actions.GetGuildMembers, parameters);
+        return await RequestAsync<GetGuildMembersResponse>(Actions.GetGuildMembers, parameters).ConfigureAwait(false);
     }
 
     #endregion
@@ -250,7 +250,7 @@ public class GoCqApi : IMessageApi
             {"user_id", userId},
             {"duration", (int)duration.TotalSeconds}
         };
-        await RequestAsync(Actions.SetGroupBan, parameters);
+        await RequestAsync(Actions.SetGroupBan, parameters).ConfigureAwait(false);
     }
 
     public async Task SetFriendAddRequest(FriendAddRequest request)
@@ -262,7 +262,7 @@ public class GoCqApi : IMessageApi
             {"remark", request.Remark}
         };
 
-        await RequestAsync(Actions.SetFriendAddRequest, parameters);
+        await RequestAsync(Actions.SetFriendAddRequest, parameters).ConfigureAwait(false);
     }
 
     public async Task SetGroupAddRequest(GroupAddRequest request)
@@ -276,14 +276,14 @@ public class GoCqApi : IMessageApi
             {"reason", request.Reason}
         };
 
-        await RequestAsync(Actions.SetGroupAddRequest, parameters);
+        await RequestAsync(Actions.SetGroupAddRequest, parameters).ConfigureAwait(false);
     }
 
     #endregion
 
     private async Task RequestAsync(string url, IDictionary<string, object>? parameters)
     {
-        var response = await _goCqConnector.SendMessageAsync(url, parameters);
+        var response = await _goCqConnector.SendMessageAsync(url, parameters).ConfigureAwait(false);
         if (response == null)
             throw new Exception("未知错误，请检查连接是否正常");
 
@@ -297,7 +297,7 @@ public class GoCqApi : IMessageApi
 
     private async Task<T> RequestAsync<T>(string url, IDictionary<string, object>? parameters)
     {
-        var response = await _goCqConnector.SendMessageAsync<T>(url, parameters);
+        var response = await _goCqConnector.SendMessageAsync<T>(url, parameters).ConfigureAwait(false);
         if (response == null)
             throw new Exception("未知错误，请检查连接是否正常");
 

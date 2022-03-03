@@ -26,7 +26,7 @@ public class DemoPlugin : BasicPlugin
     [CommandHandler]
     public IResponse Echo([Argument] string content) => Reply(content);
 
-    [CommandHandler("sign")]
+    [CommandHandler("model")]
     [Description("Echo all of your contents.")]
     public async Task<IResponse> ModelBinding(BindingModel bindingModel)
     {
