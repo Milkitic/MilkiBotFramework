@@ -6,5 +6,5 @@ namespace MilkiBotFramework.Plugining;
 public interface IMessagePlugin
 {
     IAsyncEnumerable<IResponse> OnMessageReceived(MessageContext context);
-    Task<IResponse> OnBindingFailed(BindingException bindingException, MessageContext context);
+    Task<IResponse?> OnBindingFailed(BindingException bindingException, MessageContext context);
 }

@@ -190,11 +190,11 @@ public partial class PluginManager
                     }
                     catch (BindingException ex)
                     {
-                        var errMsg = $"Command binding failed ({ex.BindingFailureType}). " +
-                                     $"Command={ex.BindingSource.CommandInfo.Command};";
+                        var errMsg = $"Command binding failed ({ex.BindingFailureType}; /{ex.BindingSource.CommandInfo.Command}";
                         if (ex.BindingSource.ParameterInfo != null)
-                            errMsg += $" Parameter={ex.BindingSource.ParameterInfo.Name}";
-                        _logger.LogWarning(ex, errMsg);
+                            errMsg += $".{(ex.BindingSource.ParameterInfo.Name ?? ex.BindingSource.ParameterInfo.ParameterName)}";
+                        errMsg += "). Message: " + ex.Message;
+                        _logger.LogWarning(errMsg);
 
                         var messagePlugin = (IMessagePlugin)pluginInstance;
                         var response = await messagePlugin.OnBindingFailed(ex, messageContext);

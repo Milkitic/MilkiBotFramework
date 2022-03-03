@@ -331,15 +331,14 @@ public class CommandInjector
                 throw new BindingException("Convert error",
                     new BindingSource(commandInfo, paramDef), BindingFailureType.ConvertError, ex);
             }
-
-            // todo: equality helper
-            if (argValue == paramDef.DefaultValue) return argValue;
+            
+            if (EqualityComparer<object>.Default.Equals(argValue, paramDef.DefaultValue)) return argValue;
             if (paramDef.Authority > messageContext.Authority)
             {
                 throw new BindingException(
                     "The specified argument needs a higher authority to change the default value. Current: " + messageContext.Authority +
                     "; Desired: " + commandInfo.Authority,
-                    new BindingSource(commandInfo, null), BindingFailureType.AuthenticationFailed);
+                    new BindingSource(commandInfo, paramDef), BindingFailureType.AuthenticationFailed);
             }
         }
 
@@ -366,14 +365,13 @@ public class CommandInjector
                     new BindingSource(commandInfo, paramDef), BindingFailureType.ConvertError, ex);
             }
 
-            // todo: equality helper
-            if (optionValue == paramDef.DefaultValue) return optionValue;
+            if (EqualityComparer<object>.Default.Equals(optionValue, paramDef.DefaultValue)) return optionValue;
             if (paramDef.Authority > messageContext.Authority)
             {
                 throw new BindingException(
                     "The specified option needs a higher authority to change the default value. Current: " + messageContext.Authority +
                     "; Desired: " + commandInfo.Authority,
-                    new BindingSource(commandInfo, null), BindingFailureType.AuthenticationFailed);
+                    new BindingSource(commandInfo, paramDef), BindingFailureType.AuthenticationFailed);
             }
         }
         else

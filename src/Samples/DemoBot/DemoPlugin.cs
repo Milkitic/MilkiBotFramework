@@ -23,10 +23,32 @@ public class DemoPlugin : BasicPlugin
         _pluginManager = pluginManager;
     }
 
+    [CommandHandler("group", AllowedMessageType = MessageType.Channel)]
+    public IResponse Group([Argument] string content = "world")
+    {
+        return Reply("hello group");
+    }
+
+    [CommandHandler("private", AllowedMessageType = MessageType.Private)]
+    public IResponse Private([Argument] string content = "world")
+    {
+        return Reply("hello private");
+    }
+
     [CommandHandler("hello")]
     public IResponse EchoRoot1([Argument(Authority = MessageAuthority.Admin)] string content = "world")
     {
         return Reply("hello " + content);
+    }
+
+    public override async Task<IResponse?> OnBindingFailed(BindingException bindingException, MessageContext context)
+    {
+        if (bindingException.BindingSource.CommandInfo.Command == "hello")
+        {
+            return Reply("hello的参数只有管理员才能使用哦");
+        }
+
+        return null;
     }
 
     [CommandHandler(Authority = MessageAuthority.Admin)]
