@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Tasking
+﻿namespace MilkiBotFramework.Tasking
 {
     /// <summary>
     /// 计划任务触发器。

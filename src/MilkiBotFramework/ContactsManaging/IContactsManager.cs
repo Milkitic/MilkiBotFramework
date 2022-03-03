@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using MilkiBotFramework.ContactsManaging.Models;
+﻿using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
 
 namespace MilkiBotFramework.ContactsManaging;

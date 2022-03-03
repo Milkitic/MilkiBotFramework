@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace MilkiBotFramework.Messaging;
+﻿namespace MilkiBotFramework.Messaging;
 
 internal class AsyncMessage : IAsyncMessage
 {

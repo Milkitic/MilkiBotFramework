@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace MilkiBotFramework.Messaging.RichMessages;
+﻿namespace MilkiBotFramework.Messaging.RichMessages;
 
 public class Reply : IRichMessage
 {

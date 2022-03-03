@@ -1,5 +1,4 @@
-﻿using System;
-using MilkiBotFramework.Messaging;
+﻿using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining.Loading;
 
 namespace MilkiBotFramework.Plugining.Attributes;

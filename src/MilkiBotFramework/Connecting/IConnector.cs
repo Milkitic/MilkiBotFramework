@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-
-namespace MilkiBotFramework.Connecting;
+﻿namespace MilkiBotFramework.Connecting;
 
 public interface IConnector : IConnectorConfigurable
 {

@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Threading.Tasks;
-using MilkiBotFramework.Imaging;
+﻿using MilkiBotFramework.Imaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.GoCqHttp.Utils;
 using SixLabors.ImageSharp;

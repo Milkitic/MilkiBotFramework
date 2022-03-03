@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Plugining;
+﻿namespace MilkiBotFramework.Plugining;
 
 public class PluginMetadata
 {

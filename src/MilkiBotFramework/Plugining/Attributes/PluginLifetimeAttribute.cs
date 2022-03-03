@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Plugining.Attributes;
+﻿namespace MilkiBotFramework.Plugining.Attributes;
 
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class PluginLifetimeAttribute : Attribute

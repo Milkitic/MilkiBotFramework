@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
+﻿namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 
 public class GoCqApiException : Exception
 {

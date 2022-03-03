@@ -1,7 +1,4 @@
-﻿using System.IO;
-using System.Threading.Tasks;
-using MilkiBotFramework.Connecting;
-using MilkiBotFramework.Utils;
+﻿using MilkiBotFramework.Connecting;
 using SixLabors.ImageSharp;
 
 namespace MilkiBotFramework.Messaging.RichMessages;

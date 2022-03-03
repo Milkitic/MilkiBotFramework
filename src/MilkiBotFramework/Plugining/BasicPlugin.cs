@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using MilkiBotFramework.Messaging;
+﻿using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining.Attributes;
 
 namespace MilkiBotFramework.Plugining;

@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace MilkiBotFramework.Dispatching
+﻿namespace MilkiBotFramework.Dispatching
 {
     public interface IDispatcher
     {

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace MilkiBotFramework.Plugining.Loading;
+﻿namespace MilkiBotFramework.Plugining.Loading;
 
 public class ModelBindingInfo
 {

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Messaging;
+﻿namespace MilkiBotFramework.Messaging;
 
 public class MessageTimeoutException : Exception
 {

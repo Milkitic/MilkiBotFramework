@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Plugining.Attributes;
@@ -357,7 +351,7 @@ public partial class PluginManager
             }
 
             var commandInfo = new CommandInfo(command, methodDescription, methodInfo, returnType,
-                commandHandlerAttribute.Authority, commandHandlerAttribute.AllowedMessageType, 
+                commandHandlerAttribute.Authority, commandHandlerAttribute.AllowedMessageType,
                 parameterInfos.ToArray());
 
             commands.Add(command, commandInfo);

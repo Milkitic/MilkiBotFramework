@@ -1,5 +1,4 @@
-﻿using System;
-using MilkiBotFramework.Messaging.RichMessages;
+﻿using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Plugining.Loading;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp;

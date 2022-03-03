@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 
 namespace MilkiBotFramework.Plugining.CommandLine;
 
@@ -21,9 +18,9 @@ public sealed class CommandLineResult
     }
 
     public CommandLineAuthority Authority { get; }
-    public ReadOnlyMemory<char>? Command { get;  }
+    public ReadOnlyMemory<char>? Command { get; }
     public Dictionary<ReadOnlyMemory<char>, ReadOnlyMemory<char>?> Options { get; }
-    public List<ReadOnlyMemory<char>> Arguments { get;  }
+    public List<ReadOnlyMemory<char>> Arguments { get; }
     public ReadOnlyMemory<char> SimpleArgument { get; }
 
     public override string ToString()

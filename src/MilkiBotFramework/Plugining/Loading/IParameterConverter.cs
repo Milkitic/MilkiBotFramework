@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Plugining.Loading;
+﻿namespace MilkiBotFramework.Plugining.Loading;
 
 public interface IParameterConverter
 {

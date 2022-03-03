@@ -1,6 +1,6 @@
 ﻿namespace MilkiBotFramework.ContactsManaging.Results;
 
-public sealed class ContactsUpdateInfo 
+public sealed class ContactsUpdateInfo
 {
     public ContactsUpdateInfo(string? id)
     {

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
@@ -7,7 +6,6 @@ using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
-using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 using MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 using MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events;
 

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Tasking
+﻿namespace MilkiBotFramework.Tasking
 {
     /// <summary>
     /// 时间戳偏移

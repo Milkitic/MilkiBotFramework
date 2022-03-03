@@ -1,6 +1,4 @@
-﻿using System.Threading;
-
-namespace MilkiBotFramework.Tasking
+﻿namespace MilkiBotFramework.Tasking
 {
     /// <summary>
     /// 任务执行Delegate

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Connecting;
+﻿namespace MilkiBotFramework.Connecting;
 
 public sealed class LightHttpClientCreationOptions
 {

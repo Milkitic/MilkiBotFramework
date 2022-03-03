@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace MilkiBotFramework.Tasking
+﻿namespace MilkiBotFramework.Tasking
 {
     /// <summary>
     /// 任务设置

@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using MilkiBotFramework.Messaging.RichMessages;
+﻿using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {

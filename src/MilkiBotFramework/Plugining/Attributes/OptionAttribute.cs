@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Plugining.Attributes;
+﻿namespace MilkiBotFramework.Plugining.Attributes;
 
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class OptionAttribute : ParameterAttribute

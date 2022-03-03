@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Reflection;
+﻿using System.Reflection;
 using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.Plugining.Loading
@@ -10,7 +9,7 @@ namespace MilkiBotFramework.Plugining.Loading
             string description,
             MethodInfo methodInfo,
             CommandReturnType commandReturnType,
-            MessageAuthority authority, 
+            MessageAuthority authority,
             MessageType messageType,
             IReadOnlyList<CommandParameterInfo> parameterInfos)
         {

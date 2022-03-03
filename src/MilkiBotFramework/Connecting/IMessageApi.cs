@@ -1,7 +1,4 @@
-﻿using System.Threading.Tasks;
-using MilkiBotFramework.Messaging.RichMessages;
-
-namespace MilkiBotFramework.Connecting;
+﻿namespace MilkiBotFramework.Connecting;
 
 public interface IMessageApi
 {

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Plugining.CommandLine;
+﻿namespace MilkiBotFramework.Plugining.CommandLine;
 
 public class CommandLineException : Exception
 {

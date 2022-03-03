@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Plugining.Attributes;
+﻿namespace MilkiBotFramework.Plugining.Attributes;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public class RegexCommandAttribute : Attribute

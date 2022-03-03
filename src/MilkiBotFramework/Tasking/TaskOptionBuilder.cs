@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Tasking
+﻿namespace MilkiBotFramework.Tasking
 {
     /// <summary>
     /// 为<see cref="TaskOption"/>的包装，以采用Fluent API配置

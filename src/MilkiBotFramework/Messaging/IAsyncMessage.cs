@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-
-namespace MilkiBotFramework.Messaging;
+﻿namespace MilkiBotFramework.Messaging;
 
 public interface IAsyncMessage
 {

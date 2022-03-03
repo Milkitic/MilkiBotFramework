@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace MilkiBotFramework.Plugining.Loading;
+﻿namespace MilkiBotFramework.Plugining.Loading;
 
 public sealed class PluginInfo
 {
-    public PluginInfo(PluginMetadata metadata, 
-        Type type, 
+    public PluginInfo(PluginMetadata metadata,
+        Type type,
         Type baseType,
         PluginLifetime lifetime,
         IReadOnlyDictionary<string, CommandInfo> commands,

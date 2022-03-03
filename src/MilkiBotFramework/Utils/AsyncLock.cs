@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace MilkiBotFramework.Utils;
+﻿namespace MilkiBotFramework.Utils;
 
 /// <summary>
 /// SemaphoreSlim为核心的lock()异步实现

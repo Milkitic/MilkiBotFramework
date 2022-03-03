@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace MilkiBotFramework.Messaging;
+﻿namespace MilkiBotFramework.Messaging;
 
 public sealed class MessageUserIdentity
 {

@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using MilkiBotFramework.Aspnetcore;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;

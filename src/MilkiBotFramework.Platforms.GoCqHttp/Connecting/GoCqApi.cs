@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using MilkiBotFramework.Connecting;
+﻿using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel.Guild;

@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-namespace MilkiBotFramework.Platforms.GoCqHttp.Utils;
+﻿namespace MilkiBotFramework.Platforms.GoCqHttp.Utils;
 
 public static class EncodingHelper
 {
