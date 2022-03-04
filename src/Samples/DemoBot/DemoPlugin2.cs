@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Attributes;
+using MilkiBotFramework.Plugining.Resources;
 
 namespace DemoBot;
 
@@ -11,9 +12,10 @@ public class DemoPlugin2 : BasicPlugin<GoCqMessageContext>
 {
     private readonly ILogger<DemoPlugin2> _logger;
 
-    public DemoPlugin2(ILogger<DemoPlugin2> logger)
+    public DemoPlugin2(ILogger<DemoPlugin2> logger, ConfigurationFactory configurationFactory)
     {
         _logger = logger;
+        var config = configurationFactory.GetConfiguration<TestConfiguration>();
     }
 
     //protected override async Task OnInitialized()
@@ -35,4 +37,9 @@ public class DemoPlugin2 : BasicPlugin<GoCqMessageContext>
     //{
     //    _logger.LogDebug(nameof(OnExecuted));
     //}
+}
+
+public class TestConfiguration : ConfigurationBase
+{
+    public string Key1 { get; set; }
 }

@@ -7,6 +7,9 @@ using MilkiBotFramework.Plugining.Loading;
 
 namespace MilkiBotFramework.Messaging;
 
+/// <summary>
+/// 表示一个类，用以传递单条消息的上下文信息。
+/// </summary>
 public class MessageContext
 {
     private readonly IRichMessageConverter _richMessageConverter;

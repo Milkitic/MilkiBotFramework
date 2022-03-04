@@ -10,6 +10,11 @@ using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.Dispatching;
 
+/// <summary>
+/// 表示一个类，用以分发处理后的消息。
+/// <para>该类可处理原始的字符串消息，将结果以<see cref="EventBus"/>的途径分发。</para>
+/// </summary>
+/// <typeparam name="TMessageContext"><see cref="MessageContext"/>类型</typeparam>
 public abstract class DispatcherBase<TMessageContext> : IDispatcher
     where TMessageContext : MessageContext
 {
@@ -71,7 +76,6 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         }
 
         messageContext.MessageIdentity = messageIdentity;
-        TrySetTextMessage(messageContext);
         switch (messageIdentity!.MessageType)
         {
             case MessageType.Private:
@@ -122,6 +126,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                 throw new ArgumentOutOfRangeException();
         }
 
+        TrySetTextMessage(messageContext);
         await _eventBus.PublishAsync(new DispatchMessageEvent(messageContext, messageIdentity.MessageType));
     }
 

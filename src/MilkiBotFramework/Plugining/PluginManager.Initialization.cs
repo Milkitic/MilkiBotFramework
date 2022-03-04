@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -63,7 +64,7 @@ public partial class PluginManager
                 }
 
                 if (failList.Count == 0) continue;
-                foreach (var pluginInfo in failList) assemblyContext.PluginInfos.Remove(pluginInfo);
+                foreach (var pluginInfo in failList) pluginInfo.InitializationFailed = true;
             }
         }
 
@@ -81,14 +82,15 @@ public partial class PluginManager
         var ctx = !isRuntimeContext
             ? new AssemblyLoadContext(contextName) // No need to hot unload.
             : AssemblyLoadContext.Default;
+        var dict = new Dictionary<string, AssemblyContext>();
         var loaderContext = new LoaderContext
         {
             AssemblyLoadContext = ctx,
             ServiceCollection = new ServiceCollection(),
             Name = contextName ?? "Host",
-            IsRuntimeContext = isRuntimeContext
+            IsRuntimeContext = isRuntimeContext,
+            AssemblyContexts = new ReadOnlyDictionary<string, AssemblyContext>(dict)
         };
-
         foreach (var assemblyResult in assemblyResults)
         {
             var assemblyPath = assemblyResult.AssemblyPath;
@@ -133,24 +135,7 @@ public partial class PluginManager
                     : ctx.LoadFromAssemblyPath(assemblyPath);
                 if (asm != null)
                 {
-                    var asmContext = new AssemblyContext
-                    {
-                        Assembly = asm
-                    };
-
-                    if (assemblyResult.DbContexts.Length > 0)
-                    {
-                        foreach (var dbContext in assemblyResult.DbContexts)
-                        {
-                            var type = asm.GetType(dbContext);
-                            if (type != null)
-                                asmContext.DbContextTypes.Add(type);
-                            else
-                                _logger.LogError("Cannot resolve DbContext: " + dbContext +
-                                                   ". This will lead to further errors.");
-                        }
-                    }
-
+                    var pluginInfos = new List<PluginInfo>();
                     foreach (var typeResult in typeResults)
                     {
                         var typeFullName = typeResult.TypeFullName!;
@@ -195,14 +180,28 @@ public partial class PluginManager
 
                         if (pluginInfo != null)
                         {
-                            asmContext.PluginInfos.Add(pluginInfo);
+                            pluginInfos.Add(pluginInfo);
                             _plugins.Add(pluginInfo);
                         }
                     }
 
+                    var asmContext = new AssemblyContext
+                    {
+                        Assembly = asm,
+                        DbContextTypes = assemblyResult.DbContexts.Select(dbContext =>
+                        {
+                            var type = asm.GetType(dbContext);
+                            if (type == null)
+                                _logger.LogError("Cannot resolve DbContext: " + dbContext +
+                                                 ". This will lead to further errors.");
+                            return type!;
+                        }).Where(k => k != null!).ToArray(),
+                        PluginInfos = pluginInfos.ToArray(),
+                    };
+
                     if (isValid)
                     {
-                        loaderContext.AssemblyContexts.Add(assemblyFilename, asmContext);
+                        dict.Add(assemblyFilename, asmContext);
                     }
                 }
             }
@@ -269,6 +268,8 @@ public partial class PluginManager
         if (configLoggerProvider != null)
             loaderContext.ServiceCollection.AddLogging(o => configLoggerProvider.ConfigureLogger!(o));
 
+        loaderContext.ServiceCollection.AddSingleton(typeof(ConfigurationFactory));
+        loaderContext.ServiceCollection.AddSingleton(loaderContext);
         //var tExt = typeof(SqliteServiceCollectionExtensions);
         //var method = tExt.GetMethod("AddSqlite");
         //if (method != null)
@@ -306,7 +307,7 @@ public partial class PluginManager
         {
             foreach (var dbContextType in assemblyContext.Value.DbContextTypes)
             {
-                var dbFolder = Path.Combine(_botOptions.PluginDataDir, loaderContext.Name);
+                var dbFolder = Path.Combine(_botOptions.PluginDatabaseDir, loaderContext.Name);
                 var dbFilename = $"{Path.GetFileNameWithoutExtension(assemblyContext.Key)}.{dbContextType.Name}.db";
                 var dbPath = Path.Combine(dbFolder, dbFilename);
                 var dbContext = (PluginDbContext)scope.ServiceProvider.GetService(dbContextType)!;

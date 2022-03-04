@@ -17,6 +17,7 @@ public sealed class PluginInfo
         Index = index;
     }
 
+    public bool InitializationFailed { get; internal set; }
     public PluginMetadata Metadata { get; }
     public Type Type { get; }
     public Type BaseType { get; }

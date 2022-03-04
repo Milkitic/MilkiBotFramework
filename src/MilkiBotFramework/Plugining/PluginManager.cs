@@ -26,8 +26,8 @@ public partial class PluginManager
     private readonly CommandInjector _commandInjector;
 
     // sub directory per loader
-    private readonly Dictionary<string, LoaderContext> _loaderContexts = new();
     private readonly HashSet<PluginInfo> _plugins = new();
+    private readonly Dictionary<string, LoaderContext> _loaderContexts = new();
     private readonly EventBus _eventBus;
 
     private readonly ConcurrentDictionary<MessageUserIdentity, AsyncMessage> _asyncMessageDict = new();
@@ -358,6 +358,8 @@ public partial class PluginManager
             {
                 foreach (var pluginInfo in assemblyContext.PluginInfos)
                 {
+                    if (pluginInfo.InitializationFailed) continue;
+
                     var pluginInstance = (PluginBase)serviceScope.ServiceProvider.GetService(pluginInfo.Type)!;
                     if (pluginInfo.BaseType != StaticTypes.BasicPlugin &&
                         pluginInfo.BaseType != StaticTypes.BasicPlugin_)

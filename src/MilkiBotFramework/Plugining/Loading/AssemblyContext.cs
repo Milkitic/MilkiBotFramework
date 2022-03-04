@@ -2,10 +2,9 @@
 
 namespace MilkiBotFramework.Plugining.Loading;
 
-internal class AssemblyContext
+public class AssemblyContext
 {
-    public string AssemblyName { get; init; }
     public Assembly Assembly { get; init; }
-    public List<PluginInfo> PluginInfos { get; } = new();
-    public List<Type> DbContextTypes { get; } = new();
+    public IReadOnlyList<PluginInfo> PluginInfos { get; init; }
+    public IReadOnlyList<Type> DbContextTypes { get; init; }
 }
