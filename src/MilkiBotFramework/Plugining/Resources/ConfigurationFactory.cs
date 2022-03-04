@@ -77,7 +77,6 @@ namespace MilkiBotFramework.Plugining.Resources
                 //}
                 catch (Exception ex)
                 {
-                    //Console.WriteLine(ex);
                     config = null;
                     e = ex;
                     return false;
