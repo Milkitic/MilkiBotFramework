@@ -10,9 +10,13 @@ public sealed class SelfInfo
 
 public sealed class ChannelInfo
 {
-    public ChannelInfo(string channelId)
+    public ChannelInfo(string channelId, IEnumerable<MemberInfo>? members = null)
     {
         ChannelId = channelId;
+        if (members != null)
+            Members = new ConcurrentDictionary<string, MemberInfo>(
+                members.ToDictionary(k => k.UserId, k => k)
+            );
     }
 
     public string ChannelId { get; }

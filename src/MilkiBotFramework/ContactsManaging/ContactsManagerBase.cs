@@ -19,7 +19,9 @@ public abstract class ContactsManagerBase : IContactsManager
 
     protected SelfInfo? SelfInfo;
 
-    protected readonly ConcurrentDictionary<string, ConcurrentDictionary<string, ChannelInfo>> SubChannelMapping = new();
+    protected readonly ConcurrentDictionary<string, ConcurrentDictionary<string, ChannelInfo>>
+        SubChannelMapping = new();
+
     protected readonly ConcurrentDictionary<string, ChannelInfo> ChannelMapping = new();
     protected readonly ConcurrentDictionary<string, PrivateInfo> PrivateMapping = new();
 
@@ -48,7 +50,8 @@ public abstract class ContactsManagerBase : IContactsManager
         return Task.FromResult(new SelfInfoResult { IsSuccess = true, SelfInfo = SelfInfo });
     }
 
-    public virtual Task<MemberInfoResult> TryGetOrAddMemberInfo(string channelId, string userId, string? subChannelId = null)
+    public virtual Task<MemberInfoResult> TryGetOrAddMemberInfo(string channelId, string userId,
+        string? subChannelId = null)
     {
         if (subChannelId == null)
         {
@@ -157,29 +160,122 @@ public abstract class ContactsManagerBase : IContactsManager
 
     private void TryUpdateMember(ContactsUpdateInfo updateInfo)
     {
-        // todo
+        var userId = updateInfo.UserId;
+        if (userId == null) return;
+
+        ConcurrentDictionary<string, MemberInfo> members;
+        if (updateInfo.SubId == null)
+        {
+            if (!ChannelMapping.TryGetValue(updateInfo.Id, out var channelInfo))
+                return;
+            members = channelInfo.Members;
+        }
+        else
+        {
+            if (!SubChannelMapping.TryGetValue(updateInfo.Id, out var dict) ||
+                !dict.TryGetValue(updateInfo.Id, out var subChannelInfo))
+                return;
+            members = subChannelInfo.Members;
+        }
+
+        if (updateInfo.ContactsUpdateType is ContactsUpdateType.Added or ContactsUpdateType.Changed)
+        {
+            members.AddOrUpdate(userId, new MemberInfo(userId)
+            {
+                Nickname = updateInfo.Name,
+                Card = updateInfo.Remark
+            }, (k, v) =>
+            {
+                if (updateInfo.Name != null) v.Nickname = updateInfo.Name;
+                if (updateInfo.Remark != null) v.Card = updateInfo.Remark;
+                if (updateInfo.MemberRole != null) v.MemberRole = updateInfo.MemberRole.Value;
+                return v;
+            });
+        }
+        else
+        {
+            members.TryRemove(userId, out _);
+        }
+
         _logger.LogInformation("Member " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id);
     }
 
     private void TryUpdateChannel(ContactsUpdateInfo updateInfo)
     {
-        // todo
+        if (updateInfo.ContactsUpdateType is ContactsUpdateType.Added or ContactsUpdateType.Changed)
+        {
+            ChannelMapping.AddOrUpdate(updateInfo.Id, new ChannelInfo(updateInfo.Id,
+                updateInfo.Members)
+            {
+                Name = updateInfo.Name,
+            }, (k, v) =>
+            {
+                if (updateInfo.Name != null) v.Name = updateInfo.Name;
+                return v;
+            });
+        }
+        else
+        {
+            ChannelMapping.TryRemove(updateInfo.Id, out _);
+        }
+
         _logger.LogInformation("Channel " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id);
     }
 
     private void TryUpdateSubChannel(ContactsUpdateInfo updateInfo)
     {
-        // todo
-        _logger.LogInformation("SubChannel " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id);
+        if (!SubChannelMapping.TryGetValue(updateInfo.Id, out var dict))
+            return;
+        if (updateInfo.SubId == null)
+            return;
+
+        if (updateInfo.ContactsUpdateType is ContactsUpdateType.Added or ContactsUpdateType.Changed)
+        {
+            dict.AddOrUpdate(updateInfo.SubId, new ChannelInfo(updateInfo.Id,
+                updateInfo.Members)
+            {
+                SubChannelId = updateInfo.SubId,
+                Name = updateInfo.Name,
+            }, (k, v) =>
+            {
+                if (updateInfo.Name != null) v.Name = updateInfo.Name;
+                return v;
+            });
+        }
+        else
+        {
+            dict.TryRemove(updateInfo.SubId, out _);
+        }
+
+        _logger.LogInformation("SubChannel " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id + "." +
+                               updateInfo.SubId);
     }
 
     private void TryUpdatePrivate(ContactsUpdateInfo updateInfo)
     {
-        // todo
+        if (updateInfo.ContactsUpdateType is ContactsUpdateType.Added or ContactsUpdateType.Changed)
+        {
+            PrivateMapping.AddOrUpdate(updateInfo.Id, new PrivateInfo(updateInfo.Id)
+            {
+                Nickname = updateInfo.Name,
+                Remark = updateInfo.Remark
+            }, (k, v) =>
+            {
+                if (updateInfo.Name != null) v.Nickname = updateInfo.Name;
+                if (updateInfo.Remark != null) v.Remark = updateInfo.Remark;
+                return v;
+            });
+        }
+        else
+        {
+            PrivateMapping.TryRemove(updateInfo.Id, out _);
+        }
+
         _logger.LogInformation("Private " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id);
     }
 
-    private bool GetChannelOrSubChannel(string channelId, string? subChannelId, [NotNullWhen(true)] out ChannelInfo? channelInfo)
+    private bool GetChannelOrSubChannel(string channelId, string? subChannelId,
+        [NotNullWhen(true)] out ChannelInfo? channelInfo)
     {
         if (subChannelId == null)
         {
@@ -243,6 +339,7 @@ public abstract class ContactsManagerBase : IContactsManager
                                       newInfo.Nickname);
                 oldInfo.Nickname = newInfo.Nickname;
             }
+
             if (oldInfo.Remark != newInfo.Remark)
             {
                 logger.LogInformation($"Changed private {exist} remark from: " + oldInfo.Remark + " to " +
@@ -322,12 +419,14 @@ public abstract class ContactsManagerBase : IContactsManager
                                       oldInfo.Nickname + " to " + newInfo.Nickname);
                 oldInfo.Nickname = newInfo.Nickname;
             }
+
             if (oldInfo.Card != newInfo.Card)
             {
                 logger.LogInformation($"Changed channel {channelId} member {exist} card from: " +
                                       oldInfo.Card + " to " + newInfo.Card);
                 oldInfo.Card = newInfo.Card;
             }
+
             if (oldInfo.MemberRole != newInfo.MemberRole)
             {
                 logger.LogInformation($"Changed channel {channelId} member {exist} role from: " +
