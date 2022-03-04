@@ -25,7 +25,6 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     private Type? _dispatcherType;
     private Type? _messageApiType;
     private Type? _contactsManagerType;
-    private string _pluginBaseDir = "./plugins";
     private Type? _commandAnalyzerType;
     private IParameterConverter? _defaultConverter;
     private Type? _richMessageConverterType;
@@ -45,12 +44,6 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     public TBuilder ConfigureHttpClient(Action<LightHttpClientCreationOptions> configureHttp)
     {
         _configureHttp = configureHttp;
-        return (TBuilder)this;
-    }
-
-    public TBuilder SetPluginBaseDirectory(string directory)
-    {
-        _pluginBaseDir = directory;
         return (TBuilder)this;
     }
 
@@ -111,11 +104,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         serviceCollection.AddSingleton(typeof(IServiceProvider), _ => serviceProvider!);
         serviceProvider = BuildCore(serviceCollection);
         ConfigureApp(serviceProvider);
-
-        // PluginManager
-        var pluginManager = serviceProvider.GetService<PluginManager>()!;
-        pluginManager.PluginBaseDirectory = _pluginBaseDir;
-
+        
         // Bot
         var bot = (Bot)serviceProvider.GetService(typeof(Bot));
         //bot.ConfigureLogger = _configureLogger;

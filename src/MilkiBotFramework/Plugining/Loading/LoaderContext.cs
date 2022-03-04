@@ -11,7 +11,7 @@ internal class LoaderContext
     public ServiceProvider? ServiceProvider { get; private set; }
     public AssemblyLoadContext AssemblyLoadContext { get; init; }
     public Dictionary<string, AssemblyContext> AssemblyContexts { get; } = new();
-
+    
     public ServiceProvider BuildServiceProvider()
     {
         if (ServiceProvider != null) return ServiceProvider;

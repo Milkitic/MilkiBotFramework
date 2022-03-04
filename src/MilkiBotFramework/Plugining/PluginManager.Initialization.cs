@@ -2,9 +2,11 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Loader;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Plugining.Attributes;
+using MilkiBotFramework.Plugining.Data;
 using MilkiBotFramework.Plugining.Loading;
 using MilkiBotFramework.Utils;
 
@@ -12,20 +14,19 @@ namespace MilkiBotFramework.Plugining;
 
 public partial class PluginManager
 {
-    public string PluginBaseDirectory { get; internal set; }
-
     //todo: Same command; Same guid
     public async Task InitializeAllPlugins()
     {
         var sw = Stopwatch.StartNew();
-        if (!Directory.Exists(PluginBaseDirectory)) Directory.CreateDirectory(PluginBaseDirectory);
-        var directories = Directory.GetDirectories(PluginBaseDirectory);
+        var pluginBaseDir = _botOptions.PluginBaseDir;
+        if (!Directory.Exists(pluginBaseDir)) Directory.CreateDirectory(pluginBaseDir);
+        var directories = Directory.GetDirectories(pluginBaseDir);
 
         foreach (var directory in directories)
         {
             var files = Directory.GetFiles(directory, "*.dll");
             var contextName = Path.GetFileName(directory);
-            CreateContextAndAddPlugins(contextName, files);
+            await CreateContextAndAddPlugins(contextName, files);
         }
 
         var entryAsm = Assembly.GetEntryAssembly();
@@ -33,7 +34,7 @@ public partial class PluginManager
         {
             var dir = Path.GetDirectoryName(entryAsm.Location)!;
             var context = AssemblyLoadContext.Default.Assemblies;
-            CreateContextAndAddPlugins(null, context
+            await CreateContextAndAddPlugins(null, context
                 .Where(k => !k.IsDynamic && k.Location.StartsWith(dir))
                 .Select(k => k.Location)
             );
@@ -69,7 +70,7 @@ public partial class PluginManager
         _logger.LogInformation($"Plugin initialization done in {sw.Elapsed.TotalSeconds:N3}s!");
     }
 
-    private void CreateContextAndAddPlugins(string? contextName, IEnumerable<string> files)
+    private async Task CreateContextAndAddPlugins(string? contextName, IEnumerable<string> files)
     {
         var assemblyResults = AssemblyHelper.AnalyzePluginsInAssemblyFilesByDnlib(_logger, files);
         if (assemblyResults.Count <= 0 || assemblyResults.All(k => k.TypeResults.Length == 0))
@@ -84,7 +85,7 @@ public partial class PluginManager
         {
             AssemblyLoadContext = ctx,
             ServiceCollection = new ServiceCollection(),
-            Name = contextName ?? "Runtime Context",
+            Name = contextName ?? "Host",
             IsRuntimeContext = isRuntimeContext
         };
 
@@ -136,6 +137,19 @@ public partial class PluginManager
                     {
                         Assembly = asm
                     };
+
+                    if (assemblyResult.DbContexts.Length > 0)
+                    {
+                        foreach (var dbContext in assemblyResult.DbContexts)
+                        {
+                            var type = asm.GetType(dbContext);
+                            if (type != null)
+                                asmContext.DbContextTypes.Add(type);
+                            else
+                                _logger.LogError("Cannot resolve DbContext: " + dbContext +
+                                                   ". This will lead to further errors.");
+                        }
+                    }
 
                     foreach (var typeResult in typeResults)
                     {
@@ -204,10 +218,10 @@ public partial class PluginManager
             }
         }
 
-        InitializeLoaderContext(loaderContext);
+        await InitializeLoaderContext(loaderContext);
     }
 
-    private void InitializeLoaderContext(LoaderContext loaderContext)
+    private async Task InitializeLoaderContext(LoaderContext loaderContext)
     {
         if (loaderContext.AssemblyLoadContext != AssemblyLoadContext.Default)
         {
@@ -255,7 +269,62 @@ public partial class PluginManager
         if (configLoggerProvider != null)
             loaderContext.ServiceCollection.AddLogging(o => configLoggerProvider.ConfigureLogger!(o));
 
-        loaderContext.BuildServiceProvider();
+        //var tExt = typeof(SqliteServiceCollectionExtensions);
+        //var method = tExt.GetMethod("AddSqlite");
+        //if (method != null)
+        //{           
+        //var dbFolder = Path.Combine(_botOptions.PluginDataDir, loaderContext.Name);
+        //var dbFilename = Path.GetFileNameWithoutExtension(assemblyContext.Key) + "." + dbContextType.Name +
+        //                 ".sqlite3";
+        //var dbPath = Path.Combine(dbFolder, dbFilename);
+        //if (!Directory.Exists(dbFolder)) Directory.CreateDirectory(dbFolder);
+        //var genericMethod = method.MakeGenericMethod(dbContextType);
+        //genericMethod.Invoke(null, new object?[]
+        //{
+        //    loaderContext.ServiceCollection, dbPath, null, null
+        //});
+        //}
+        foreach (var assemblyContext in loaderContext.AssemblyContexts)
+        {
+            foreach (var dbContextType in assemblyContext.Value.DbContextTypes)
+            {
+
+                try
+                {
+                    loaderContext.ServiceCollection.AddScoped(dbContextType);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurs while configuring DbContext: " + dbContextType.FullName);
+                }
+            }
+        }
+
+        var serviceProvider = loaderContext.BuildServiceProvider();
+        using var scope = serviceProvider.CreateScope();
+        foreach (var assemblyContext in loaderContext.AssemblyContexts)
+        {
+            foreach (var dbContextType in assemblyContext.Value.DbContextTypes)
+            {
+                var dbFolder = Path.Combine(_botOptions.PluginDataDir, loaderContext.Name);
+                var dbFilename = $"{Path.GetFileNameWithoutExtension(assemblyContext.Key)}.{dbContextType.Name}.db";
+                var dbPath = Path.Combine(dbFolder, dbFilename);
+                var dbContext = (PluginDbContext)scope.ServiceProvider.GetService(dbContextType)!;
+                if (!Directory.Exists(dbFolder)) Directory.CreateDirectory(dbFolder);
+
+                dbContext.TemporaryDbPath = dbPath;
+                try
+                {
+                    await dbContext.Database.MigrateAsync();
+                    await dbContext.Database.CloseConnectionAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Fail to migrate DbContext: " + dbContextType.FullName);
+                }
+            }
+        }
+
         _loaderContexts.Add(loaderContext.Name, loaderContext);
     }
 

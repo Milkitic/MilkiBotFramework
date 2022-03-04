@@ -1,6 +1,7 @@
 ﻿using dnlib.DotNet;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Plugining;
+using MilkiBotFramework.Plugining.Data;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace MilkiBotFramework.Utils;
@@ -12,6 +13,7 @@ internal static class AssemblyHelper
         public string AssemblyFullName { get; init; }
         public string AssemblyPath { get; init; }
         public TypeResult[] TypeResults { get; init; }
+        public string[] DbContexts { get; init; }
     }
 
     public class TypeResult
@@ -26,6 +28,8 @@ internal static class AssemblyHelper
         [nameof(BasicPlugin)] = StaticTypes.BasicPlugin,
         [nameof(ServicePlugin)] = StaticTypes.ServicePlugin
     };
+
+    public static readonly Type TypeDbContext = typeof(PluginDbContext);
 
     public static IReadOnlyList<AssemblyResult> AnalyzePluginsInAssemblyFilesByDnlib(
         ILogger logger,
@@ -55,45 +59,8 @@ internal static class AssemblyHelper
         {
             //logger.LogDebug("Find " + asmName);
             using var module = ModuleDefMD.Load(asmPath, modCtx);
-            var typeResults = module.HasTypes
-                ? module.Types.Select(k =>
-                {
-                    ITypeDefOrRef? baseType = k;
-
-                    Type? pluginType = null;
-                    while (baseType != null && !PluginTypes.TryGetValue(baseType.Name, out pluginType))
-                    {
-                        var typeDef = baseType as TypeDef;
-                        if (typeDef == null)
-                        {
-                            baseType = null;
-                            break;
-                        }
-
-                        baseType = typeDef.BaseType;
-
-                        if (baseType is { NumberOfGenericParameters: > 0 })
-                        {
-                            if (PluginTypes.TryGetValue(baseType.ReflectionName, out pluginType))
-                            {
-                                baseType = baseType.ScopeType;
-                                break;
-                            }
-                        }
-                    }
-
-                    var valid = baseType != null &&
-                                !k.IsAbstract &&
-                                k.IsPublic &&
-                                PluginTypes.ContainsKey(baseType.Name);
-                    var result = valid ? k : null;
-                    return new TypeResult
-                    {
-                        BaseType = pluginType,
-                        TypeFullName = result?.FullName
-                    };
-                }).Where(k => k.TypeFullName != null).ToArray()
-                : Array.Empty<TypeResult>();
+            var typeResults = GetPluginTypeResults(module);
+            var dbContexts = GetDbContexts(module);
             if (typeResults.Length == 0)
                 logger.LogDebug($"Found \"{folder}/{asmName}\" with no plugins.");
             else
@@ -101,6 +68,7 @@ internal static class AssemblyHelper
             availableDictionary.Add(new AssemblyResult
             {
                 TypeResults = typeResults,
+                DbContexts = dbContexts,
                 AssemblyPath = module.Location,
                 AssemblyFullName = module.Assembly.FullName
             });
@@ -109,5 +77,92 @@ internal static class AssemblyHelper
         {
             logger.LogError($"Failed to read assembly {asmName}: {ex.Message}");
         }
+    }
+
+    private static string[] GetDbContexts(ModuleDefMD module)
+    {
+        if (!module.HasTypes)
+            return Array.Empty<string>();
+        string[] typeResults = module.Types.Select(k =>
+        {
+            if (k.FullName.Contains("MyPluginDbContext"))
+            {
+
+            }
+            ITypeDefOrRef? baseType = k;
+
+            Type? pluginType = null;
+            while (baseType != null && TypeDbContext.Name != baseType.ReflectionName)
+            {
+                var typeDef = baseType as TypeDef;
+                if (typeDef == null)
+                {
+                    baseType = null;
+                    break;
+                }
+
+                baseType = typeDef.BaseType;
+
+                if (baseType is { NumberOfGenericParameters: > 0 })
+                {
+                    if (TypeDbContext.Name == baseType.ReflectionName)
+                    {
+                        baseType = baseType.ScopeType;
+                        break;
+                    }
+                }
+            }
+
+            var valid = baseType != null &&
+                        !k.IsAbstract &&
+                        TypeDbContext.Name == baseType.Name;
+            var result = valid ? k : null;
+            return result?.FullName;
+        }).Where(k => k != null).Select(k => k).ToArray();
+        return typeResults;
+    }
+
+    private static TypeResult[] GetPluginTypeResults(ModuleDefMD module)
+    {
+        if (!module.HasTypes)
+            return Array.Empty<TypeResult>();
+        var typeResults = module.Types.Select(k =>
+        {
+            ITypeDefOrRef? baseType = k;
+
+            Type? pluginType = null;
+            while (baseType != null && !PluginTypes.TryGetValue(baseType.Name, out pluginType))
+            {
+                var typeDef = baseType as TypeDef;
+                if (typeDef == null)
+                {
+                    baseType = null;
+                    break;
+                }
+
+                baseType = typeDef.BaseType;
+
+                if (baseType is { NumberOfGenericParameters: > 0 })
+                {
+                    if (PluginTypes.TryGetValue(baseType.ReflectionName, out pluginType))
+                    {
+                        baseType = baseType.ScopeType;
+                        break;
+                    }
+                }
+            }
+
+            var valid = baseType != null &&
+                        !k.IsAbstract &&
+                        k.IsPublic &&
+                        PluginTypes.ContainsKey(baseType.Name);
+            var result = valid ? k : null;
+            return new TypeResult
+            {
+                BaseType = pluginType,
+                TypeFullName = result?.FullName
+            };
+        }).Where(k => k.TypeFullName != null).ToArray();
+        return typeResults;
     }
 }

@@ -20,7 +20,6 @@ namespace MilkiBotFramework.Platforms.GoCqHttp
                 k.BindingPath = connection.ServerBindPath;
                 k.ConnectionType = connection.ConnectionType;
             });
-
             builder.ConfigureServices(k =>
             {
                 if (connection.ConnectionType == ConnectionType.Websocket)

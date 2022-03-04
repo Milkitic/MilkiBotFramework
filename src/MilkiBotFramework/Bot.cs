@@ -126,6 +126,8 @@ namespace MilkiBotFramework
     public sealed class BotOptions
     {
         public HashSet<string> RootAccounts { get; set; } = new();
+        public string PluginDataDir { get; set; } = "./databases";
+        public string PluginBaseDir { get; set; } = "./plugins";
         public string CacheImageDir { get; set; } = "./caches/images";
         public string GifSiclePath { get; set; }
         public string FfMpegPath { get; set; }

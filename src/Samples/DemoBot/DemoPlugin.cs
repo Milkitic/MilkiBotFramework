@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining;
@@ -10,13 +11,15 @@ namespace DemoBot;
 [PluginIdentifier("1e1e623a-d89d-49ad-b801-f93dd94cf2d7", Index = 1)]
 public class DemoPlugin : BasicPlugin
 {
+    private readonly MyPluginDbContext _myPluginDbContext;
     private readonly DemoPlugin2 _demoPlugin2;
     private readonly ILogger<DemoPlugin> _logger;
     private readonly IRichMessageConverter _richMessageConverter;
     private readonly PluginManager _pluginManager;
 
-    public DemoPlugin(DemoPlugin2 demoPlugin2, ILogger<DemoPlugin> logger, IRichMessageConverter richMessageConverter, PluginManager pluginManager)
+    public DemoPlugin(MyPluginDbContext myPluginDbContext, DemoPlugin2 demoPlugin2, ILogger<DemoPlugin> logger, IRichMessageConverter richMessageConverter, PluginManager pluginManager)
     {
+        _myPluginDbContext = myPluginDbContext;
         _demoPlugin2 = demoPlugin2;
         _logger = logger;
         _richMessageConverter = richMessageConverter;

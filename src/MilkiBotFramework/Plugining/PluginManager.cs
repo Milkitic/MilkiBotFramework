@@ -17,6 +17,7 @@ public partial class PluginManager
 
     private readonly IServiceProvider _serviceProvider;
     private readonly IServiceCollection _serviceCollection;
+    private readonly BotOptions _botOptions;
     private readonly IDispatcher _dispatcher;
     private readonly IMessageApi _messageApi;
     private readonly IRichMessageConverter _richMessageConverter;
@@ -38,10 +39,12 @@ public partial class PluginManager
         ICommandLineAnalyzer commandLineAnalyzer,
         IServiceProvider serviceProvider,
         IServiceCollection serviceCollection,
+        BotOptions botOptions,
         EventBus eventBus)
     {
         _serviceProvider = serviceProvider;
         _serviceCollection = serviceCollection;
+        _botOptions = botOptions;
         _dispatcher = dispatcher;
         _messageApi = messageApi;
         _richMessageConverter = richMessageConverter;
