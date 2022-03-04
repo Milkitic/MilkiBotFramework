@@ -104,10 +104,9 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         serviceCollection.AddSingleton(typeof(IServiceProvider), _ => serviceProvider!);
         serviceProvider = BuildCore(serviceCollection);
         ConfigureApp(serviceProvider);
-        
+
         // Bot
-        var bot = (Bot)serviceProvider.GetService(typeof(Bot));
-        //bot.ConfigureLogger = _configureLogger;
+        var bot = (Bot)serviceProvider.GetService(typeof(Bot))!;
         return (TBot)bot;
     }
 
@@ -136,6 +135,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         var configureLogger = _configureLogger ??= CreateDefaultLoggerConfiguration();
         var configureHttp = _configureHttp ??= CreateDefaultHttpConfiguration();
         var httpOptions = new LightHttpClientCreationOptions();
+        configureHttp(httpOptions);
         serviceCollection
             .AddLogging(k => configureLogger(k))
             .AddSingleton(_botOptions)
