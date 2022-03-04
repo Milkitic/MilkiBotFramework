@@ -2,5 +2,5 @@
 
 public enum BindingFailureType
 {
-    None, ConvertError, CannotResolve, Mismatch, AuthenticationFailed, MessageTypeFailed
+    None, ConvertError, Mismatch, AuthenticationFailed, MessageTypeFailed
 }

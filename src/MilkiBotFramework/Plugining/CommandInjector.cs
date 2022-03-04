@@ -91,13 +91,11 @@ public class CommandInjector
                 if (result == null)
                 {
                     if (modelBind)
-                        throw new BindingException(
-                            $"Could not resolve type {paramDef.ParameterType}. Only one model binding declaration is supported.",
-                            new BindingSource(commandInfo, paramDef), BindingFailureType.CannotResolve);
+                        throw new ArgumentException(
+                            $"Could not resolve type {paramDef.ParameterType}. Only one model binding declaration is supported.");
                     if (paramBind)
-                        throw new BindingException(
-                            $"Could not resolve type {paramDef.ParameterType}. Combination of model binding and parameter binding is not supported.",
-                            new BindingSource(commandInfo, paramDef), BindingFailureType.CannotResolve);
+                        throw new ArgumentException(
+                            $"Could not resolve type {paramDef.ParameterType}. Combination of model binding and parameter binding is not supported.");
                     modelBind = true;
 
                     // model binding
@@ -112,9 +110,8 @@ public class CommandInjector
             else
             {
                 if (modelBind)
-                    throw new BindingException(
-                        $"Could not resolve type {paramDef.ParameterType}. Combination of model binding and parameter binding is not supported.",
-                        new BindingSource(commandInfo, paramDef), BindingFailureType.CannotResolve);
+                    throw new ArgumentException(
+                        $"Could not resolve type {paramDef.ParameterType}. Combination of model binding and parameter binding is not supported.");
                 paramBind = true;
 
                 // parameter binding
