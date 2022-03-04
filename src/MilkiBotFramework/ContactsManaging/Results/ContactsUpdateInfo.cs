@@ -12,7 +12,7 @@ public sealed class ContactsUpdateInfo
     public string Id { get; }
     public string? SubId { get; init; }
     public string? UserId { get; init; }
-    public string? Card { get; init; }
+    public string? Remark { get; init; }
     public string? Name { get; init; }
     public ContactsUpdateRole ContactsUpdateRole { get; init; }
     public ContactsUpdateType ContactsUpdateType { get; init; }
