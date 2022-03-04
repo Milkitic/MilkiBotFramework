@@ -1,7 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
-namespace MilkiBotFramework.Plugining.Data
+namespace MilkiBotFramework.Plugining.Resources
 {
     public abstract class PluginDbContext : DbContext
     {

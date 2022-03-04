@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Plugining.Attributes;
-using MilkiBotFramework.Plugining.Data;
 using MilkiBotFramework.Plugining.Loading;
+using MilkiBotFramework.Plugining.Resources;
 using MilkiBotFramework.Utils;
 
 namespace MilkiBotFramework.Plugining;
