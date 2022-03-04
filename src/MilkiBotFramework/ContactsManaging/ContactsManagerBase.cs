@@ -184,7 +184,7 @@ public abstract class ContactsManagerBase : IContactsManager
             {
                 Nickname = updateInfo.Name,
                 Card = updateInfo.Remark
-            }, (k, v) =>
+            }, (_, v) =>
             {
                 if (updateInfo.Name != null) v.Nickname = updateInfo.Name;
                 if (updateInfo.Remark != null) v.Card = updateInfo.Remark;
@@ -208,7 +208,7 @@ public abstract class ContactsManagerBase : IContactsManager
                 updateInfo.Members)
             {
                 Name = updateInfo.Name,
-            }, (k, v) =>
+            }, (_, v) =>
             {
                 if (updateInfo.Name != null) v.Name = updateInfo.Name;
                 return v;
@@ -236,7 +236,7 @@ public abstract class ContactsManagerBase : IContactsManager
             {
                 SubChannelId = updateInfo.SubId,
                 Name = updateInfo.Name,
-            }, (k, v) =>
+            }, (_, v) =>
             {
                 if (updateInfo.Name != null) v.Name = updateInfo.Name;
                 return v;
@@ -259,7 +259,7 @@ public abstract class ContactsManagerBase : IContactsManager
             {
                 Nickname = updateInfo.Name,
                 Remark = updateInfo.Remark
-            }, (k, v) =>
+            }, (_, v) =>
             {
                 if (updateInfo.Name != null) v.Nickname = updateInfo.Name;
                 if (updateInfo.Remark != null) v.Remark = updateInfo.Remark;
