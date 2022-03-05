@@ -2,7 +2,7 @@
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.ObjectGraphVisitors;
 
-namespace MilkiBotFramework.Plugining.Resources;
+namespace MilkiBotFramework.Plugining.Configuration;
 
 public class CommentsObjectGraphVisitor : ChainedObjectGraphVisitor
 {

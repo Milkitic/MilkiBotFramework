@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Attributes;
+using MilkiBotFramework.Plugining.Configuration;
 
 namespace DemoBot;
 
@@ -14,16 +15,27 @@ public class DemoPlugin : BasicPlugin
     private readonly MyPluginDbContext _myPluginDbContext;
     private readonly DemoPlugin2 _demoPlugin2;
     private readonly ILogger<DemoPlugin> _logger;
+    private readonly IConfiguration<TestConfiguration> _configuration;
     private readonly IRichMessageConverter _richMessageConverter;
     private readonly PluginManager _pluginManager;
 
-    public DemoPlugin(MyPluginDbContext myPluginDbContext, DemoPlugin2 demoPlugin2, ILogger<DemoPlugin> logger, IRichMessageConverter richMessageConverter, PluginManager pluginManager)
+    public DemoPlugin(MyPluginDbContext myPluginDbContext, DemoPlugin2 demoPlugin2, ILogger<DemoPlugin> logger,
+        IConfiguration<TestConfiguration> configuration, IRichMessageConverter richMessageConverter, PluginManager pluginManager)
     {
         _myPluginDbContext = myPluginDbContext;
         _demoPlugin2 = demoPlugin2;
         _logger = logger;
+        _configuration = configuration;
         _richMessageConverter = richMessageConverter;
         _pluginManager = pluginManager;
+    }
+
+    [CommandHandler("key2")]
+    public async Task<IResponse> Key2()
+    {
+        var result = _configuration.Instance.Key2++;
+        await _configuration.Instance.SaveAsync();
+        return Reply(result.ToString());
     }
 
     [CommandHandler("group", AllowedMessageType = MessageType.Channel)]

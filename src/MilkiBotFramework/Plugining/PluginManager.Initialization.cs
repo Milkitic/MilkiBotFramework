@@ -4,11 +4,13 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Loader;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Plugining.Attributes;
+using MilkiBotFramework.Plugining.Configuration;
+using MilkiBotFramework.Plugining.Database;
 using MilkiBotFramework.Plugining.Loading;
-using MilkiBotFramework.Plugining.Resources;
 using MilkiBotFramework.Utils;
 
 namespace MilkiBotFramework.Plugining;
@@ -269,6 +271,7 @@ public partial class PluginManager
             loaderContext.ServiceCollection.AddLogging(o => configLoggerProvider.ConfigureLogger!(o));
 
         loaderContext.ServiceCollection.AddSingleton(typeof(ConfigurationFactory));
+        loaderContext.ServiceCollection.AddSingleton(typeof(IConfiguration<>), typeof(Configuration<>));
         loaderContext.ServiceCollection.AddSingleton(loaderContext);
         //var tExt = typeof(SqliteServiceCollectionExtensions);
         //var method = tExt.GetMethod("AddSqlite");

@@ -1,7 +1,7 @@
 ﻿using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
-namespace MilkiBotFramework.Plugining.Resources;
+namespace MilkiBotFramework.Plugining.Configuration;
 
 public sealed class CommentsObjectDescriptor : IObjectDescriptor
 {

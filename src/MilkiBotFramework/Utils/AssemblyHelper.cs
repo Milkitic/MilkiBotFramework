@@ -1,7 +1,7 @@
 ﻿using dnlib.DotNet;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Plugining;
-using MilkiBotFramework.Plugining.Resources;
+using MilkiBotFramework.Plugining.Database;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace MilkiBotFramework.Utils;

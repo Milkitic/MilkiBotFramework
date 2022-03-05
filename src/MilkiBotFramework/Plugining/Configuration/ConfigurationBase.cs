@@ -1,9 +1,7 @@
 ﻿using System.Text;
-using System.Xml.Linq;
-using System.Xml.Serialization;
 using YamlDotNet.Serialization;
 
-namespace MilkiBotFramework.Plugining.Resources;
+namespace MilkiBotFramework.Plugining.Configuration;
 
 public class ConfigurationBase
 {

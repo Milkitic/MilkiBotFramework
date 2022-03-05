@@ -1,19 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Plugining.Loading;
 using MilkiBotFramework.Utils;
-using YamlDotNet.Core;
 
-namespace MilkiBotFramework.Plugining.Resources
+namespace MilkiBotFramework.Plugining.Configuration
 {
     public class ConfigurationFactory
     {
+        private readonly Dictionary<Type, ConfigurationBase> _cachedDict = new();
+
         private readonly LoaderContext _loaderContext;
         private readonly BotOptions _botOptions;
         private readonly ILogger<ConfigLoggerProvider> _logger;
@@ -30,6 +25,10 @@ namespace MilkiBotFramework.Plugining.Resources
         public T GetConfiguration<T>(YamlConverter? converter = null) where T : ConfigurationBase
         {
             var t = typeof(T);
+
+            if (_cachedDict.TryGetValue(t, out var val))
+                return (T)val;
+
             var filename = t.FullName + ".yaml";
             var folder = Path.Combine(_botOptions.PluginConfigurationDir, _loaderContext.Name);
             var path = Path.Combine(folder, filename);
@@ -37,6 +36,7 @@ namespace MilkiBotFramework.Plugining.Resources
             var success = TryLoadConfigFromFile<T>(path, converter, out var config, out var ex);
             if (!success) throw ex!;
             config!.SaveAction = async () => SaveConfig(config, path, converter);
+            _cachedDict.Add(t, config);
             return config;
         }
 

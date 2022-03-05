@@ -1,7 +1,7 @@
 ﻿using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace MilkiBotFramework.Plugining.Resources;
+namespace MilkiBotFramework.Plugining.Configuration;
 
 public class YamlConverter
 {

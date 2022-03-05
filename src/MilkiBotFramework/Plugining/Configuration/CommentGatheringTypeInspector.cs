@@ -3,7 +3,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.TypeInspectors;
 
-namespace MilkiBotFramework.Plugining.Resources;
+namespace MilkiBotFramework.Plugining.Configuration;
 
 public class CommentGatheringTypeInspector : TypeInspectorSkeleton
 {
