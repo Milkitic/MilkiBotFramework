@@ -127,6 +127,7 @@ namespace MilkiBotFramework
     {
         public HashSet<string> RootAccounts { get; set; } = new();
         public string PluginBaseDir { get; set; } = "./plugins";
+        public string PluginHomeDir { get; set; } = "./homes";
         public string PluginDatabaseDir { get; set; } = "./databases";
         public string PluginConfigurationDir { get; set; } = "./configurations";
         public string CacheImageDir { get; set; } = "./caches/images";

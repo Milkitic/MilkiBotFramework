@@ -7,7 +7,8 @@ public sealed class PluginInfo
         Type baseType,
         PluginLifetime lifetime,
         IReadOnlyDictionary<string, CommandInfo> commands,
-        int index)
+        int index,
+        string pluginHome)
     {
         Metadata = metadata;
         Type = type;
@@ -15,7 +16,9 @@ public sealed class PluginInfo
         Lifetime = lifetime;
         Commands = commands;
         Index = index;
+        PluginHome = pluginHome;
     }
+
 
     public bool InitializationFailed { get; internal set; }
     public PluginMetadata Metadata { get; }
@@ -24,4 +27,5 @@ public sealed class PluginInfo
     public PluginLifetime Lifetime { get; }
     public IReadOnlyDictionary<string, CommandInfo> Commands { get; }
     public int Index { get; }
+    public string PluginHome { get; set; }
 }

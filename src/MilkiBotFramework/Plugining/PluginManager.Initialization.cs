@@ -310,8 +310,8 @@ public partial class PluginManager
         {
             foreach (var dbContextType in assemblyContext.Value.DbContextTypes)
             {
-                var dbFolder = Path.Combine(_botOptions.PluginDatabaseDir, loaderContext.Name);
-                var dbFilename = $"{Path.GetFileNameWithoutExtension(assemblyContext.Key)}.{dbContextType.Name}.db";
+                var dbFolder = _botOptions.PluginDatabaseDir/*Path.Combine(_botOptions.PluginDatabaseDir, loaderContext.Name)*/;
+                var dbFilename = $"{loaderContext.Name}.{Path.GetFileNameWithoutExtension(assemblyContext.Key)}.{dbContextType.Name}.db";
                 var dbPath = Path.Combine(dbFolder, dbFilename);
                 var dbContext = (PluginDbContext)scope.ServiceProvider.GetService(dbContextType)!;
                 if (!Directory.Exists(dbFolder)) Directory.CreateDirectory(dbFolder);
@@ -332,9 +332,10 @@ public partial class PluginManager
         _loaderContexts.Add(loaderContext.Name, loaderContext);
     }
 
-    private static void InitializePlugin(PluginBase instance, PluginInfo pluginInfo)
+    private void InitializePlugin(PluginBase instance, PluginInfo pluginInfo)
     {
         instance.Metadata = pluginInfo.Metadata;
+        instance.PluginHome = pluginInfo.PluginHome;
         instance.IsInitialized = true;
         instance.OnInitialized();
     }
@@ -363,6 +364,10 @@ public partial class PluginManager
         var authors = type.GetCustomAttribute<AuthorAttribute>()?.Author ?? DefaultAuthors;
 
         var metadata = new PluginMetadata(Guid.Parse(guid), name, description, version, authors);
+
+        var pluginHome = Path.Combine(_botOptions.PluginHomeDir, $"{metadata.Guid:B} {metadata.Name}");
+        if (!Directory.Exists(pluginHome))
+            Directory.CreateDirectory(pluginHome);
 
         var methodSets = new HashSet<string>();
         var commands = new Dictionary<string, CommandInfo>();
@@ -430,7 +435,7 @@ public partial class PluginManager
             commands.Add(command, commandInfo);
         }
 
-        return new PluginInfo(metadata, type, baseType, lifetime, commands, index);
+        return new PluginInfo(metadata, type, baseType, lifetime, commands, index, pluginHome);
     }
 
     private CommandParameterInfo GetParameterInfo(object[] attrs, Type targetType,

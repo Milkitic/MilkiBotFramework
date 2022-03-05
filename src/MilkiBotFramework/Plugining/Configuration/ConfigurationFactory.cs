@@ -29,8 +29,8 @@ namespace MilkiBotFramework.Plugining.Configuration
             if (_cachedDict.TryGetValue(t, out var val))
                 return (T)val;
 
-            var filename = t.FullName + ".yaml";
-            var folder = Path.Combine(_botOptions.PluginConfigurationDir, _loaderContext.Name);
+            var filename = $"{_loaderContext.Name}.{t.FullName}.yaml";
+            var folder = _botOptions.PluginConfigurationDir/*Path.Combine(_botOptions.PluginConfigurationDir, _loaderContext.Name)*/;
             var path = Path.Combine(folder, filename);
             converter ??= new YamlConverter();
             var success = TryLoadConfigFromFile<T>(path, converter, out var config, out var ex);

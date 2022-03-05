@@ -5,10 +5,6 @@ namespace MilkiBotFramework.Plugining;
 
 public abstract class PluginBase
 {
-    protected internal PluginMetadata Metadata { get; internal set; }
-    public bool IsInitialized { get; internal set; }
-    public abstract PluginType PluginType { get; }
-
     protected static IResponse Handled() => new MessageResponse(true);
     protected static IResponse Reply(string message, out IAsyncMessage nextMessage, bool reply = true) => Reply(new Text(message), out nextMessage, reply);
     protected static IResponse Reply(IRichMessage message, out IAsyncMessage nextMessage, bool reply = true)
@@ -25,12 +21,16 @@ public abstract class PluginBase
     protected static IResponse ToChannel(string channelId, string message, string? subChannelId = null, string? atId = null) => ToChannel(channelId, new Text(message), subChannelId, atId);
     protected static IResponse ToChannel(string channelId, IRichMessage message, string? subChannelId = null, string? atId = null) => ((IResponse)new MessageResponse(channelId, subChannelId, message, MessageType.Channel)).At(atId);
 
+    protected internal PluginMetadata Metadata { get; internal set; } = null!;
+    protected internal string PluginHome { get; internal set; } = null!;
+
+    public bool IsInitialized { get; internal set; }
+    public abstract PluginType PluginType { get; }
+
     protected internal virtual Task OnInitialized() => Task.CompletedTask;
     protected internal virtual Task OnUninitialized() => Task.CompletedTask;
     protected internal virtual Task OnExecuting() => Task.CompletedTask;
     protected internal virtual Task OnExecuted() => Task.CompletedTask;
-
-    protected string ResourceDir => throw new NotImplementedException();
 
     protected Task<T> ReadValueAsync<T>(string key)
     {
