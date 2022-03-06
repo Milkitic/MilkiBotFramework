@@ -2,7 +2,7 @@
 
 namespace MilkiBotFramework.Imaging;
 
-public interface IImageProcessor<in TViewModel> where TViewModel : class
+public interface IDrawingProcessor<in TViewModel> where TViewModel : class
 {
     string Process(Image source, TViewModel model);
     string Process(TViewModel model);

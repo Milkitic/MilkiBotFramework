@@ -143,7 +143,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
             .AddSingleton(httpOptions)
             .AddSingleton<BotTaskScheduler>()
             .AddSingleton<EventBus>()
-            .AddSingleton<DrawingProcessor>()
+            .AddSingleton<ImageProcessor>()
             .AddSingleton<LightHttpClient>()
             .AddSingleton<PluginManager>()
             .AddSingleton(new ConfigLoggerProvider(_configureLogger))
