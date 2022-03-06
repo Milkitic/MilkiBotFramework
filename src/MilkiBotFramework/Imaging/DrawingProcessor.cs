@@ -1,16 +1,16 @@
 ﻿using System.Diagnostics;
 using System.Text;
-using MilkiBotFramework.Imaging;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace MilkiBotFramework.Utils
+namespace MilkiBotFramework.Imaging
 {
-    public class ImageProcessor
+    // wpf gif: https://docs.microsoft.com/en-us/dotnet/desktop/wpf/graphics-multimedia/how-to-encode-and-decode-a-gif-image?view=netframeworkdesktop-4.8
+    public class DrawingProcessor<TViewModel> : IImageProcessor<TViewModel> where TViewModel : class
     {
         private readonly BotOptions _options;
 
-        public ImageProcessor(BotOptions options)
+        public DrawingProcessor(BotOptions options)
         {
             _options = options;
         }
@@ -19,7 +19,7 @@ namespace MilkiBotFramework.Utils
         {
             var tempPath = Path.Combine(_options.CacheImageDir, Path.GetRandomFileName() + ".gif");
 
-            ImageHelper.SaveGifToFileAsync(tempPath, source, palette).Wait();
+            ImageProcessor.SaveGifToFileAsync(tempPath, source, palette).Wait();
             var newPath = CompressToFile(tempPath);
             return newPath;
         }
@@ -61,7 +61,7 @@ namespace MilkiBotFramework.Utils
 
         public async Task<string[]> SaveFramesToFileAsync(ImageFrameCollection imageFrames)
         {
-            var images = await ImageHelper.CloneImagesFromFramesAsync(imageFrames);
+            var images = await ImageProcessor.CloneImagesFromFramesAsync(imageFrames);
             var guid = Path.GetRandomFileName();
             var j = 0;
             var pathList = new List<string>();

@@ -4,6 +4,7 @@ using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Event;
+using MilkiBotFramework.Imaging;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.CommandLine;
@@ -142,7 +143,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
             .AddSingleton(httpOptions)
             .AddSingleton<BotTaskScheduler>()
             .AddSingleton<EventBus>()
-            .AddSingleton<ImageProcessor>()
+            .AddSingleton<DrawingProcessor>()
             .AddSingleton<LightHttpClient>()
             .AddSingleton<PluginManager>()
             .AddSingleton(new ConfigLoggerProvider(_configureLogger))
