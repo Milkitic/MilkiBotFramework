@@ -4,6 +4,7 @@ using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes;
 using MilkiBotFramework.Platforms.GoCqHttp.Utils;
+using MilkiBotFramework.Utils;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Jpeg;

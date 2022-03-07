@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
 using System.Text;
+using MilkiBotFramework.Utils;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.PixelFormats;
@@ -9,25 +10,43 @@ using SixLabors.ImageSharp.Processing.Processors.Quantization;
 
 namespace MilkiBotFramework.Imaging;
 
-public class ImageProcessor
+public static class ImageHelper
 {
-    private readonly BotOptions _options;
-
-    public ImageProcessor(BotOptions options)
+    private static readonly Dictionary<ImageType, byte[]> KnownFileHeaders = new()
     {
-        _options = options;
+        { ImageType.Jpeg, new byte[] { 0xFF, 0xD8 } }, // JPEG
+        { ImageType.Bmp, new byte[] { 0x42, 0x4D } }, // BMP
+        { ImageType.Gif, new byte[] { 0x47, 0x49, 0x46 } }, // GIF
+        { ImageType.Png, new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A } }, // PNG
+        //{ ImageType.Pdf, new byte[]{ 0x25, 0x50, 0x44, 0x46 }} // PDF
+    };
+
+    public static ImageType GetKnownImageType(ReadOnlySpan<byte> data)
+    {
+        foreach (var (imageType, bytes) in KnownFileHeaders)
+        {
+            if (data.Length < bytes.Length) continue;
+
+            var slice = data.Slice(0, bytes.Length);
+            if (slice.SequenceEqual(bytes))
+            {
+                return imageType;
+            }
+        }
+
+        return ImageType.Unknown;
     }
 
-    public string CompressToFile(Image source, Color[]? palette = null)
+    public static string CompressToFile(string gifSiclePath, string saveFolder, Image source, Color[]? palette = null)
     {
-        var tempPath = Path.Combine(_options.CacheImageDir, Path.GetRandomFileName() + ".gif");
+        var tempPath = Path.Combine(saveFolder, Path.GetRandomFileName() + ".gif");
 
-        ImageProcessor.SaveGifToFileAsync(tempPath, source, palette).Wait();
-        var newPath = CompressToFile(tempPath);
+        ImageHelper.SaveGifToFileAsync(tempPath, source, palette).Wait();
+        var newPath = CompressToFile(gifSiclePath, tempPath);
         return newPath;
     }
 
-    public string CompressToFile(string sourcePath)
+    public static string CompressToFile(string gifSiclePath, string sourcePath)
     {
         var targetDir = Path.GetDirectoryName(sourcePath);
         if (targetDir == null)
@@ -43,7 +62,7 @@ public class ImageProcessor
         try
         {
             var proc = Process.Start(
-                new ProcessStartInfo(_options.GifSiclePath,
+                new ProcessStartInfo(gifSiclePath,
                     $"-i \"{fileName}{extension}\" --loopcount=infinite --careful --optimize=2 -o \"{targetName}\"")
                 {
                     WorkingDirectory = targetDir,
@@ -62,15 +81,15 @@ public class ImageProcessor
         return Path.Combine(targetDir, targetName);
     }
 
-    public async Task<string[]> SaveFramesToFileAsync(ImageFrameCollection imageFrames)
+    public static async Task<string[]> SaveFramesToFileAsync(string saveFolder, ImageFrameCollection imageFrames)
     {
-        var images = await ImageProcessor.CloneImagesFromFramesAsync(imageFrames);
+        var images = await ImageHelper.CloneImagesFromFramesAsync(imageFrames);
         var guid = Path.GetRandomFileName();
         var j = 0;
         var pathList = new List<string>();
         foreach (var keyValuePair in images)
         {
-            string outputFilePath = Path.Combine(_options.CacheImageDir, $"{guid}-{j:00}.png");
+            string outputFilePath = Path.Combine(saveFolder, $"{guid}-{j:00}.png");
             await keyValuePair.Image.SaveAsPngAsync(outputFilePath);
             pathList.Add(outputFilePath);
             j++;
@@ -79,16 +98,15 @@ public class ImageProcessor
         return pathList.ToArray();
     }
 
-    public async Task<Color[]> ComputePalette(ImageFrameCollection imageFrames)
+    public static async Task<Color[]> ComputePalette(string ffmpegPath, string saveFolder, ImageFrameCollection imageFrames)
     {
-        var path = await SaveFramesToFileAsync(imageFrames);
+        var path = await SaveFramesToFileAsync(saveFolder, imageFrames);
         var sourceFolder = Path.GetDirectoryName(path[0]);
         var split = Path.GetFileName(path[0]).Split('-');
         var standardName = split[0];
         var ext = Path.GetExtension(split[1]);
 
-        var ffmpeg = _options.FfMpegPath;
-        RunAndWait(ffmpeg,
+        RunAndWait(ffmpegPath,
             $"-hide_banner " +
             //$"-f image2 " +
             $"-hwaccel auto " +
@@ -102,72 +120,6 @@ public class ImageProcessor
 
         var colors = GetPaletteFromFile(targetPath);
         return colors;
-    }
-
-    private static Color[] GetPaletteFromFile(string targetPath)
-    {
-        bool x = false;
-        bool y = true;
-
-        var result = x | y;
-
-        using var image = (Image<Rgba32>)Image.Load(targetPath);
-        var arr = new Color[256];
-        int k = 0;
-        image.ProcessPixelRows(pixelAccessor =>
-        {
-            for (int y = 0; y < pixelAccessor.Height; y++)
-            {
-                Span<Rgba32> row = pixelAccessor.GetRowSpan(y);
-
-                // Using row.Length helps JIT to eliminate bounds checks when accessing row[x].
-                foreach (var color in row)
-                {
-                    arr[k++] = color;
-                }
-            }
-        });
-
-        return arr;
-    }
-
-    private static void RunAndWait(string fileName, string arguments, string workingDirectory)
-    {
-        var stringBuilder = new StringBuilder();
-
-        void OnProcDataReceived(object s, DataReceivedEventArgs e)
-        {
-            stringBuilder.AppendLine(e.Data);
-        }
-
-        var psi = new ProcessStartInfo(fileName, arguments)
-        {
-            WorkingDirectory = workingDirectory,
-            RedirectStandardError = true,
-            RedirectStandardOutput = true,
-            WindowStyle = ProcessWindowStyle.Hidden
-        };
-        var proc = new Process { StartInfo = psi };
-        proc.Start();
-
-        proc.OutputDataReceived += OnProcDataReceived;
-        proc.ErrorDataReceived += OnProcDataReceived;
-        proc.BeginErrorReadLine();
-        proc.BeginOutputReadLine();
-
-        proc?.WaitForExit();
-
-        proc.OutputDataReceived -= OnProcDataReceived;
-        proc.ErrorDataReceived -= OnProcDataReceived;
-
-
-        if (proc?.ExitCode != 0)
-        {
-            throw new Exception("ffmpeg exit with code: " + proc?.ExitCode,
-                new Exception(stringBuilder.ToString()));
-        }
-
-        proc?.Dispose();
     }
 
     public static Image GetResizedImage(Image source, float uniformScaleRate)
@@ -262,7 +214,7 @@ public class ImageProcessor
         await gif.SaveAsGifAsync(path, encoder);
     }
 
-    public static async Task<List<FrameInfo>> CloneImagesFromFramesAsync(
+    public static async Task<List<GifFrame>> CloneImagesFromFramesAsync(
         ImageFrameCollection imageFrames)
     {
         var t = Task.Run(() => imageFrames
@@ -270,7 +222,7 @@ public class ImageProcessor
             .Select((f, i) =>
             {
                 var image = imageFrames.CloneFrame(i);
-                return new FrameInfo(image, TimeSpan.FromMilliseconds(f.Metadata.GetGifMetadata().FrameDelay * 10d));
+                return new GifFrame(image, TimeSpan.FromMilliseconds(f.Metadata.GetGifMetadata().FrameDelay * 10d));
             }
             ));
 
@@ -278,21 +230,21 @@ public class ImageProcessor
         return results;
     }
 
-    public static Task<Image> CreateGifByImagesAsync(IReadOnlyCollection<Image> images, TimeSpan delay, Size size,
+    public static Task<Image> CreateGifByImagesAsync(IEnumerable<Image> images, TimeSpan delay, Size size,
         bool clone = false)
     {
-        return CreateGifByImagesAsync(images.Select(k => new FrameInfo(k, delay)).ToArray(), size, clone);
+        return CreateGifByImagesAsync(images.Select(k => new GifFrame(k, delay)), size, clone);
     }
 
-    public static async Task<Image> CreateGifByImagesAsync(ICollection<FrameInfo> frameInfos, Size size,
+    public static async Task<Image> CreateGifByImagesAsync(IEnumerable<GifFrame> frameInfos, Size size,
         bool clone = false)
     {
         // Iterate in parallel over the images and wait until all images are processed
         var t = Task.Run(() => frameInfos
             .AsParallel()
-            .Select((kvp, index) =>
+            .Select(gifFrame =>
             {
-                var (image, delay) = kvp;
+                var (image, delay) = gifFrame;
 
                 // Resize the image
                 var (width, height) = size;
@@ -335,89 +287,64 @@ public class ImageProcessor
         }
     }
 
-    [Obsolete("todo: dangerous: memory leak", true)]
-    public static List<FrameInfo> CompressSerial(IReadOnlyList<FrameInfo> sourceSerial, bool autoDisposeSource = true)
+    private static Color[] GetPaletteFromFile(string targetPath)
     {
-        if (sourceSerial.Count <= 1) return sourceSerial.ToList();
-        var newList = new List<FrameInfo>
+        using var image = (Image<Rgba32>)Image.Load(targetPath);
+        var arr = new Color[256];
+        int k = 0;
+        image.ProcessPixelRows(pixelAccessor =>
+        {
+            for (int y = 0; y < pixelAccessor.Height; y++)
             {
-                new(((Image<Rgba32>)sourceSerial[0].Image).Clone(), sourceSerial[0].Delay)
-            };
-        for (var i = 0; i < sourceSerial.Count - 1; i++)
-        {
-            var bitmap = (Image<Rgba32>)sourceSerial[i].Image;
-            var nextBitmap = (Image<Rgba32>)sourceSerial[i + 1].Image;
-            var difference = GetDifference(bitmap, nextBitmap);
-            newList.Add(new FrameInfo(difference, sourceSerial[i + 1].Delay));
-        }
-
-        if (autoDisposeSource)
-        {
-            foreach (var image in sourceSerial)
-            {
-                image.Image.Dispose();
-            }
-        }
-
-        return newList;
-    }
-
-    [Obsolete("todo: dangerous: memory leak", true)]
-    public static List<Image> CompressSerial(IReadOnlyList<Image> sourceSerial, bool autoDisposeSource = true)
-    {
-        if (sourceSerial.Count <= 1) return sourceSerial.ToList();
-        var newList = new List<Image> { sourceSerial[0] };
-        for (var i = 0; i < sourceSerial.Count - 1; i++)
-        {
-            var bitmap = (Image<Rgba32>)sourceSerial[i];
-            var nextBitmap = (Image<Rgba32>)sourceSerial[i + 1];
-            var difference = GetDifference(bitmap, nextBitmap);
-            newList.Add(difference);
-        }
-
-        if (autoDisposeSource)
-        {
-            foreach (var image in sourceSerial)
-            {
-                image.Dispose();
-            }
-        }
-
-        return newList;
-    }
-
-    [Obsolete("todo: dangerous: memory leak", true)]
-    public static Image GetDifference(Image<Rgba32> oldFrame, Image<Rgba32> newFrame)
-    {
-        if (oldFrame.Height != newFrame.Height || oldFrame.Width != newFrame.Width)
-        {
-            throw new Exception("Bitmaps are not of equal dimensions.");
-        }
-
-        var newImage = new Image<Rgba32>(oldFrame.Width, oldFrame.Height);
-
-        newImage.ProcessPixelRows(oldFrame, newFrame, (newImageAccessor, oldAccessor, newAccessor) =>
-        {
-            for (int y = 0; y < oldAccessor.Height; y++)
-            {
-                Span<Rgba32> pixelRowSpan1 = oldAccessor.GetRowSpan(y);
-                Span<Rgba32> pixelRowSpan2 = newAccessor.GetRowSpan(y);
-                Span<Rgba32> pixelRowSpanSource = newImageAccessor.GetRowSpan(y);
+                Span<Rgba32> row = pixelAccessor.GetRowSpan(y);
 
                 // Using row.Length helps JIT to eliminate bounds checks when accessing row[x].
-                for (int x = 0; x < pixelRowSpan1.Length; x++)
+                foreach (var color in row)
                 {
-                    var color1 = pixelRowSpan1[x];
-                    var color2 = pixelRowSpan2[x];
-
-                    if (color1.Rgba != color2.Rgba)
-                    {
-                        pixelRowSpanSource[x] = new Rgba32(color2.Rgba);
-                    }
+                    arr[k++] = color;
                 }
             }
         });
 
-        return newImage;
+        return arr;
+    }
+
+    private static void RunAndWait(string fileName, string arguments, string workingDirectory)
+    {
+        var stringBuilder = new StringBuilder();
+
+        void OnProcDataReceived(object s, DataReceivedEventArgs e)
+        {
+            stringBuilder.AppendLine(e.Data);
+        }
+
+        var psi = new ProcessStartInfo(fileName, arguments)
+        {
+            WorkingDirectory = workingDirectory,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            WindowStyle = ProcessWindowStyle.Hidden
+        };
+        var proc = new Process { StartInfo = psi };
+        proc.Start();
+
+        proc.OutputDataReceived += OnProcDataReceived;
+        proc.ErrorDataReceived += OnProcDataReceived;
+        proc.BeginErrorReadLine();
+        proc.BeginOutputReadLine();
+
+        proc.WaitForExit();
+
+        proc.OutputDataReceived -= OnProcDataReceived;
+        proc.ErrorDataReceived -= OnProcDataReceived;
+
+
+        if (proc.ExitCode != 0)
+        {
+            throw new Exception("ffmpeg exit with code: " + proc.ExitCode,
+                new Exception(stringBuilder.ToString()));
+        }
+
+        proc.Dispose();
     }
 }

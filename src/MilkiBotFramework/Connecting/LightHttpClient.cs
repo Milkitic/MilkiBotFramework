@@ -111,14 +111,14 @@ public class LightHttpClient
     public async Task<(byte[], ImageType)> GetImageBytesFromUrlAsync(string uri)
     {
         byte[] urlContents = await _httpClient.GetByteArrayAsync(uri);
-        var type = FormatHelper.GetKnownImageType(urlContents);
+        var type = ImageHelper.GetKnownImageType(urlContents);
         return (urlContents, type);
     }
 
     public async Task<(Image, ImageType)> GetImageFromUrlAsync(string uri)
     {
         byte[] urlContents = await _httpClient.GetByteArrayAsync(uri);
-        var type = FormatHelper.GetKnownImageType(urlContents);
+        var type = ImageHelper.GetKnownImageType(urlContents);
         var ms = new MemoryStream(urlContents);
         return (await Image.LoadAsync(ms), type);
     }
@@ -126,7 +126,7 @@ public class LightHttpClient
     public async Task<string> SaveImageFromUrlAsync(string uri, string saveDir, string filename)
     {
         byte[] urlContents = await _httpClient.GetByteArrayAsync(uri);
-        var type = FormatHelper.GetKnownImageType(urlContents);
+        var type = ImageHelper.GetKnownImageType(urlContents);
         string ext = type switch
         {
             ImageType.Jpeg => ".jpg",

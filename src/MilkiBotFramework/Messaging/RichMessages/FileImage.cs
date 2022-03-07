@@ -11,7 +11,7 @@ public class FileImage : IRichMessage
     public async Task<MemoryImage> ToMemoryImageAsync()
     {
         var bytes = await File.ReadAllBytesAsync(Path);
-        var imageType = FormatHelper.GetKnownImageType(bytes);
+        var imageType = ImageHelper.GetKnownImageType(bytes);
 
         var stream = new MemoryStream(bytes);
         var bitmap = await Image.LoadAsync(stream);

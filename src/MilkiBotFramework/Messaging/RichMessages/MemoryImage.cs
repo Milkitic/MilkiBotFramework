@@ -1,4 +1,5 @@
 ﻿using MilkiBotFramework.Imaging;
+using MilkiBotFramework.Utils;
 using SixLabors.ImageSharp;
 
 namespace MilkiBotFramework.Messaging.RichMessages;

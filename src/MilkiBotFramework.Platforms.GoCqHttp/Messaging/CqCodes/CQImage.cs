@@ -1,6 +1,7 @@
 ﻿using MilkiBotFramework.Imaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.GoCqHttp.Utils;
+using MilkiBotFramework.Utils;
 using SixLabors.ImageSharp;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
