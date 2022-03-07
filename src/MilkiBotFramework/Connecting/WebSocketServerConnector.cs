@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Fleck;
 using Microsoft.Extensions.Logging;
-using LogLevel = Fleck.LogLevel;
 
 namespace MilkiBotFramework.Connecting;
 
@@ -16,11 +15,21 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
     private IWebSocketConnection? _socket;
     private WebSocketServer? _server;
     private readonly ConcurrentDictionary<string, WebsocketRequestSession> _sessions = new();
-    private List<TaskCompletionSource> _messageWaiters = new();
+    private readonly List<TaskCompletionSource> _messageWaiters = new();
+    private readonly WebSocketMessageManager _manager;
 
     public WebSocketServerConnector(ILogger<WebSocketServerConnector> logger)
     {
         _logger = logger;
+        _manager = new WebSocketMessageManager(logger,
+            () => MessageTimeout,
+            async message =>
+            {
+                if (_socket != null) await _socket.Send(message);
+            },
+            RawMessageReceived,
+            TryGetStateByMessage
+        );
     }
 
     public ConnectionType ConnectionType { get; set; }
@@ -38,7 +47,7 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
     public Task ConnectAsync()
     {
         _server = new WebSocketServer(BindingPath);
-        FleckLog.Level = LogLevel.Error;
+        FleckLog.Level = Fleck.LogLevel.Error;
         _server.Start(socket =>
         {
             socket.OnOpen = () =>
@@ -70,7 +79,7 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
             };
             socket.OnMessage = async message =>
             {
-                await OnMessageReceivedCore(message);
+                await _manager.InvokeMessageReceive(message);
             };
             socket.OnError = exception =>
             {
@@ -98,7 +107,18 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
             var connectionWaiter = new TaskCompletionSource();
             _messageWaiters.Add(connectionWaiter);
             using var cts1 = new CancellationTokenSource(ConnectionTimeout);
-            cts1.Token.Register(() => connectionWaiter.SetCanceled());
+            cts1.Token.Register(() =>
+            {
+                try
+                {
+                    connectionWaiter.SetCanceled();
+                    _logger.LogWarning($"Connection is forced to time out after {ConnectionTimeout.Seconds} seconds.");
+                }
+                catch
+                {
+                    // ignored
+                }
+            });
             try
             {
                 await connectionWaiter.Task;
@@ -113,37 +133,7 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
             }
         }
 
-        var tcs = new TaskCompletionSource();
-        using var cts = new CancellationTokenSource(MessageTimeout);
-        cts.Token.Register(() =>
-        {
-            try
-            {
-                tcs.SetCanceled();
-            }
-            catch
-            {
-                _logger.LogWarning($"Message is forced to time out after {MessageTimeout.Seconds} seconds.");
-            }
-        });
-        var sessionObj = new WebsocketRequestSession(tcs);
-        _sessions.TryAdd(state, sessionObj);
-        await _socket.Send(message);
-        try
-        {
-            await tcs.Task.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("Timed out for receiving response from websocket server.", ex);
-        }
-        finally
-        {
-            _sessions.TryRemove(state, out _);
-        }
-
-        if (sessionObj.Response == null) throw new NullReferenceException();
-        return sessionObj.Response;
+        return await _manager.SendMessageAsync(message, state);
     }
 
     public void Dispose()
@@ -160,35 +150,5 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
     {
         state = null;
         return false;
-    }
-
-    private Task OnMessageReceivedCore(string msg)
-    {
-        var hasState = TryGetStateByMessage(msg, out var state);
-        if (!hasState || string.IsNullOrEmpty(state))
-        {
-            RawMessageReceived?.Invoke(msg);
-            return Task.CompletedTask;
-        }
-
-        if (_sessions.TryGetValue(state, out var sessionObj))
-        {
-            sessionObj.Response = msg;
-            try
-            {
-                sessionObj.TaskCompletionSource.SetResult();
-            }
-            catch (TaskCanceledException)
-            {
-                _logger.LogWarning($"Rollback to raw message: response received but the task has been canceled due to the timeout setting.");
-            }
-        }
-        else
-        {
-            _logger.LogWarning($"Rollback to raw message due to unknown response state: {state}.");
-            RawMessageReceived?.Invoke(msg);
-        }
-
-        return Task.CompletedTask;
     }
 }

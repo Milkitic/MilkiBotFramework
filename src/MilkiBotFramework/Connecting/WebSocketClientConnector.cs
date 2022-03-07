@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Net.WebSockets;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -16,12 +15,18 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
 
     private readonly AsyncLock _asyncLock = new();
     private WebsocketClient? _client;
-    private readonly ConcurrentDictionary<string, WebsocketRequestSession> _sessions = new();
     private bool _isConnected = false;
+    private readonly WebSocketMessageManager _manager;
 
     public WebSocketClientConnector(ILogger<WebSocketClientConnector> logger)
     {
         _logger = logger;
+        _manager = new WebSocketMessageManager(logger,
+            () => MessageTimeout,
+            async message => _client?.Send(message),
+            RawMessageReceived,
+            TryGetStateByMessage
+        );
     }
 
     public ConnectionType ConnectionType { get; set; }
@@ -101,45 +106,13 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
         }
     }
 
-    public async Task<string> SendMessageAsync(string message, string state)
+    public Task<string> SendMessageAsync(string message, string state)
     {
         if (_client == null)
             throw new ArgumentNullException(nameof(_client),
                 "WebsocketClient is not ready. Try to connect before sending message.");
-        //if (!_isConnected)
-        //    throw new Exception("WebsocketClient is not connected.");
 
-        var tcs = new TaskCompletionSource();
-        using var cts = new CancellationTokenSource(MessageTimeout);
-        cts.Token.Register(() =>
-        {
-            try
-            {
-                tcs.SetCanceled();
-            }
-            catch
-            {
-                _logger.LogWarning($"Message is forced to time out after {MessageTimeout.Seconds} seconds.");
-            }
-        });
-        var sessionObj = new WebsocketRequestSession(tcs);
-        _sessions.TryAdd(state, sessionObj);
-        _client.Send(message);
-        try
-        {
-            await tcs.Task.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("Timed out for receiving response from websocket server.", ex);
-        }
-        finally
-        {
-            _sessions.TryRemove(state, out _);
-        }
-
-        if (sessionObj.Response == null) throw new NullReferenceException();
-        return sessionObj.Response;
+        return _manager.SendMessageAsync(message, state);
     }
 
     public async ValueTask DisposeAsync()
@@ -160,40 +133,10 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
         return false;
     }
 
-    private async Task OnMessageReceived(ResponseMessage message)
+    private Task OnMessageReceived(ResponseMessage message)
     {
         if (message.MessageType != WebSocketMessageType.Text || string.IsNullOrWhiteSpace(message.Text))
-            return;
-        await OnMessageReceivedCore(message.Text).ConfigureAwait(false);
-    }
-
-    private Task OnMessageReceivedCore(string msg)
-    {
-        var hasState = TryGetStateByMessage(msg, out var state);
-        if (!hasState || string.IsNullOrEmpty(state))
-        {
-            RawMessageReceived?.Invoke(msg);
             return Task.CompletedTask;
-        }
-
-        if (_sessions.TryGetValue(state, out var sessionObj))
-        {
-            sessionObj.Response = msg;
-            try
-            {
-                sessionObj.TaskCompletionSource.SetResult();
-            }
-            catch (TaskCanceledException)
-            {
-                _logger.LogWarning($"Rollback to raw message: response received but the task has been canceled due to the timeout setting.");
-            }
-        }
-        else
-        {
-            _logger.LogWarning($"Rollback to raw message due to unknown response state: {state}.");
-            RawMessageReceived?.Invoke(msg);
-        }
-
-        return Task.CompletedTask;
+        return _manager.InvokeMessageReceive(message.Text);
     }
 }

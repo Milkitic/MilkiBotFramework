@@ -8,7 +8,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 
 internal static class GoCqWebsocketHelper
 {
-    public static async Task<GoCqApiResponse<T>> SendMessageAsync<T>(IWebSocketConnector wsConnector,
+    public static async Task<GoCqApiResponse<T>> SendMessageAsync<T>(IConnector connector,
         string action,
         IDictionary<string, object>? @params)
     {
@@ -20,11 +20,11 @@ internal static class GoCqWebsocketHelper
             State = state
         };
         var reqJson = JsonSerializer.Serialize(req);
-        var str = await wsConnector.SendMessageAsync(reqJson, state);
+        var str = await connector.SendMessageAsync(reqJson, state);
         return JsonSerializer.Deserialize<GoCqApiResponse<T>>(str)!;
     }
 
-    public static bool TryGetStateByMessage(IWebSocketConnector wsConnector,
+    public static bool TryGetStateByMessage(IConnector connector,
         string msg,
         [NotNullWhen(true)] out string? state)
     {

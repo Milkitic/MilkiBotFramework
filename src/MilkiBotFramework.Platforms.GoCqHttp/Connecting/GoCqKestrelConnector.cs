@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Aspnetcore;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
@@ -16,6 +18,8 @@ public sealed class GoCqKestrelConnector : AspnetcoreConnector, IGoCqConnector
 
     public async Task<GoCqApiResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params)
     {
+        if (ConnectionType == ConnectionType.ReverseWebsocket)
+            return await GoCqWebsocketHelper.SendMessageAsync<T>(this, action, @params);
         if (WebSocketConnector == null)
             return await _lightHttpClient.HttpPost<GoCqApiResponse<T>>(TargetUri + "/" + action, @params);
         if (WebSocketConnector is IGoCqConnector goCqConnector)
@@ -23,11 +27,16 @@ public sealed class GoCqKestrelConnector : AspnetcoreConnector, IGoCqConnector
         throw new ArgumentException(null, nameof(WebSocketConnector));
     }
 
-    public GoCqKestrelConnector(
-        IWebSocketConnector? webSocketConnector,
+    protected override bool TryGetStateByMessage(string msg, [NotNullWhen(true)] out string? state)
+    {
+        return GoCqWebsocketHelper.TryGetStateByMessage(this, msg, out state);
+    }
+
+    public GoCqKestrelConnector(IWebSocketConnector? webSocketConnector,
+        ILogger<GoCqKestrelConnector> logger,
         LightHttpClient lightHttpClient,
         WebApplication webApplication)
-        : base(webSocketConnector, webApplication)
+        : base(webSocketConnector, logger, webApplication)
     {
         _lightHttpClient = lightHttpClient;
     }
