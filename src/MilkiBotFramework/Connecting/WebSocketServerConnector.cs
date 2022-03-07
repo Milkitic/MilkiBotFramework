@@ -16,6 +16,7 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
     private IWebSocketConnection? _socket;
     private WebSocketServer? _server;
     private readonly ConcurrentDictionary<string, WebsocketRequestSession> _sessions = new();
+    private List<TaskCompletionSource> _messageWaiters = new();
 
     public WebSocketServerConnector(ILogger<WebSocketServerConnector> logger)
     {
@@ -25,7 +26,7 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
     public ConnectionType ConnectionType { get; set; }
     public string? TargetUri { get; set; }
     public string? BindingPath { get; set; }
-    public TimeSpan ConnectionTimeout { get; set; }
+    public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// 消息超时时间。
@@ -50,6 +51,15 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
                 }
 
                 _socket = socket;
+
+                if (_messageWaiters.Count > 0)
+                {
+                    foreach (var taskCompletionSource in _messageWaiters.ToArray())
+                    {
+                        taskCompletionSource.SetResult();
+                    }
+                }
+
                 _logger.LogInformation("Websocket client connected.");
             };
             socket.OnClose = () =>
@@ -84,7 +94,24 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
     public async Task<string> SendMessageAsync(string message, string state)
     {
         if (_socket == null)
-            throw new ArgumentNullException(nameof(_socket), "There is no available websocket connection.");
+        {
+            var connectionWaiter = new TaskCompletionSource();
+            _messageWaiters.Add(connectionWaiter);
+            using var cts1 = new CancellationTokenSource(ConnectionTimeout);
+            cts1.Token.Register(() => connectionWaiter.SetCanceled());
+            try
+            {
+                await connectionWaiter.Task;
+            }
+            catch
+            {
+                throw new ArgumentNullException(nameof(_socket), "There is no available websocket connection.");
+            }
+            finally
+            {
+                _messageWaiters.Remove(connectionWaiter);
+            }
+        }
 
         var tcs = new TaskCompletionSource();
         using var cts = new CancellationTokenSource(MessageTimeout);
