@@ -1,11 +1,11 @@
 ﻿namespace MilkiBotFramework.Connecting;
 
-public sealed class WebsocketRequestSession
+public sealed class WebSocketMessageSession
 {
     public TaskCompletionSource TaskCompletionSource { get; set; }
     public string? Response { get; set; }
 
-    public WebsocketRequestSession(TaskCompletionSource taskCompletionSource)
+    public WebSocketMessageSession(TaskCompletionSource taskCompletionSource)
     {
         TaskCompletionSource = taskCompletionSource;
     }

@@ -50,14 +50,14 @@ namespace MilkiBotFramework.Aspnetcore
             //}
 
             var connector = serviceProvider.GetService<IConnector>()!;
-            if (connector.ConnectionType == ConnectionType.ReverseWebsocket)
+            if (connector.ConnectionType == ConnectionType.ReverseWebSocket)
             {
                 var webSocketOptions = new WebSocketOptions
                 {
                     KeepAliveInterval = TimeSpan.FromSeconds(2)
                 };
                 _app.UseWebSockets(webSocketOptions);
-                _app.UseMiddleware<ReverseWebsocketMiddleware>();
+                _app.UseMiddleware<ReverseWebSocketMiddleware>();
             }
             else if (connector!.ConnectionType == ConnectionType.Http)
             {

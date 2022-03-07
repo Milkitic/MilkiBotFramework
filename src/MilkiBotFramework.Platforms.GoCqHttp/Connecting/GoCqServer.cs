@@ -18,11 +18,11 @@ public sealed class GoCqServer : WebSocketServerConnector, IGoCqConnector
 
     public Task<GoCqApiResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params)
     {
-        return GoCqWebsocketHelper.SendMessageAsync<T>(this, action, @params);
+        return GoCqWebSocketHelper.SendMessageAsync<T>(this, action, @params);
     }
 
     protected override bool TryGetStateByMessage(string msg, [NotNullWhen(true)] out string? state)
     {
-        return GoCqWebsocketHelper.TryGetStateByMessage(this, msg, out state);
+        return GoCqWebSocketHelper.TryGetStateByMessage(this, msg, out state);
     }
 }

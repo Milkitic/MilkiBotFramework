@@ -14,7 +14,7 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
 
     private IWebSocketConnection? _socket;
     private WebSocketServer? _server;
-    private readonly ConcurrentDictionary<string, WebsocketRequestSession> _sessions = new();
+    private readonly ConcurrentDictionary<string, WebSocketMessageSession> _sessions = new();
     private readonly List<TaskCompletionSource> _messageWaiters = new();
     private readonly WebSocketMessageSessionManager _sessionManager;
 
@@ -69,13 +69,13 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
                     }
                 }
 
-                _logger.LogInformation("Websocket client connected.");
+                _logger.LogInformation("WebSocket client connected.");
             };
             socket.OnClose = () =>
             {
                 if (_socket != socket) return;
                 _socket = null;
-                _logger.LogInformation("Websocket client disconnected.");
+                _logger.LogInformation("WebSocket client disconnected.");
             };
             socket.OnMessage = async message =>
             {

@@ -6,7 +6,7 @@ using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 
-internal static class GoCqWebsocketHelper
+internal static class GoCqWebSocketHelper
 {
     public static async Task<GoCqApiResponse<T>> SendMessageAsync<T>(IConnector connector,
         string action,

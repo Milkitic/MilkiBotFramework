@@ -2,5 +2,5 @@
 
 public enum ConnectionType
 {
-    Http, Websocket, ReverseWebsocket
+    Http, WebSocket, ReverseWebSocket
 }

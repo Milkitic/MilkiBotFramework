@@ -41,11 +41,11 @@ public class AspnetcoreConnector : IConnector
 
     public async Task ConnectAsync()
     {
-        if (ConnectionType == ConnectionType.Websocket && WebSocketConnector != null)
+        if (ConnectionType == ConnectionType.WebSocket && WebSocketConnector != null)
         {
             ConnectInnerWsClient();
         }
-        else if (ConnectionType == ConnectionType.ReverseWebsocket)
+        else if (ConnectionType == ConnectionType.ReverseWebSocket)
         {
             ConnectReverseWs();
         }
@@ -68,7 +68,7 @@ public class AspnetcoreConnector : IConnector
 
     public async Task<string> SendMessageAsync(string message, string state)
     {
-        if (ConnectionType == ConnectionType.ReverseWebsocket)
+        if (ConnectionType == ConnectionType.ReverseWebSocket)
             return await SendWsMessage(message, state);
         if (WebSocketConnector != null)
             return await WebSocketConnector.SendMessageAsync(message, state);

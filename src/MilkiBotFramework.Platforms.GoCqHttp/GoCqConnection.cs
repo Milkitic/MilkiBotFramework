@@ -15,14 +15,14 @@ public class GoCqConnection
     public string? TargetUri { get; private set; }
     public string? ServerBindPath { get; private set; }
 
-    public static GoCqConnection Websocket(string callingUri)
+    public static GoCqConnection WebSocket(string callingUri)
     {
-        return new GoCqConnection(ConnectionType.Websocket, callingUri, null);
+        return new GoCqConnection(ConnectionType.WebSocket, callingUri, null);
     }
 
-    public static GoCqConnection ReverseWebsocket(string serverBindPath)
+    public static GoCqConnection ReverseWebSocket(string serverBindPath)
     {
-        return new GoCqConnection(ConnectionType.ReverseWebsocket, null, serverBindPath);
+        return new GoCqConnection(ConnectionType.ReverseWebSocket, null, serverBindPath);
     }
 
     public static GoCqConnection Http(string callingUri, string serverBindPath)

@@ -14,7 +14,7 @@ public class WebSocketMessageSessionManager
     private readonly Func<string, Task>? _rawReceivedFunc;
     private readonly TryGetStateByMessageDelegate _tryGetStateDelegate;
 
-    private readonly ConcurrentDictionary<string, WebsocketRequestSession> _sessions = new();
+    private readonly ConcurrentDictionary<string, WebSocketMessageSession> _sessions = new();
     private readonly Func<TimeSpan> _getMessageTimeout;
 
     public WebSocketMessageSessionManager(ILogger logger,
@@ -47,7 +47,7 @@ public class WebSocketMessageSessionManager
                 // ignored
             }
         });
-        var sessionObj = new WebsocketRequestSession(tcs);
+        var sessionObj = new WebSocketMessageSession(tcs);
         _sessions.TryAdd(state, sessionObj);
         await _sendAction(message);
         try

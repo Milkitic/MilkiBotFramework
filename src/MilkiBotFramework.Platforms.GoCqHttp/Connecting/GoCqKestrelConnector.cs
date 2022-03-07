@@ -18,8 +18,8 @@ public sealed class GoCqKestrelConnector : AspnetcoreConnector, IGoCqConnector
 
     public async Task<GoCqApiResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params)
     {
-        if (ConnectionType == ConnectionType.ReverseWebsocket)
-            return await GoCqWebsocketHelper.SendMessageAsync<T>(this, action, @params);
+        if (ConnectionType == ConnectionType.ReverseWebSocket)
+            return await GoCqWebSocketHelper.SendMessageAsync<T>(this, action, @params);
         if (WebSocketConnector == null)
             return await _lightHttpClient.HttpPost<GoCqApiResponse<T>>(TargetUri + "/" + action, @params);
         if (WebSocketConnector is IGoCqConnector goCqConnector)
@@ -29,7 +29,7 @@ public sealed class GoCqKestrelConnector : AspnetcoreConnector, IGoCqConnector
 
     protected override bool TryGetStateByMessage(string msg, [NotNullWhen(true)] out string? state)
     {
-        return GoCqWebsocketHelper.TryGetStateByMessage(this, msg, out state);
+        return GoCqWebSocketHelper.TryGetStateByMessage(this, msg, out state);
     }
 
     public GoCqKestrelConnector(IWebSocketConnector? webSocketConnector,

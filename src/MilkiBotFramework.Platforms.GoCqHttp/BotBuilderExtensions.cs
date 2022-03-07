@@ -22,7 +22,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp
             });
             builder.ConfigureServices(k =>
             {
-                if (connection.ConnectionType == ConnectionType.Websocket)
+                if (connection.ConnectionType == ConnectionType.WebSocket)
                     k.AddSingleton(typeof(IWebSocketConnector),
                         s => new GoCqClient(s.GetService<ILogger<GoCqClient>>()!)
                         {

@@ -1,14 +1,13 @@
 ﻿using MilkiBotFramework.Connecting;
-using MilkiBotFramework.Dispatching;
 
 namespace MilkiBotFramework.Aspnetcore;
 
-public class ReverseWebsocketMiddleware
+public class ReverseWebSocketMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly AspnetcoreConnector _connector;
 
-    public ReverseWebsocketMiddleware(RequestDelegate next, IConnector connector)
+    public ReverseWebSocketMiddleware(RequestDelegate next, IConnector connector)
     {
         _next = next;
         _connector = (AspnetcoreConnector)connector;
