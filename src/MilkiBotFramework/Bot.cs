@@ -146,15 +146,3 @@ public class Bot
         return exitCode;
     }
 }
-
-public sealed class BotOptions
-{
-    public HashSet<string> RootAccounts { get; set; } = new();
-    public string PluginBaseDir { get; set; } = "./plugins";
-    public string PluginHomeDir { get; set; } = "./homes";
-    public string PluginDatabaseDir { get; set; } = "./databases";
-    public string PluginConfigurationDir { get; set; } = "./configurations";
-    public string CacheImageDir { get; set; } = "./caches/images";
-    public string GifSiclePath { get; set; }
-    public string FfMpegPath { get; set; }
-}

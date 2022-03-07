@@ -8,6 +8,7 @@ using MilkiBotFramework.Imaging;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.CommandLine;
+using MilkiBotFramework.Plugining.Configuration;
 using MilkiBotFramework.Plugining.Loading;
 using MilkiBotFramework.Tasking;
 using MilkiBotFramework.Utils;
@@ -18,7 +19,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 {
     private IServiceCollection? _services;
 
-    private readonly BotOptions _botOptions = new();
+    private BotOptions? _botOptions;
     private Action<ILoggingBuilder>? _configureLogger;
     private Action<LightHttpClientCreationOptions>? _configureHttp;
     private Action<IConnectorConfigurable>? _configureConnector;
@@ -30,9 +31,16 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     private IParameterConverter? _defaultConverter;
     private Type? _richMessageConverterType;
 
-    public TBuilder ConfigureOptions(Action<BotOptions> configureBot)
+    private string? _optionPath;
+    private Action<object>? _configureBot;
+    private Type? _optionType;
+
+    public TBuilder ConfigOptions<T>(string? optionPath, Action<T>? configure = null) where T : BotOptions
     {
-        configureBot?.Invoke(_botOptions);
+        _optionPath = optionPath;
+        if (configure != null)
+            _configureBot = o => configure.Invoke((T)o);
+        _optionType = typeof(T);
         return (TBuilder)this;
     }
 
@@ -143,7 +151,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         configureHttp(httpOptions);
         serviceCollection
             .AddLogging(k => configureLogger(k))
-            .AddSingleton(_botOptions)
+            .AddSingleton(GetOptionInstance())
             .AddSingleton(httpOptions)
             .AddSingleton<BotTaskScheduler>()
             .AddSingleton<EventBus>()
@@ -171,6 +179,22 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         }
 
         serviceCollection.AddSingleton(serviceCollection);
+    }
+
+    private BotOptions GetOptionInstance()
+    {
+        var path = _optionPath ?? "appsettings.yaml";
+        var optionType = _optionType ?? typeof(BotOptions);
+        if (_botOptions == null)
+        {
+            var success = ConfigurationFactory.TryLoadConfigFromFile(optionType, path, new YamlConverter(), null,
+                out var config, out var ex);
+            if (!success) throw ex!;
+            _botOptions = (BotOptions?)config!;
+        }
+
+        _configureBot?.Invoke(_botOptions);
+        return _botOptions;
     }
 
     private Action<LightHttpClientCreationOptions> CreateDefaultHttpConfiguration()

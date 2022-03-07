@@ -5,7 +5,7 @@ namespace MilkiBotFramework.Plugining.Configuration;
 
 public class YamlConverter
 {
-    public T DeserializeSettings<T>(string content)
+    public ConfigurationBase DeserializeSettings(string content, Type type)
     {
         var builder = new DeserializerBuilder()
             .WithNamingConvention(PascalCaseNamingConvention.Instance)
@@ -17,10 +17,10 @@ public class YamlConverter
 
         var ymlDeserializer = builder.Build();
 
-        return ymlDeserializer.Deserialize<T>(content);
+        return (ConfigurationBase)ymlDeserializer.Deserialize(content, type);
     }
 
-    public string SerializeSettings<T>(T obj)
+    public string SerializeSettings(ConfigurationBase @object)
     {
         var builder = new SerializerBuilder()
             .WithNamingConvention(PascalCaseNamingConvention.Instance)
@@ -31,7 +31,7 @@ public class YamlConverter
         var list = ConfigTagMapping();
         if (list != null) InnerConfigTagMapping(list, builder);
         var converter = builder.Build();
-        var content = converter.Serialize(obj);
+        var content = converter.Serialize(@object);
         return content;
     }
 
