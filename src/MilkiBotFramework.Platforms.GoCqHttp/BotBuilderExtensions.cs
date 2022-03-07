@@ -23,13 +23,13 @@ namespace MilkiBotFramework.Platforms.GoCqHttp
             builder.ConfigureServices(k =>
             {
                 if (connection.ConnectionType == ConnectionType.Websocket)
-                    k.AddSingleton(typeof(WebSocketClientConnector),
+                    k.AddSingleton(typeof(IWebSocketConnector),
                         s => new GoCqClient(s.GetService<ILogger<GoCqClient>>()!)
                         {
                             TargetUri = connection.TargetUri
                         });
                 else
-                    k.AddSingleton(typeof(WebSocketClientConnector), _ => null!);
+                    k.AddSingleton(typeof(IWebSocketConnector), _ => null!);
             });
 
             return builder
@@ -41,11 +41,21 @@ namespace MilkiBotFramework.Platforms.GoCqHttp
                 .UseMessageApi<GoCqApi>();
         }
 
-        public static TBuilder UseGoCqHttp<TBot, TBuilder>(this BotBuilderBase<TBot, TBuilder> builder, string wsServerUri)
+        public static TBuilder UseGoCqHttp<TBot, TBuilder>(this BotBuilderBase<TBot, TBuilder> builder, 
+            string wsUri,
+            bool asClient = true)
             where TBot : Bot where TBuilder : BotBuilderBase<TBot, TBuilder>
         {
+            if (asClient)
+            {
+                builder.UseConnector<GoCqClient>(wsUri);
+            }
+            else
+            {
+                builder.UseConnector<GoCqServer>(wsUri);
+            }
+
             return builder
-                .UseConnector<GoCqClient>(wsServerUri)
                 .ConfigureServices(k => { k.AddScoped(typeof(GoCqMessageContext)); })
                 .UseDispatcher<GoCqDispatcher>()
                 .UseCommandLineAnalyzer<CommandLineAnalyzer>(new GoCqParameterConverter())

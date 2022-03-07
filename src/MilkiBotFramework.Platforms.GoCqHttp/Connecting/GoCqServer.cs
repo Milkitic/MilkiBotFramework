@@ -5,9 +5,9 @@ using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 
-public sealed class GoCqClient : WebSocketClientConnector, IGoCqConnector
+public sealed class GoCqServer : WebSocketServerConnector, IGoCqConnector
 {
-    public GoCqClient(ILogger<GoCqClient> logger) : base(logger)
+    public GoCqServer(ILogger<GoCqServer> logger) : base(logger)
     {
     }
 

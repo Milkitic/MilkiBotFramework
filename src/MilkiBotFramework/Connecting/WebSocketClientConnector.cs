@@ -8,11 +8,12 @@ using Websocket.Client;
 
 namespace MilkiBotFramework.Connecting;
 
-public abstract class WebSocketClientConnector : IConnector, IDisposable, IAsyncDisposable
+public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposable, IAsyncDisposable
 {
     public event Func<string, Task>? RawMessageReceived;
 
     private readonly ILogger _logger;
+
     private readonly AsyncLock _asyncLock = new();
     private WebsocketClient? _client;
     private readonly ConcurrentDictionary<string, WebsocketRequestSession> _sessions = new();
