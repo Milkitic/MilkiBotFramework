@@ -86,7 +86,7 @@ public class HelloWorld : BasicPlugin
 - [x] 联系人相关功能完善（包括go-cq实现）
 - [x] 插件命令的权限(考虑其他插件要正确读取声明的权限)
 - [x] 插件的配置设置、数据库读写、资源分配的管理
-- [ ] 完善内部事件，以及INotifyProperty相关
+- [x] 完善内部事件
 - [ ] 支持reverse-ws
 - [x] 部分绘制图像共享功能 (包含Maui/WPF绘制框架)
 - [ ] 支持基于Github issue的更新

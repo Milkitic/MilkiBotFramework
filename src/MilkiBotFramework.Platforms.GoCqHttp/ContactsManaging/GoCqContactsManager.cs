@@ -89,7 +89,7 @@ public sealed class GoCqContactsManager : ContactsManagerBase
             return MemberInfoResult.Fail;
         }
 
-        var memberInfo = new MemberInfo(groupMember.UserId)
+        var memberInfo = new MemberInfo(channelId, groupMember.UserId, subChannelId)
         {
             Nickname = string.IsNullOrEmpty(groupMember.Nickname) ? null : groupMember.Nickname,
             Card = string.IsNullOrEmpty(groupMember.Card) ? null : groupMember.Card,
@@ -171,7 +171,7 @@ public sealed class GoCqContactsManager : ContactsManagerBase
             };
             foreach (var groupMember in allMembers)
             {
-                var memberInfo = new MemberInfo(groupMember.UserId)
+                var memberInfo = new MemberInfo(groupInfo.GroupId, groupMember.UserId, null)
                 {
                     Card = groupMember.Card,
                     MemberRole = groupMember.Role switch

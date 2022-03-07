@@ -19,6 +19,7 @@ public abstract class ContactsManagerBase : IContactsManager
     private readonly BotTaskScheduler _botTaskScheduler;
     private readonly ILogger _logger;
     private readonly EventBus _eventBus;
+    private bool _initialized;
 
     protected SelfInfo? SelfInfo;
 
@@ -41,6 +42,8 @@ public abstract class ContactsManagerBase : IContactsManager
 
     public void InitializeTasks()
     {
+        if (_initialized) return;
+        _initialized = true;
         _botTaskScheduler.AddTask("RefreshContactsTask", builder => builder
             .ByInterval(TimeSpan.FromMinutes(5))
             .AtStartup()
@@ -134,7 +137,7 @@ public abstract class ContactsManagerBase : IContactsManager
         out Dictionary<string, ChannelInfo> subChannels,
         out Dictionary<string, PrivateInfo> privates);
 
-    private void OnEventReceived(DispatchMessageEvent e)
+    private async Task OnEventReceived(DispatchMessageEvent e)
     {
         if (e.MessageType != MessageType.Notice) return;
 
@@ -145,23 +148,23 @@ public abstract class ContactsManagerBase : IContactsManager
         switch (contactsUpdateInfo!.ContactsUpdateRole)
         {
             case ContactsUpdateRole.Channel:
-                TryUpdateChannel(contactsUpdateInfo);
+                await TryUpdateChannel(contactsUpdateInfo);
                 break;
             case ContactsUpdateRole.SubChannel:
-                TryUpdateSubChannel(contactsUpdateInfo);
+                await TryUpdateSubChannel(contactsUpdateInfo);
                 break;
             case ContactsUpdateRole.Member:
-                TryUpdateMember(contactsUpdateInfo);
+                await TryUpdateMember(contactsUpdateInfo);
                 break;
             case ContactsUpdateRole.Private:
-                TryUpdatePrivate(contactsUpdateInfo);
+                await TryUpdatePrivate(contactsUpdateInfo);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
 
-    private void TryUpdateMember(ContactsUpdateInfo updateInfo)
+    private async Task TryUpdateMember(ContactsUpdateInfo updateInfo)
     {
         var userId = updateInfo.UserId;
         if (userId == null) return;
@@ -181,9 +184,10 @@ public abstract class ContactsManagerBase : IContactsManager
             members = subChannelInfo.Members;
         }
 
+        MemberInfo? memberInfo;
         if (updateInfo.ContactsUpdateType is ContactsUpdateType.Added or ContactsUpdateType.Changed)
         {
-            members.AddOrUpdate(userId, new MemberInfo(userId)
+            members.AddOrUpdate(userId, new MemberInfo(updateInfo.Id, userId, updateInfo.SubId)
             {
                 Nickname = updateInfo.Name,
                 Card = updateInfo.Remark
@@ -194,17 +198,27 @@ public abstract class ContactsManagerBase : IContactsManager
                 if (updateInfo.MemberRole != null) v.MemberRole = updateInfo.MemberRole.Value;
                 return v;
             });
+
+            memberInfo = members[userId];
         }
         else
         {
-            members.TryRemove(userId, out _);
+            members.TryRemove(userId, out memberInfo);
         }
+
+        await _eventBus.PublishAsync((ContactsUpdateEvent)new ContactsUpdateSingleEvent
+        {
+            MemberInfo = memberInfo,
+            UpdateType = updateInfo.ContactsUpdateType,
+            UpdateRole = updateInfo.ContactsUpdateRole
+        });
 
         _logger.LogInformation("Member " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id);
     }
 
-    private void TryUpdateChannel(ContactsUpdateInfo updateInfo)
+    private async Task TryUpdateChannel(ContactsUpdateInfo updateInfo)
     {
+        ChannelInfo? channelInfo;
         if (updateInfo.ContactsUpdateType is ContactsUpdateType.Added or ContactsUpdateType.Changed)
         {
             ChannelMapping.AddOrUpdate(updateInfo.Id, new ChannelInfo(updateInfo.Id,
@@ -216,22 +230,32 @@ public abstract class ContactsManagerBase : IContactsManager
                 if (updateInfo.Name != null) v.Name = updateInfo.Name;
                 return v;
             });
+
+            channelInfo = ChannelMapping[updateInfo.Id];
         }
         else
         {
-            ChannelMapping.TryRemove(updateInfo.Id, out _);
+            ChannelMapping.TryRemove(updateInfo.Id, out channelInfo);
         }
+
+        await _eventBus.PublishAsync((ContactsUpdateEvent)new ContactsUpdateSingleEvent
+        {
+            ChannelInfo = channelInfo,
+            UpdateType = updateInfo.ContactsUpdateType,
+            UpdateRole = updateInfo.ContactsUpdateRole
+        });
 
         _logger.LogInformation("Channel " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id);
     }
 
-    private void TryUpdateSubChannel(ContactsUpdateInfo updateInfo)
+    private async Task TryUpdateSubChannel(ContactsUpdateInfo updateInfo)
     {
         if (!SubChannelMapping.TryGetValue(updateInfo.Id, out var dict))
             return;
         if (updateInfo.SubId == null)
             return;
 
+        ChannelInfo? channelInfo;
         if (updateInfo.ContactsUpdateType is ContactsUpdateType.Added or ContactsUpdateType.Changed)
         {
             dict.AddOrUpdate(updateInfo.SubId, new ChannelInfo(updateInfo.Id,
@@ -244,18 +268,28 @@ public abstract class ContactsManagerBase : IContactsManager
                 if (updateInfo.Name != null) v.Name = updateInfo.Name;
                 return v;
             });
+
+            channelInfo = dict[updateInfo.SubId];
         }
         else
         {
-            dict.TryRemove(updateInfo.SubId, out _);
+            dict.TryRemove(updateInfo.SubId, out channelInfo);
         }
+
+        await _eventBus.PublishAsync((ContactsUpdateEvent)new ContactsUpdateSingleEvent
+        {
+            SubChannelInfo = channelInfo,
+            UpdateType = updateInfo.ContactsUpdateType,
+            UpdateRole = updateInfo.ContactsUpdateRole
+        });
 
         _logger.LogInformation("SubChannel " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id + "." +
                                updateInfo.SubId);
     }
 
-    private void TryUpdatePrivate(ContactsUpdateInfo updateInfo)
+    private async Task TryUpdatePrivate(ContactsUpdateInfo updateInfo)
     {
+        PrivateInfo? privateInfo;
         if (updateInfo.ContactsUpdateType is ContactsUpdateType.Added or ContactsUpdateType.Changed)
         {
             PrivateMapping.AddOrUpdate(updateInfo.Id, new PrivateInfo(updateInfo.Id)
@@ -268,11 +302,20 @@ public abstract class ContactsManagerBase : IContactsManager
                 if (updateInfo.Remark != null) v.Remark = updateInfo.Remark;
                 return v;
             });
+
+            privateInfo = PrivateMapping[updateInfo.Id];
         }
         else
         {
-            PrivateMapping.TryRemove(updateInfo.Id, out _);
+            PrivateMapping.TryRemove(updateInfo.Id, out privateInfo);
         }
+
+        await _eventBus.PublishAsync((ContactsUpdateEvent)new ContactsUpdateSingleEvent
+        {
+            PrivateInfo = privateInfo,
+            UpdateType = updateInfo.ContactsUpdateType,
+            UpdateRole = updateInfo.ContactsUpdateRole
+        });
 
         _logger.LogInformation("Private " + updateInfo.ContactsUpdateType + ": " + updateInfo.Id);
     }
@@ -306,12 +349,17 @@ public abstract class ContactsManagerBase : IContactsManager
             out var subChannels,
             out var privates);
 
-        RefreshChannels(channels, context.Logger);
-        RefreshPrivates(privates, context.Logger);
+        var list = RefreshChannels(channels, context.Logger);
+        var list2 = RefreshPrivates(privates, context.Logger);
         // todo subchannels
+
+        list.AddRange(list2);
+
+        if (list.Count > 0)
+            _eventBus.StartPublishTask(new ContactsUpdateEvent { Events = list });
     }
 
-    private void RefreshPrivates(Dictionary<string, PrivateInfo> privates, ILogger logger)
+    private List<ContactsUpdateSingleEvent> RefreshPrivates(Dictionary<string, PrivateInfo> privates, ILogger logger)
     {
         var newPrivates = privates.Keys.ToHashSet();
         var oldPrivates = PrivateMapping.Keys.ToHashSet();
@@ -320,16 +368,20 @@ public abstract class ContactsManagerBase : IContactsManager
         var exists = newPrivates.Where(k => oldPrivates.Contains(k)).ToArray();
         var removes = oldPrivates.Except(exists);
 
+        var list = new List<ContactsUpdateSingleEvent>();
+
         foreach (var add in adds)
         {
             PrivateMapping.TryAdd(add, privates[add]);
             logger.LogInformation("Added private: " + add);
+            list.Add(new ContactsUpdateSingleEvent { PrivateInfo = privates[add], UpdateRole = ContactsUpdateRole.Private, UpdateType = ContactsUpdateType.Added });
         }
 
         foreach (var remove in removes)
         {
-            PrivateMapping.TryRemove(remove, out _);
+            PrivateMapping.TryRemove(remove, out var removed);
             logger.LogInformation("Removed private: " + remove);
+            list.Add(new ContactsUpdateSingleEvent { PrivateInfo = removed, UpdateRole = ContactsUpdateRole.Private, UpdateType = ContactsUpdateType.Removed });
         }
 
         foreach (var exist in exists)
@@ -341,6 +393,7 @@ public abstract class ContactsManagerBase : IContactsManager
                 logger.LogInformation($"Changed private {exist} nickname from: " + oldInfo.Nickname + " to " +
                                       newInfo.Nickname);
                 oldInfo.Nickname = newInfo.Nickname;
+                list.Add(new ContactsUpdateSingleEvent { ChangedPath = "Nickname", PrivateInfo = oldInfo, UpdateRole = ContactsUpdateRole.Private, UpdateType = ContactsUpdateType.Changed });
             }
 
             if (oldInfo.Remark != newInfo.Remark)
@@ -348,11 +401,14 @@ public abstract class ContactsManagerBase : IContactsManager
                 logger.LogInformation($"Changed private {exist} remark from: " + oldInfo.Remark + " to " +
                                       newInfo.Remark);
                 oldInfo.Remark = newInfo.Remark;
+                list.Add(new ContactsUpdateSingleEvent { ChangedPath = "Remark", PrivateInfo = oldInfo, UpdateRole = ContactsUpdateRole.Private, UpdateType = ContactsUpdateType.Changed });
             }
         }
+
+        return list;
     }
 
-    private void RefreshChannels(Dictionary<string, ChannelInfo> channels, ILogger logger)
+    private List<ContactsUpdateSingleEvent> RefreshChannels(Dictionary<string, ChannelInfo> channels, ILogger logger)
     {
         var newChannels = channels.Keys.ToHashSet();
         var oldChannels = ChannelMapping.Keys.ToHashSet();
@@ -361,16 +417,20 @@ public abstract class ContactsManagerBase : IContactsManager
         var exists = newChannels.Where(k => oldChannels.Contains(k)).ToArray();
         var removes = oldChannels.Except(exists);
 
+        var list = new List<ContactsUpdateSingleEvent>();
+
         foreach (var add in adds)
         {
             ChannelMapping.TryAdd(add, channels[add]);
             logger.LogInformation("Add channel and members: " + add);
+            list.Add(new ContactsUpdateSingleEvent { ChannelInfo = channels[add], UpdateRole = ContactsUpdateRole.Channel, UpdateType = ContactsUpdateType.Added });
         }
 
         foreach (var remove in removes)
         {
-            ChannelMapping.TryRemove(remove, out _);
+            ChannelMapping.TryRemove(remove, out var removed);
             logger.LogInformation("Remove channel and members: " + remove);
+            list.Add(new ContactsUpdateSingleEvent { ChannelInfo = removed, UpdateRole = ContactsUpdateRole.Channel, UpdateType = ContactsUpdateType.Removed });
         }
 
         foreach (var exist in exists)
@@ -381,13 +441,17 @@ public abstract class ContactsManagerBase : IContactsManager
             {
                 logger.LogInformation($"Changed channel {exist} name from: " + oldInfo.Name + " to " + newInfo.Name);
                 oldInfo.Name = newInfo.Name;
+                list.Add(new ContactsUpdateSingleEvent { ChangedPath = "Name", ChannelInfo = oldInfo, UpdateRole = ContactsUpdateRole.Channel, UpdateType = ContactsUpdateType.Changed });
             }
 
-            RefreshMembers(newInfo, oldInfo.Members, newInfo.Members, logger);
+            var events = RefreshMembers(newInfo, oldInfo.Members, newInfo.Members, logger);
+            list.AddRange(events);
         }
+
+        return list;
     }
 
-    private void RefreshMembers(ChannelInfo channel,
+    private List<ContactsUpdateSingleEvent> RefreshMembers(ChannelInfo channel,
         ConcurrentDictionary<string, MemberInfo> oldMemberDict,
         ConcurrentDictionary<string, MemberInfo> newMemberDict,
         ILogger logger)
@@ -399,17 +463,21 @@ public abstract class ContactsManagerBase : IContactsManager
         var exists = newMembers.Where(k => oldMembers.Contains(k)).ToArray();
         var removes = oldMembers.Except(exists);
 
+        var list = new List<ContactsUpdateSingleEvent>();
+
         var channelId = channel.ChannelId;
         foreach (var add in adds)
         {
             channel.Members.TryAdd(add, newMemberDict[add]);
             logger.LogInformation($"Add channel {channelId} member: " + add);
+            list.Add(new ContactsUpdateSingleEvent { MemberInfo = newMemberDict[add], UpdateRole = ContactsUpdateRole.Member, UpdateType = ContactsUpdateType.Added });
         }
 
         foreach (var remove in removes)
         {
-            channel.Members.TryRemove(remove, out _);
+            channel.Members.TryRemove(remove, out var removed);
             logger.LogInformation($"Remove channel {channelId} member: " + remove);
+            list.Add(new ContactsUpdateSingleEvent { MemberInfo = removed, UpdateRole = ContactsUpdateRole.Member, UpdateType = ContactsUpdateType.Removed });
         }
 
         foreach (var exist in exists)
@@ -421,6 +489,7 @@ public abstract class ContactsManagerBase : IContactsManager
                 logger.LogInformation($"Changed channel {channelId} member {exist} nickname from: " +
                                       oldInfo.Nickname + " to " + newInfo.Nickname);
                 oldInfo.Nickname = newInfo.Nickname;
+                list.Add(new ContactsUpdateSingleEvent { ChangedPath = "Nickname", MemberInfo = oldInfo, UpdateRole = ContactsUpdateRole.Member, UpdateType = ContactsUpdateType.Changed });
             }
 
             if (oldInfo.Card != newInfo.Card)
@@ -428,6 +497,7 @@ public abstract class ContactsManagerBase : IContactsManager
                 logger.LogInformation($"Changed channel {channelId} member {exist} card from: " +
                                       oldInfo.Card + " to " + newInfo.Card);
                 oldInfo.Card = newInfo.Card;
+                list.Add(new ContactsUpdateSingleEvent { ChangedPath = "Card", MemberInfo = oldInfo, UpdateRole = ContactsUpdateRole.Member, UpdateType = ContactsUpdateType.Changed });
             }
 
             if (oldInfo.MemberRole != newInfo.MemberRole)
@@ -435,7 +505,10 @@ public abstract class ContactsManagerBase : IContactsManager
                 logger.LogInformation($"Changed channel {channelId} member {exist} role from: " +
                                       oldInfo.MemberRole + " to " + newInfo.MemberRole);
                 oldInfo.MemberRole = newInfo.MemberRole;
+                list.Add(new ContactsUpdateSingleEvent { ChangedPath = "MemberRole", MemberInfo = oldInfo, UpdateRole = ContactsUpdateRole.Member, UpdateType = ContactsUpdateType.Changed });
             }
         }
+
+        return list;
     }
 }

@@ -8,7 +8,7 @@ using Websocket.Client;
 
 namespace MilkiBotFramework.Connecting;
 
-public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
+public abstract class WebSocketClientConnector : IConnector, IDisposable, IAsyncDisposable
 {
     public event Func<string, Task>? RawMessageReceived;
 
@@ -38,13 +38,13 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
 
     public async Task ConnectAsync()
     {
-        using (await _asyncLock.LockAsync())
+        using (await _asyncLock.LockAsync().ConfigureAwait(false))
         {
             if (_client is { IsStarted: true })
                 return;
         }
 
-        await DisconnectAsync();
+        await DisconnectAsync().ConfigureAwait(false);
 
         if (TargetUri == null) throw new ArgumentNullException(nameof(TargetUri));
 
@@ -75,7 +75,7 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
         try
         {
             _logger.LogInformation($"Starting managed websocket connection to {TargetUri}...");
-            await _client.Start();
+            await _client.Start().ConfigureAwait(false);
             //_logger.LogInformation($"Connected to websocket server.");
         }
         catch (Exception e)
@@ -86,14 +86,15 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
 
     public async Task DisconnectAsync()
     {
-        using (await _asyncLock.LockAsync())
+        using (await _asyncLock.LockAsync().ConfigureAwait(false))
         {
             if (_client is not { IsStarted: true })
                 return;
 
             if (_client != null)
             {
-                await _client.StopOrFail(WebSocketCloseStatus.Empty, null);
+                await _client.StopOrFail(WebSocketCloseStatus.Empty, null).ConfigureAwait(false);
+                _client.Dispose();
                 _client = null;
             }
         }
@@ -125,7 +126,7 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
         _client.Send(message);
         try
         {
-            await tcs.Task;
+            await tcs.Task.ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -142,7 +143,13 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await DisconnectAsync();
+        await DisconnectAsync().ConfigureAwait(false);
+        _asyncLock.Dispose();
+    }
+
+    public void Dispose()
+    {
+        DisconnectAsync().Wait();
         _asyncLock.Dispose();
     }
 
@@ -156,7 +163,7 @@ public abstract class WebSocketClientConnector : IConnector, IAsyncDisposable
     {
         if (message.MessageType != WebSocketMessageType.Text || string.IsNullOrWhiteSpace(message.Text))
             return;
-        await OnMessageReceivedCore(message.Text);
+        await OnMessageReceivedCore(message.Text).ConfigureAwait(false);
     }
 
     private Task OnMessageReceivedCore(string msg)
