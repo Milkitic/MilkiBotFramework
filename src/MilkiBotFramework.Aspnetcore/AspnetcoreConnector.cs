@@ -2,6 +2,7 @@
 using System.Net.WebSockets;
 using System.Text;
 using MilkiBotFramework.Connecting;
+using MilkiBotFramework.Utils;
 
 namespace MilkiBotFramework.Aspnetcore;
 
@@ -13,9 +14,14 @@ public class AspnetcoreConnector : IConnector
     private readonly ILogger<AspnetcoreConnector> _logger;
     private readonly WebApplication _webApplication;
 
+    private readonly AsyncLock _ioLock = new();
+
     private readonly List<TaskCompletionSource> _messageWaiters = new();
-    private WebSocketMessageManager? _manager;
+    private WebSocketMessageSessionManager? _manager;
     private WebSocket? _webSocket;
+
+    private const int WsMaxLen = 1024 * 1024 * 10;
+    private readonly byte[] _wsBuffer = new byte[1024 * 8];
 
     public AspnetcoreConnector(IWebSocketConnector? webSocketConnector,
         ILogger<AspnetcoreConnector> logger,
@@ -37,42 +43,11 @@ public class AspnetcoreConnector : IConnector
     {
         if (ConnectionType == ConnectionType.Websocket && WebSocketConnector != null)
         {
-            WebSocketConnector.RawMessageReceived += (s) =>
-            {
-                if (RawMessageReceived != null) return RawMessageReceived(s);
-                return Task.CompletedTask;
-            };
-
-            try
-            {
-                WebSocketConnector.ConnectAsync().Wait(3000);
-            }
-            catch (Exception ex)
-            {
-                if (ex is not TaskCanceledException &&
-                    ex.InnerException is not TaskCanceledException)
-                {
-                    throw;
-                }
-                // ignored
-            }
+            ConnectInnerWsClient();
         }
         else if (ConnectionType == ConnectionType.ReverseWebsocket)
         {
-            _manager = new WebSocketMessageManager(_logger,
-                () => MessageTimeout,
-                async message =>
-                {
-                    if (_webSocket == null) return;
-                    var buffer = Encoding.UTF8.GetBytes(message);
-                    await _webSocket.SendAsync(new ArraySegment<byte>(buffer),
-                        WebSocketMessageType.Text,
-                        true,
-                        CancellationToken.None);
-                },
-                RawMessageReceived,
-                TryGetStateByMessage
-            );
+            ConnectReverseWs();
         }
 
         await _webApplication.StartAsync();
@@ -80,53 +55,23 @@ public class AspnetcoreConnector : IConnector
 
     public async Task DisconnectAsync()
     {
+        if (_webSocket != null)
+        {
+            await _webSocket.CloseAsync(
+                WebSocketCloseStatus.NormalClosure,
+                "Server closed.",
+                CancellationToken.None);
+        }
+
         await _webApplication.StopAsync();
     }
 
     public async Task<string> SendMessageAsync(string message, string state)
     {
         if (ConnectionType == ConnectionType.ReverseWebsocket)
-        {
-            if (_webSocket == null)
-            {
-                var connectionWaiter = new TaskCompletionSource();
-                _messageWaiters.Add(connectionWaiter);
-                using var cts1 = new CancellationTokenSource(ConnectionTimeout);
-                cts1.Token.Register(() =>
-                {
-                    try
-                    {
-                        connectionWaiter.SetCanceled();
-                        _logger.LogWarning($"Connection is forced to time out after {ConnectionTimeout.Seconds} seconds.");
-                    }
-                    catch
-                    {
-                        // ignored
-                    }
-                });
-                try
-                {
-                    await connectionWaiter.Task;
-                }
-                catch
-                {
-                    throw new ArgumentNullException(nameof(_webSocket), "There is no available websocket connection.");
-                }
-                finally
-                {
-                    _messageWaiters.Remove(connectionWaiter);
-                }
-            }
-
-            if (_manager != null) return await _manager.SendMessageAsync(message, state);
-            else throw new ArgumentException("WebSocketMessageManager is null.");
-        }
-
+            return await SendWsMessage(message, state);
         if (WebSocketConnector != null)
-        {
             return await WebSocketConnector.SendMessageAsync(message, state);
-        }
-
         throw new NotSupportedException();
     }
 
@@ -165,12 +110,16 @@ public class AspnetcoreConnector : IConnector
         _webSocket = null;
     }
 
+    protected virtual bool TryGetStateByMessage(string msg, [NotNullWhen(true)] out string? state)
+    {
+        state = null;
+        return false;
+    }
+
     private async Task WsMessageReceiveLoop(WebSocket webSocket)
     {
-        //const int maxLen = 1024 * 1024 * 10;
-        var buffer = new byte[1024 * 64 + 1];
         var receiveResult = await webSocket.ReceiveAsync(
-            new ArraySegment<byte>(buffer), CancellationToken.None);
+            new ArraySegment<byte>(_wsBuffer), CancellationToken.None);
 
         while (!receiveResult.CloseStatus.HasValue)
         {
@@ -182,53 +131,48 @@ public class AspnetcoreConnector : IConnector
                 return;
             }
 
-            Memory<byte> actualBytes;
+            string message;
             if (!receiveResult.EndOfMessage)
             {
-                await webSocket.CloseAsync(WebSocketCloseStatus.MessageTooBig,
-                    "Text message size reaches max limit: " + (buffer.Length - 1),
-                    CancellationToken.None);
-                return;
+                using (await _ioLock.LockAsync())
+                {
+                    await using var ms = new MemoryStream();
+                    ms.Write(_wsBuffer);
 
-                #region backup
+                    while (!receiveResult.EndOfMessage)
+                    {
+                        receiveResult = await webSocket.ReceiveAsync(
+                            new ArraySegment<byte>(_wsBuffer), CancellationToken.None);
 
-                //// receive by buffer sequence(rwlock) if not text
-                //await using var ms = new MemoryStream();
-                //ms.Write(buffer);
+                        if (receiveResult.CloseStatus.HasValue)
+                        {
+                            await webSocket.CloseAsync(
+                                receiveResult.CloseStatus.Value,
+                                receiveResult.CloseStatusDescription,
+                                CancellationToken.None);
+                            return;
+                        }
 
-                //while (receiveResult.Count == buffer.Length)
-                //{
-                //    receiveResult = await webSocket.ReceiveAsync(
-                //        new ArraySegment<byte>(buffer), CancellationToken.None);
+                        ms.Write(_wsBuffer.AsSpan(0, receiveResult.Count));
+                        if (ms.Length <= WsMaxLen) continue;
 
-                //    if (receiveResult.CloseStatus.HasValue)
-                //    {
-                //        await webSocket.CloseAsync(
-                //            receiveResult.CloseStatus.Value,
-                //            receiveResult.CloseStatusDescription,
-                //            CancellationToken.None);
-                //        return;
-                //    }
+                        await webSocket.CloseAsync(WebSocketCloseStatus.MessageTooBig,
+                            "Message size reaches max limit: " + WsMaxLen,
+                            CancellationToken.None);
+                        return;
+                    }
 
-                //    ms.Write(buffer.AsSpan(0, receiveResult.Count));
-                //    if (ms.Length <= maxLen) continue;
-
-                //    await webSocket.CloseAsync(WebSocketCloseStatus.MessageTooBig,
-                //        "Message size reaches max limit: " + maxLen,
-                //        CancellationToken.None);
-                //    return;
-                //}
-
-                //actualBytes = ms.ToArray();
-
-                #endregion
+                    ms.Position = 0;
+                    using var sr = new StreamReader(ms, Encoding.Default);
+                    message = await sr.ReadToEndAsync();
+                }
             }
             else
             {
-                actualBytes = buffer.AsMemory(0, receiveResult.Count);
+                var actualBytes = _wsBuffer.AsMemory(0, receiveResult.Count);
+                message = Encoding.Default.GetString(actualBytes.Span);
             }
 
-            var message = Encoding.Default.GetString(actualBytes.Span);
             try
             {
                 if (_manager != null) await _manager.InvokeMessageReceive(message);
@@ -240,7 +184,7 @@ public class AspnetcoreConnector : IConnector
             }
 
             receiveResult = await webSocket.ReceiveAsync(
-                new ArraySegment<byte>(buffer), CancellationToken.None);
+                new ArraySegment<byte>(_wsBuffer), CancellationToken.None);
         }
 
         await webSocket.CloseAsync(
@@ -249,9 +193,84 @@ public class AspnetcoreConnector : IConnector
             CancellationToken.None);
     }
 
-    protected virtual bool TryGetStateByMessage(string msg, [NotNullWhen(true)] out string? state)
+    private void ConnectInnerWsClient()
     {
-        state = null;
-        return false;
+        WebSocketConnector!.RawMessageReceived += (s) =>
+        {
+            if (RawMessageReceived != null) return RawMessageReceived(s);
+            return Task.CompletedTask;
+        };
+
+        try
+        {
+            WebSocketConnector.ConnectAsync().Wait(3000);
+        }
+        catch (Exception ex)
+        {
+            if (ex is not TaskCanceledException &&
+                ex.InnerException is not TaskCanceledException)
+            {
+                throw;
+            }
+            // ignored
+        }
+    }
+
+    private void ConnectReverseWs()
+    {
+        _manager = new WebSocketMessageSessionManager(_logger,
+            () => MessageTimeout,
+            async message =>
+            {
+                using (await _ioLock.LockAsync())
+                {
+                    if (_webSocket == null) return;
+                    var buffer = Encoding.UTF8.GetBytes(message);
+                    await _webSocket.SendAsync(new ArraySegment<byte>(buffer),
+                        WebSocketMessageType.Text,
+                        true,
+                        CancellationToken.None);
+                }
+            },
+            RawMessageReceived,
+            TryGetStateByMessage
+        );
+    }
+
+    private async Task<string> SendWsMessage(string message, string state)
+    {
+        if (_webSocket == null)
+        {
+            var connectionWaiter = new TaskCompletionSource();
+            _messageWaiters.Add(connectionWaiter);
+            using var cts1 = new CancellationTokenSource(ConnectionTimeout);
+            cts1.Token.Register(() =>
+            {
+                try
+                {
+                    connectionWaiter.SetCanceled();
+                    _logger.LogWarning($"Connection is forced to time out after {ConnectionTimeout.Seconds} seconds.");
+                }
+                catch
+                {
+                    // ignored
+                }
+            });
+            try
+            {
+                await connectionWaiter.Task;
+            }
+            catch
+            {
+                throw new ArgumentNullException(nameof(_webSocket), "There is no available websocket connection.");
+            }
+            finally
+            {
+                _messageWaiters.Remove(connectionWaiter);
+            }
+        }
+
+        if (_manager != null) return await _manager.SendMessageAsync(message, state);
+        else throw new ArgumentException("WebSocketMessageManager is null.");
     }
 }

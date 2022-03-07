@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace MilkiBotFramework.Connecting;
 
-public class WebSocketMessageManager
+public class WebSocketMessageSessionManager
 {
     public delegate bool TryGetStateByMessageDelegate(string msg, [NotNullWhen(true)] out string? state);
 
@@ -17,7 +17,7 @@ public class WebSocketMessageManager
     private readonly ConcurrentDictionary<string, WebsocketRequestSession> _sessions = new();
     private readonly Func<TimeSpan> _getMessageTimeout;
 
-    public WebSocketMessageManager(ILogger logger,
+    public WebSocketMessageSessionManager(ILogger logger,
         Func<TimeSpan> getMessageTimeout,
         Func<string, Task> sendAction,
         Func<string, Task>? rawReceivedFunc,

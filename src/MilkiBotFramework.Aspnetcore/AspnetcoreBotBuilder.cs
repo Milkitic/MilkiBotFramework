@@ -49,44 +49,15 @@ namespace MilkiBotFramework.Aspnetcore
             //    _app.UseSwaggerUI();
             //}
 
-            var connector = serviceProvider.GetService<IConnector>();
-            if (connector!.ConnectionType == ConnectionType.ReverseWebsocket)
+            var connector = serviceProvider.GetService<IConnector>()!;
+            if (connector.ConnectionType == ConnectionType.ReverseWebsocket)
             {
-                var aspnetcoreConnector = (AspnetcoreConnector)connector;
                 var webSocketOptions = new WebSocketOptions
                 {
                     KeepAliveInterval = TimeSpan.FromSeconds(2)
                 };
                 _app.UseWebSockets(webSocketOptions);
-                _app.Use(async (context, next) =>
-                {
-                    var path = connector.BindingPath;
-                    if (context.Request.Path.Equals(path, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (context.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (context.WebSockets.IsWebSocketRequest)
-                            {
-                                var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                                await aspnetcoreConnector.OnWebSocketOpen(webSocket);
-                            }
-                            else
-                            {
-                                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                            }
-                        }
-                        else
-                        {
-                            context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
-                        }
-
-                    }
-                    else
-                    {
-                        await next(context);
-                    }
-                });
-                //_app.UseMiddleware<ReverseWebsocketMiddleware>();
+                _app.UseMiddleware<ReverseWebsocketMiddleware>();
             }
             else if (connector!.ConnectionType == ConnectionType.Http)
             {

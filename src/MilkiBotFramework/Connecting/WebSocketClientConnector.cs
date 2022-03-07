@@ -16,12 +16,12 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
     private readonly AsyncLock _asyncLock = new();
     private WebsocketClient? _client;
     private bool _isConnected = false;
-    private readonly WebSocketMessageManager _manager;
+    private readonly WebSocketMessageSessionManager _sessionManager;
 
     public WebSocketClientConnector(ILogger<WebSocketClientConnector> logger)
     {
         _logger = logger;
-        _manager = new WebSocketMessageManager(logger,
+        _sessionManager = new WebSocketMessageSessionManager(logger,
             () => MessageTimeout,
             async message => _client?.Send(message),
             RawMessageReceived,
@@ -112,7 +112,7 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
             throw new ArgumentNullException(nameof(_client),
                 "WebsocketClient is not ready. Try to connect before sending message.");
 
-        return _manager.SendMessageAsync(message, state);
+        return _sessionManager.SendMessageAsync(message, state);
     }
 
     public async ValueTask DisposeAsync()
@@ -137,6 +137,6 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
     {
         if (message.MessageType != WebSocketMessageType.Text || string.IsNullOrWhiteSpace(message.Text))
             return Task.CompletedTask;
-        return _manager.InvokeMessageReceive(message.Text);
+        return _sessionManager.InvokeMessageReceive(message.Text);
     }
 }

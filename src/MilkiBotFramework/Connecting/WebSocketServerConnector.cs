@@ -16,12 +16,12 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
     private WebSocketServer? _server;
     private readonly ConcurrentDictionary<string, WebsocketRequestSession> _sessions = new();
     private readonly List<TaskCompletionSource> _messageWaiters = new();
-    private readonly WebSocketMessageManager _manager;
+    private readonly WebSocketMessageSessionManager _sessionManager;
 
     public WebSocketServerConnector(ILogger<WebSocketServerConnector> logger)
     {
         _logger = logger;
-        _manager = new WebSocketMessageManager(logger,
+        _sessionManager = new WebSocketMessageSessionManager(logger,
             () => MessageTimeout,
             async message =>
             {
@@ -79,7 +79,7 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
             };
             socket.OnMessage = async message =>
             {
-                await _manager.InvokeMessageReceive(message);
+                await _sessionManager.InvokeMessageReceive(message);
             };
             socket.OnError = exception =>
             {
@@ -133,7 +133,7 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
             }
         }
 
-        return await _manager.SendMessageAsync(message, state);
+        return await _sessionManager.SendMessageAsync(message, state);
     }
 
     public void Dispose()
