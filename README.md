@@ -88,8 +88,8 @@ public class HelloWorld : BasicPlugin
 - [x] 插件的配置设置、数据库读写、资源分配的管理
 - [ ] 完善内部事件，以及INotifyProperty相关
 - [ ] 支持reverse-ws
-- [ ] 部分绘制图像共享功能 (包含Maui/WPF绘制框架)
-- [ ] 支持基于Github issue的热更新
+- [x] 部分绘制图像共享功能 (包含Maui/WPF绘制框架)
+- [ ] 支持基于Github issue的更新
 
 ## TBD:
 **是否支持同时多OneBot实例亦或是其他的客户端，以进行多平台互联？**
