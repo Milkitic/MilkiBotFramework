@@ -8,11 +8,12 @@ internal class MessageResponse : IResponse
     public string? SubId { get; }
     public MessageType? MessageType { get; }
     public IRichMessage? Message { get; set; }
-    public bool TryReply { get; set; }
+    public bool? TryReply { get; set; }
     public bool IsHandled { get; set; }
     public bool? IsForced { get; set; }
     public string? TryAt { get; set; }
     public AsyncMessage? AsyncMessage { get; init; }
+    public MessageContext? MessageContext { get; internal set; }
 
     public MessageResponse(string id, string? subId, IRichMessage autoMessage, MessageType messageType)
     {

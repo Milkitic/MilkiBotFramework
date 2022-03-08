@@ -82,7 +82,8 @@ namespace MilkiBotFramework.Tasking
                 var (trigger, nextTime) = list
                    .First(); // 获取最近的下次执行时间
 
-                logger.LogDebug("Next time for task {0}: {1}", taskOption.Name, nextTime);
+                if (taskOption.UseLogging)
+                    logger.LogDebug("Next time for task {0}: {1}", taskOption.Name, nextTime);
                 if (!Sleep(nextTime - now, cts)) break;
 
                 Task.Run(() => Execute(trigger, nextTime), cts.Token);
@@ -92,7 +93,8 @@ namespace MilkiBotFramework.Tasking
             {
                 try
                 {
-                    logger.LogDebug("Executing task {0} at {1}", taskOption.Name, triggerTime);
+                    if (taskOption.UseLogging)
+                        logger.LogDebug("Executing task {0} at {1}", taskOption.Name, triggerTime);
                     taskOption.Handler?.Invoke(new TaskContext
                     {
                         TaskId = taskOption.Id,

@@ -29,5 +29,7 @@
         /// 执行操作回调
         /// </summary>
         public TaskExecutionHandler? Handler { get; set; }
+
+        public bool UseLogging { get; set; } = true;
     }
 }

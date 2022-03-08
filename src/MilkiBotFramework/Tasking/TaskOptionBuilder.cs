@@ -133,6 +133,12 @@
             return this;
         }
 
+        public TaskOptionBuilder WithoutLogging()
+        {
+            Option.UseLogging = false;
+            return this;
+        }
+
         /// <summary>
         /// 执行操作
         /// </summary>

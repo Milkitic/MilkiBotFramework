@@ -85,6 +85,8 @@ public partial class PluginManager
         {
             var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
             var response = await servicePlugin.OnNoticeReceived(messageContext);
+            if (response is MessageResponse mr)
+                mr.MessageContext = messageContext;
             await SendAndCheckResponse(serviceExecutionInfo.PluginInfo, response);
 
             if (handled) break;
@@ -188,6 +190,8 @@ public partial class PluginManager
                         await foreach (var response in asyncEnumerable)
                         {
                             if (response is { IsForced: null }) response.Forced();
+                            if (response is MessageResponse mr)
+                                mr.MessageContext = messageContext;
                             await SendAndCheckResponse(pluginInfo, response);
                             if (handled) break;
                         }
@@ -301,7 +305,7 @@ public partial class PluginManager
         {
             var identity = messageContext.MessageIdentity;
             if (identity?.MessageType == MessageType.Channel &&
-                response.TryReply &&
+                response.TryReply == true &&
                 response.Message is not RichMessage { FirstIsReply: true } &&
                 response.Message is not Reply)
             {
