@@ -85,8 +85,6 @@ public partial class PluginManager
         {
             var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
             var response = await servicePlugin.OnNoticeReceived(messageContext);
-            if (response is MessageResponse mr)
-                mr.MessageContext = messageContext;
             await SendAndCheckResponse(serviceExecutionInfo.PluginInfo, response);
 
             if (handled) break;
@@ -100,6 +98,8 @@ public partial class PluginManager
         async Task SendAndCheckResponse(PluginInfo pluginInfo, IResponse? response)
         {
             if (response == null) return;
+            if (response is MessageResponse mr)
+                mr.MessageContext = messageContext;
             try
             {
                 foreach (var serviceExecutionInfo in serviceExecutionInfos)
@@ -109,6 +109,7 @@ public partial class PluginManager
                     if (!result)
                     {
                         response.IsHandled = true;
+                        handled = response.IsHandled;
                         return;
                     }
                 }
@@ -190,8 +191,6 @@ public partial class PluginManager
                         await foreach (var response in asyncEnumerable)
                         {
                             if (response is { IsForced: null }) response.Forced();
-                            if (response is MessageResponse mr)
-                                mr.MessageContext = messageContext;
                             await SendAndCheckResponse(pluginInfo, response);
                             if (handled) break;
                         }
@@ -276,6 +275,8 @@ public partial class PluginManager
         async Task SendAndCheckResponse(PluginInfo pluginInfo, IResponse? response)
         {
             if (response == null) return;
+            if (response is MessageResponse mr)
+                mr.MessageContext = messageContext;
             try
             {
                 foreach (var serviceExecutionInfo in serviceExecutionInfos)
@@ -285,6 +286,7 @@ public partial class PluginManager
                     if (!result)
                     {
                         response.IsHandled = true;
+                        handled = response.IsHandled;
                         return;
                     }
                 }
