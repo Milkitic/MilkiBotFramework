@@ -8,60 +8,80 @@ using MilkiBotFramework.Platforms.GoCqHttp.Dispatching;
 using MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 using MilkiBotFramework.Plugining.CommandLine;
 
-namespace MilkiBotFramework.Platforms.GoCqHttp
+namespace MilkiBotFramework.Platforms.GoCqHttp;
+
+public static class BotBuilderExtensions
 {
-    public static class BotBuilderExtensions
+    public static TBuilder UseGoCqHttp<TBot, TBuilder>(this BotBuilderBase<TBot, TBuilder> builder,
+        GoCqConnection? connection = null)
+        where TBot : Bot where TBuilder : BotBuilderBase<TBot, TBuilder>
     {
-        public static AspnetcoreBotBuilder UseGoCqHttp(this AspnetcoreBotBuilder builder, GoCqConnection connection)
-        {
-            builder.UseConnector<GoCqKestrelConnector>(k =>
-            {
-                k.TargetUri = connection.TargetUri!;
-                k.BindingPath = connection.ServerBindPath;
-                k.ConnectionType = connection.ConnectionType;
-            });
-            builder.ConfigureServices(k =>
-            {
-                if (connection.ConnectionType == ConnectionType.WebSocket)
-                    k.AddSingleton(typeof(IWebSocketConnector),
-                        s => new GoCqClient(s.GetService<ILogger<GoCqClient>>()!)
-                        {
-                            TargetUri = connection.TargetUri
-                        });
-                else
-                    k.AddSingleton(typeof(IWebSocketConnector), _ => null!);
-            });
+        builder
+            .ConfigureServices(k => { k.AddScoped(typeof(GoCqMessageContext)); })
+            .UseCommandLineAnalyzer<CommandLineAnalyzer>(new GoCqParameterConverter())
+            .UseContactsManager<GoCqContactsManager>()
+            .UseDispatcher<GoCqDispatcher>()
+            .UseMessageApi<GoCqApi>()
+            .UseOptions<GoCqBotOptions>(null)
+            .UseRichMessageConverter<GoCqMessageConverter>();
 
-            return builder
-                .ConfigureServices(k => { k.AddScoped(typeof(GoCqMessageContext)); })
-                .UseDispatcher<GoCqDispatcher>()
-                .UseCommandLineAnalyzer<CommandLineAnalyzer>(new GoCqParameterConverter())
-                .UseRichMessageConverter<GoCqMessageConverter>()
-                .UseContactsManager<GoCqContactsManager>()
-                .UseMessageApi<GoCqApi>();
+        connection ??= ((GoCqBotOptions)builder.GetOptionInstance()).Connection;
+
+        if (builder is AspnetcoreBotBuilder aspBuilder)
+        {
+            BuildAspnetcoreConnections(builder, connection, aspBuilder);
+        }
+        else
+        {
+            BuildCommonConnections(builder, connection);
         }
 
-        public static TBuilder UseGoCqHttp<TBot, TBuilder>(this BotBuilderBase<TBot, TBuilder> builder, 
-            string wsUri,
-            bool asClient = true)
-            where TBot : Bot where TBuilder : BotBuilderBase<TBot, TBuilder>
+        return (TBuilder)builder;
+    }
+
+    private static void BuildCommonConnections<TBot, TBuilder>(BotBuilderBase<TBot, TBuilder> builder,
+        GoCqConnection connection)
+        where TBot : Bot where TBuilder : BotBuilderBase<TBot, TBuilder>
+    {
+        if (connection.ConnectionType == ConnectionType.WebSocket)
         {
-            if (asClient)
-            {
-                builder.UseConnector<GoCqClient>(wsUri);
-            }
+            builder.UseConnector<GoCqClient>(connection.TargetUri);
+        }
+        else if (connection.ConnectionType == ConnectionType.ReverseWebSocket)
+        {
+            builder.UseConnector<GoCqServer>(connection.ServerBindUrl + connection.ServerBindPath);
+        }
+        else
+        {
+            throw new NotSupportedException("不支持通常的BotBuilder创建Http通讯，请使用AspnetcoreBotBuilder代替。");
+        }
+    }
+
+    private static void BuildAspnetcoreConnections<TBot, TBuilder>(BotBuilderBase<TBot, TBuilder> builder,
+        GoCqConnection connection,
+        AspnetcoreBotBuilder aspBuilder) where TBot : Bot where TBuilder : BotBuilderBase<TBot, TBuilder>
+    {
+        if (aspBuilder.BindUrls == AspnetcoreBotBuilder.DefaultUris)
+        {
+            aspBuilder.UseUrl(connection.ServerBindUrl);
+        }
+
+        builder.UseConnector<GoCqKestrelConnector>(k =>
+        {
+            k.TargetUri = connection.TargetUri!;
+            k.BindingPath = connection.ServerBindPath;
+            k.ConnectionType = connection.ConnectionType;
+        });
+        builder.ConfigureServices(k =>
+        {
+            if (connection.ConnectionType == ConnectionType.WebSocket)
+                k.AddSingleton(typeof(IWebSocketConnector),
+                    s => new GoCqClient(s.GetService<ILogger<GoCqClient>>()!)
+                    {
+                        TargetUri = connection.TargetUri
+                    });
             else
-            {
-                builder.UseConnector<GoCqServer>(wsUri);
-            }
-
-            return builder
-                .ConfigureServices(k => { k.AddScoped(typeof(GoCqMessageContext)); })
-                .UseDispatcher<GoCqDispatcher>()
-                .UseCommandLineAnalyzer<CommandLineAnalyzer>(new GoCqParameterConverter())
-                .UseRichMessageConverter<GoCqMessageConverter>()
-                .UseContactsManager<GoCqContactsManager>()
-                .UseMessageApi<GoCqApi>();
-        }
+                k.AddSingleton(typeof(IWebSocketConnector), _ => null!);
+        });
     }
 }

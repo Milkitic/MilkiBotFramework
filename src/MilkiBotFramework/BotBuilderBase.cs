@@ -4,14 +4,12 @@ using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Event;
-using MilkiBotFramework.Imaging;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Plugining.Configuration;
 using MilkiBotFramework.Plugining.Loading;
 using MilkiBotFramework.Tasking;
-using MilkiBotFramework.Utils;
 
 namespace MilkiBotFramework;
 
@@ -32,14 +30,30 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     private Type? _richMessageConverterType;
 
     private string? _optionPath;
-    private Action<object>? _configureBot;
     private Type? _optionType;
 
-    public TBuilder ConfigOptions<T>(string? optionPath, Action<T>? configure = null) where T : BotOptions
+    /// <summary>
+    /// Should call after UseOptions()
+    /// </summary>
+    /// <returns></returns>
+    public BotOptions GetOptionInstance()
+    {
+        var path = _optionPath ?? "appsettings.yaml";
+        var optionType = _optionType ?? typeof(BotOptions);
+        if (_botOptions == null)
+        {
+            var success = ConfigurationFactory.TryLoadConfigFromFile(optionType, path, new YamlConverter(), null,
+                out var config, out var ex);
+            if (!success) throw ex!;
+            _botOptions = (BotOptions?)config!;
+        }
+
+        return _botOptions;
+    }
+
+    public TBuilder UseOptions<T>(string? optionPath) where T : BotOptions
     {
         _optionPath = optionPath;
-        if (configure != null)
-            _configureBot = o => configure.Invoke((T)o);
         _optionType = typeof(T);
         return (TBuilder)this;
     }
@@ -162,9 +176,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
                 _commandAnalyzerType ?? typeof(CommandLineAnalyzer))
             .AddSingleton(typeof(IRichMessageConverter),
                 _richMessageConverterType ?? typeof(DefaultRichMessageConverter))
-            .AddSingleton(typeof(IConnector),
-                _connectorType ?? throw new ArgumentNullException(nameof(IConnector),
-                    "The IConnector implementation is not specified."))
+
             .AddSingleton(typeof(IDispatcher),
                 _dispatcherType ?? throw new ArgumentNullException(nameof(IDispatcher),
                     "The IDispatcher implementation is not specified."))
@@ -172,6 +184,11 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
                 _contactsManagerType ?? throw new ArgumentNullException(nameof(IContactsManager),
                     "The IContactsManager implementation is not specified."))
             .AddSingleton(typeof(Bot), typeof(TBot));
+        if (_connectorType != null)
+        {
+            serviceCollection.AddSingleton(typeof(IConnector), _connectorType);
+        }
+
         if (_messageApiType != null)
         {
             serviceCollection.AddSingleton(_messageApiType);
@@ -179,22 +196,6 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         }
 
         serviceCollection.AddSingleton(serviceCollection);
-    }
-
-    private BotOptions GetOptionInstance()
-    {
-        var path = _optionPath ?? "appsettings.yaml";
-        var optionType = _optionType ?? typeof(BotOptions);
-        if (_botOptions == null)
-        {
-            var success = ConfigurationFactory.TryLoadConfigFromFile(optionType, path, new YamlConverter(), null,
-                out var config, out var ex);
-            if (!success) throw ex!;
-            _botOptions = (BotOptions?)config!;
-        }
-
-        _configureBot?.Invoke(_botOptions);
-        return _botOptions;
     }
 
     private Action<LightHttpClientCreationOptions> CreateDefaultHttpConfiguration()
