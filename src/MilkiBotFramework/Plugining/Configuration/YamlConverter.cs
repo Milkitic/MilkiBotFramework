@@ -47,10 +47,12 @@ public class YamlConverter
 
     protected virtual void ConfigSerializeBuilder(SerializerBuilder builder)
     {
+        builder.WithTypeConverter(new MessageIdentityConverter());
     }
 
     protected virtual void ConfigDeserializeBuilder(DeserializerBuilder builder)
     {
+        builder.WithTypeConverter(new MessageIdentityConverter());
     }
 
     protected virtual List<Type> ConfigTagMapping()

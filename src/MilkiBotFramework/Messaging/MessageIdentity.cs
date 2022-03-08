@@ -33,7 +33,7 @@ public sealed class MessageIdentity
         MessageType = messageType;
     }
 
-    public MessageIdentity(string id, string subId, MessageType messageType)
+    public MessageIdentity(string id, string? subId, MessageType messageType)
     {
         Id = id;
         SubId = subId;
@@ -57,5 +57,36 @@ public sealed class MessageIdentity
         if (Id == null) return $"{{{MessageType}}}";
         if (SubId == null) return $"{{{MessageType} {Id}}}";
         return $"{{{MessageType} {Id}.{SubId}}}";
+    }
+
+    public static MessageIdentity Parse(string str)
+    {
+        var span = str.AsSpan().Trim();
+        if (span.Length < 2) throw new ArgumentException("Not a valid message identity.", nameof(str));
+        span = span[1..^1];
+
+        var spaceIndex = span.IndexOf(' ');
+        if (spaceIndex < 0) throw new ArgumentException("Not a valid message identity.", nameof(str));
+        var typeStr = span[..spaceIndex];
+
+        var messageType = Enum.Parse<MessageType>(typeStr);
+
+        var ids = span[(spaceIndex + 1)..];
+        var dotIndex = ids.IndexOf('.');
+
+        string id;
+        string? subId = null;
+        if (dotIndex < 0)
+        {
+            id = ids.ToString();
+        }
+        else
+        {
+            id = ids[..dotIndex].ToString();
+            var readOnlySpan = ids[(dotIndex + 1)..];
+            subId = readOnlySpan.Length == 0 ? null : readOnlySpan.ToString();
+        }
+
+        return new MessageIdentity(id, subId, messageType);
     }
 }
