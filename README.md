@@ -97,3 +97,17 @@ public class HelloWorld : BasicPlugin
 
 **类似nonebot内置自然语言处理器？**
 我认为没有必要内置，因为此类功能放入通用框架并不是足够的成熟稳定（存在各种概率因素）。可以继承ICommandLineAnalyzer，编写自己的命令分析器，将自然语言映射成对应命令。
+
+## 第三方库
+### 社区
+* [dnlib](https://github.com/0xd4d/dnlib) (MIT) .NET 程序集分析
+* [Fleck](https://github.com/statianzo/Fleck) (MIT) WebSocket服务器
+* [SixLabors.ImageSharp](https://github.com/SixLabors/ImageSharp) (Apache-2.0) 托管的2D绘图库
+* [Websocket.Client](https://github.com/Marfusios/websocket-client) (MIT) WebSocket客户端
+* [YamlDotNet](https://github.com/aaubry/YamlDotNet) (MIT) YAML库
+### 官方
+* [Microsoft.EntityFrameworkCore](https://github.com/dotnet/efcore) (MIT) 现代化ORM
+* [Microsoft.AspNetCore](https://github.com/dotnet/aspnetcore) (MIT) 现代化跨平台Web框架
+* Microsoft.Extensions.DependencyInjection (MIT) DI框架及实现
+* Microsoft.Extensions.Logging (MIT) 日志框架
+* wpf (MIT) Windows窗体UI框架
