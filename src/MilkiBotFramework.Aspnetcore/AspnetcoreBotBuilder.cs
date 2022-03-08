@@ -16,6 +16,7 @@ namespace MilkiBotFramework.Aspnetcore
             Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
 #endif
             _builder = WebApplication.CreateBuilder();
+            _builder.Logging.ClearProviders();
         }
 
         public AspnetcoreBotBuilder(string[] args, params string[] bindUrls)
@@ -25,6 +26,7 @@ namespace MilkiBotFramework.Aspnetcore
             Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
 #endif
             _builder = WebApplication.CreateBuilder(args);
+            _builder.Logging.ClearProviders();
         }
 
         public string[] BindUrls { get; private set; }
