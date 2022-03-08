@@ -243,6 +243,14 @@ public partial class PluginManager
                 }
                 else
                 {
+                    foreach (var serviceExecutionInfo in serviceExecutionInfos)
+                    {
+                        var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
+                        var result = await servicePlugin.OnPluginException(ex.InnerException ?? ex, messageContext);
+                        await SendAndCheckResponse(pluginInfo, result);
+                        if (handled) break;
+                    }
+
                     _logger.LogError(ex, "Error Occurs while executing plugin: " + pluginInfo.Metadata.Name +
                                          ". User input: " + message);
                 }
