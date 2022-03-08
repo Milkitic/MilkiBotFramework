@@ -359,13 +359,14 @@ public partial class PluginManager
         var guid = identifierAttribute.Guid;
         var index = identifierAttribute.Index;
         var name = identifierAttribute.Name ?? type.Name;
+        var allowDisable = identifierAttribute.AllowDisable;
         var description = type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "Nothing here.";
         var version = type.GetCustomAttribute<VersionAttribute>()?.Version ?? "0.0.1-alpha";
         var authors = type.GetCustomAttribute<AuthorAttribute>()?.Author ?? DefaultAuthors;
 
         var metadata = new PluginMetadata(Guid.Parse(guid), name, description, version, authors);
 
-        var pluginHome = Path.Combine(_botOptions.PluginHomeDir, $"{metadata.Guid:B} {metadata.Name}");
+        var pluginHome = Path.Combine(_botOptions.PluginHomeDir, $"{metadata.Guid:B}");
         if (!Directory.Exists(pluginHome))
             Directory.CreateDirectory(pluginHome);
 
@@ -435,7 +436,7 @@ public partial class PluginManager
             commands.Add(command, commandInfo);
         }
 
-        return new PluginInfo(metadata, type, baseType, lifetime, commands, index, pluginHome);
+        return new PluginInfo(metadata, type, baseType, lifetime, commands, index, pluginHome, allowDisable);
     }
 
     private CommandParameterInfo GetParameterInfo(object[] attrs, Type targetType,

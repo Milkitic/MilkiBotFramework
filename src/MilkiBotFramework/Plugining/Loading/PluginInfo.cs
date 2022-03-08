@@ -8,7 +8,8 @@ public sealed class PluginInfo
         PluginLifetime lifetime,
         IReadOnlyDictionary<string, CommandInfo> commands,
         int index,
-        string pluginHome)
+        string pluginHome,
+        bool allowDisable)
     {
         Metadata = metadata;
         Type = type;
@@ -17,6 +18,8 @@ public sealed class PluginInfo
         Commands = commands;
         Index = index;
         PluginHome = pluginHome;
+        AllowDisable = allowDisable;
+        IsService = BaseType == StaticTypes.ServicePlugin;
     }
 
 
@@ -24,8 +27,10 @@ public sealed class PluginInfo
     public PluginMetadata Metadata { get; }
     public Type Type { get; }
     public Type BaseType { get; }
+    public bool IsService { get; }
     public PluginLifetime Lifetime { get; }
     public IReadOnlyDictionary<string, CommandInfo> Commands { get; }
     public int Index { get; }
-    public string PluginHome { get; set; }
+    public string PluginHome { get; }
+    public bool AllowDisable { get; }
 }

@@ -56,6 +56,11 @@ public partial class PluginManager
         _eventBus.Subscribe<DispatchMessageEvent>(OnEventReceived);
     }
 
+    public IReadOnlyList<PluginInfo> GetAllPlugins()
+    {
+        return _plugins.ToArray();
+    }
+
     private async Task OnEventReceived(DispatchMessageEvent e)
     {
         if (e.MessageType is MessageType.Private or MessageType.Channel)

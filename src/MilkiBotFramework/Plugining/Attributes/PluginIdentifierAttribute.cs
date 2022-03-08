@@ -16,4 +16,6 @@ public sealed class PluginIdentifierAttribute : Attribute
     /// 插件优先级，越小则优先级越高
     /// </summary>
     public int Index { get; init; }
+
+    public bool AllowDisable { get; set; } = true;
 }
