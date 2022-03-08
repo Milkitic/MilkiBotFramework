@@ -19,7 +19,12 @@ public sealed class PluginInfo
         Index = index;
         PluginHome = pluginHome;
         AllowDisable = allowDisable;
-        IsService = BaseType == StaticTypes.ServicePlugin;
+        if (baseType == StaticTypes.BasicPlugin || baseType == StaticTypes.BasicPlugin_)
+            PluginType = PluginType.Basic;
+        else if (baseType == StaticTypes.ServicePlugin)
+            PluginType = PluginType.Service;
+        else
+            PluginType = PluginType.Unspecified;
     }
 
 
@@ -27,10 +32,10 @@ public sealed class PluginInfo
     public PluginMetadata Metadata { get; }
     public Type Type { get; }
     public Type BaseType { get; }
-    public bool IsService { get; }
     public PluginLifetime Lifetime { get; }
     public IReadOnlyDictionary<string, CommandInfo> Commands { get; }
     public int Index { get; }
     public string PluginHome { get; }
     public bool AllowDisable { get; }
+    public PluginType PluginType { get; }
 }
