@@ -141,7 +141,7 @@ public partial class PluginManager
                         ?.InformationalVersion ?? "0.0.1-alpha";
                     var product = assembly.GetCustomAttribute<AssemblyProductAttribute>()
                         ?.Product;
-                    _logger.LogInformation("Plugin library: " + product + " " + version);
+                    _logger.LogInformation($"Plugin library: {product} {version} by " + defaultAuthor);
 
                     var pluginInfos = new List<PluginInfo>();
                     foreach (var typeResult in typeResults)
@@ -174,11 +174,11 @@ public partial class PluginManager
                                     throw new ArgumentOutOfRangeException();
                             }
 
-                            _logger.LogInformation($"Add plugin \"{metadata.Name}\": " +
-                                                   $"Author={string.Join(",", metadata.Authors)}; " +
-                                                   //$"Version={metadata.Version}; " +
-                                                   $"Lifetime={pluginInfo.Lifetime} " +
-                                                   $"({pluginInfo.BaseType.Name})");
+                            _logger.LogInformation($"Add plugin \"{metadata.Name}\"" +
+                                                   (defaultAuthor == metadata.Authors
+                                                       ? ""
+                                                       : $" by {metadata.Authors}") +
+                                                   $" ({pluginInfo.Lifetime} {pluginInfo.BaseType.Name})");
                             isValid = true;
                         }
                         catch (Exception ex)
