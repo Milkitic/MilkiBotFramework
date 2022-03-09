@@ -20,6 +20,12 @@ public interface IResponse
         IsHandled = true;
         return this;
     }
+    public IResponse AvoidRepeat()
+    {
+        IsForced = false;
+        return this;
+    }
+
     public IResponse Forced()
     {
         IsForced = true;
