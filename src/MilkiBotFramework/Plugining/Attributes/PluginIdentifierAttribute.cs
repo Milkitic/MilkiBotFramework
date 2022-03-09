@@ -11,11 +11,12 @@ public sealed class PluginIdentifierAttribute : Attribute
 
     public string Guid { get; }
     public string? Name { get; }
+    public string? Authors { get; init; }
 
     /// <summary>
     /// 插件优先级，越小则优先级越高
     /// </summary>
     public int Index { get; init; }
 
-    public bool AllowDisable { get; set; } = true;
+    public bool AllowDisable { get; init; } = true;
 }

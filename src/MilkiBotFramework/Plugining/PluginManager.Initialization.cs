@@ -132,11 +132,18 @@ public partial class PluginManager
 
             try
             {
-                Assembly? asm = isRuntimeContext
+                Assembly? assembly = isRuntimeContext
                     ? Assembly.GetEntryAssembly()
                     : ctx.LoadFromAssemblyPath(assemblyPath);
-                if (asm != null)
+                if (assembly != null)
                 {
+                    var defaultAuthor = assembly.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company;
+                    var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                        ?.InformationalVersion ?? "0.0.1-alpha";
+                    var product = assembly.GetCustomAttribute<AssemblyProductAttribute>()
+                        ?.Product;
+                    _logger.LogInformation("Plugin library: " + product + " " + version);
+
                     var pluginInfos = new List<PluginInfo>();
                     foreach (var typeResult in typeResults)
                     {
@@ -146,11 +153,11 @@ public partial class PluginManager
                         PluginInfo? pluginInfo = null;
                         try
                         {
-                            var type = asm.GetType(typeFullName);
+                            var type = assembly.GetType(typeFullName);
                             if (type == null) throw new Exception("Can't resolve type: " + typeFullName);
 
                             typeName = type.Name;
-                            pluginInfo = GetPluginInfo(type, baseType);
+                            pluginInfo = GetPluginInfo(type, baseType, defaultAuthor);
                             var metadata = pluginInfo.Metadata;
 
                             switch (pluginInfo.Lifetime)
@@ -170,7 +177,7 @@ public partial class PluginManager
 
                             _logger.LogInformation($"Add plugin \"{metadata.Name}\": " +
                                                    $"Author={string.Join(",", metadata.Authors)}; " +
-                                                   $"Version={metadata.Version}; " +
+                                                   //$"Version={metadata.Version}; " +
                                                    $"Lifetime={pluginInfo.Lifetime} " +
                                                    $"({pluginInfo.BaseType.Name})");
                             isValid = true;
@@ -189,16 +196,18 @@ public partial class PluginManager
 
                     var asmContext = new AssemblyContext
                     {
-                        Assembly = asm,
+                        Assembly = assembly,
                         DbContextTypes = assemblyResult.DbContexts.Select(dbContext =>
                         {
-                            var type = asm.GetType(dbContext);
+                            var type = assembly.GetType(dbContext);
                             if (type == null)
                                 _logger.LogError("Cannot resolve DbContext: " + dbContext +
                                                  ". This will lead to further errors.");
                             return type!;
                         }).Where(k => k != null!).ToArray(),
                         PluginInfos = pluginInfos.ToArray(),
+                        Version = version,
+                        Product = product
                     };
 
                     if (isValid)
@@ -340,7 +349,7 @@ public partial class PluginManager
         instance.OnInitialized();
     }
 
-    private PluginInfo GetPluginInfo(Type type, Type baseType)
+    private PluginInfo GetPluginInfo(Type type, Type baseType, string? defaultAuthor)
     {
         PluginLifetime lifetime;
         if (baseType == StaticTypes.ServicePlugin)
@@ -361,10 +370,11 @@ public partial class PluginManager
         var name = identifierAttribute.Name ?? type.Name;
         var allowDisable = identifierAttribute.AllowDisable;
         var description = type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "Nothing here.";
-        var version = type.GetCustomAttribute<VersionAttribute>()?.Version ?? "0.0.1-alpha";
-        var authors = type.GetCustomAttribute<AuthorAttribute>()?.Author ?? DefaultAuthors;
+        //var version = type.GetCustomAttribute<VersionAttribute>()?.Version ?? "0.0.1-alpha";
+        //var authors = type.GetCustomAttribute<AuthorAttribute>()?.Author ?? DefaultAuthors;
+        var authors = identifierAttribute.Authors ?? defaultAuthor ?? "anonym";
 
-        var metadata = new PluginMetadata(Guid.Parse(guid), name, description, version, authors);
+        var metadata = new PluginMetadata(Guid.Parse(guid), name, description, authors);
 
         var pluginHome = Path.Combine(_botOptions.PluginHomeDir, $"{metadata.Guid:B}");
         if (!Directory.Exists(pluginHome))

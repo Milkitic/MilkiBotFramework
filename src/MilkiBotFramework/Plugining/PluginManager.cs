@@ -13,8 +13,6 @@ namespace MilkiBotFramework.Plugining;
 
 public partial class PluginManager
 {
-    private static readonly string[] DefaultAuthors = { "anonym" };
-
     private readonly IServiceProvider _serviceProvider;
     private readonly IServiceCollection _serviceCollection;
     private readonly BotOptions _botOptions;
