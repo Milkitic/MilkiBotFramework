@@ -15,9 +15,8 @@ namespace MilkiBotFramework.Messaging.RichMessages
             RichMessages.AddRange(richMessages);
         }
 
-        public RichMessage(params IRichMessage[] richMessages)
+        public RichMessage(params IRichMessage[] richMessages) : this((IEnumerable<IRichMessage>)richMessages)
         {
-            RichMessages.AddRange(richMessages);
         }
 
         public async ValueTask<string> EncodeAsync()
