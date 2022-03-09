@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
-using MilkiBotFramework.Plugining.Loading;
 using MilkiBotFramework.Utils;
 
 namespace MilkiBotFramework.Plugining.Configuration
@@ -9,27 +8,24 @@ namespace MilkiBotFramework.Plugining.Configuration
     {
         private readonly Dictionary<Type, ConfigurationBase> _cachedDict = new();
 
-        private readonly LoaderContext _loaderContext;
         private readonly BotOptions _botOptions;
         private readonly ILogger<ConfigLoggerProvider> _logger;
 
-        public ConfigurationFactory(LoaderContext loaderContext,
-            BotOptions botOptions,
+        public ConfigurationFactory(BotOptions botOptions,
             ILogger<ConfigLoggerProvider> logger)
         {
-            _loaderContext = loaderContext;
             _botOptions = botOptions;
             _logger = logger;
         }
 
-        public T GetConfiguration<T>(YamlConverter? converter = null) where T : ConfigurationBase
+        public T GetConfiguration<T>(string contextName, YamlConverter? converter = null) where T : ConfigurationBase
         {
             var t = typeof(T);
 
             if (_cachedDict.TryGetValue(t, out var val))
                 return (T)val;
 
-            var filename = $"{_loaderContext.Name}.{t.FullName}.yaml";
+            var filename = $"{contextName}.{t.FullName}.yaml";
             var folder = _botOptions.PluginConfigurationDir/*Path.Combine(_botOptions.PluginConfigurationDir, _loaderContext.Name)*/;
             var path = Path.Combine(folder, filename);
             converter ??= new YamlConverter();

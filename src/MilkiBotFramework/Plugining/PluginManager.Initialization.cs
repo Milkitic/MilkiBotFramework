@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Loader;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Plugining.Attributes;
@@ -251,10 +250,13 @@ public partial class PluginManager
         foreach (var serviceDescriptor in allTypes)
         {
             var ns = serviceDescriptor.ServiceType.Namespace;
+            var fullName = serviceDescriptor.ServiceType.FullName;
             if (serviceDescriptor.ImplementationType == serviceDescriptor.ServiceType)
             {
                 if (ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
                     ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
+                    continue;
+                if (fullName.Contains("IConfiguration`1"))
                     continue;
                 var instance = _serviceProvider.GetService(serviceDescriptor.ImplementationType);
                 if (instance == null)
@@ -266,6 +268,8 @@ public partial class PluginManager
             {
                 if (ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
                     ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
+                    continue;
+                if (fullName.Contains("IConfiguration`1"))
                     continue;
                 var instance = _serviceProvider.GetService(serviceDescriptor.ServiceType);
                 if (instance == null)
@@ -279,7 +283,6 @@ public partial class PluginManager
         if (configLoggerProvider != null)
             loaderContext.ServiceCollection.AddLogging(o => configLoggerProvider.ConfigureLogger!(o));
 
-        loaderContext.ServiceCollection.AddSingleton(typeof(ConfigurationFactory));
         loaderContext.ServiceCollection.AddSingleton(typeof(IConfiguration<>), typeof(Configuration<>));
         loaderContext.ServiceCollection.AddSingleton(loaderContext);
         //var tExt = typeof(SqliteServiceCollectionExtensions);

@@ -183,6 +183,9 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
             .AddSingleton(typeof(IContactsManager),
                 _contactsManagerType ?? throw new ArgumentNullException(nameof(IContactsManager),
                     "The IContactsManager implementation is not specified."))
+            .AddSingleton(typeof(ConfigurationFactory))
+            .AddSingleton(typeof(IConfiguration<>), typeof(Configuration<>))
+            .AddTransient(typeof(LoaderContext), _ => null!)
             .AddSingleton(typeof(Bot), typeof(TBot));
         if (_connectorType != null)
         {
