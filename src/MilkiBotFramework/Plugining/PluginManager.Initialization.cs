@@ -328,8 +328,11 @@ public partial class PluginManager
                 dbContext.TemporaryDbPath = dbPath;
                 try
                 {
+                    _logger.LogInformation("Migrating database: " + dbPath);
+                    var sw = Stopwatch.StartNew();
                     await dbContext.Database.MigrateAsync();
                     await dbContext.Database.CloseConnectionAsync();
+                    _logger.LogDebug($"Done migration in {sw.ElapsedMilliseconds}ms");
                 }
                 catch (Exception ex)
                 {
