@@ -10,7 +10,7 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
     private const char CommandFlag = '/';
     private static readonly HashSet<char> OptionFlags = new() { '-' };
     private static readonly HashSet<char> QuoteFlags = new() { '\"', '\'', '`' };
-    private static readonly HashSet<char> SplitterFlags = new() { ' ', ':' };
+    private static readonly HashSet<char> SplitterFlags = new() { ' ' };
 
     public bool TryAnalyze(string input,
         [NotNullWhen(true)] out CommandLineResult? result,
