@@ -1,13 +1,12 @@
-﻿using MilkiBotFramework.Messaging;
-using YamlDotNet.Core;
+﻿using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
 namespace MilkiBotFramework.Plugining.Configuration;
 
-public class MessageIdentityConverter : IYamlTypeConverter
+public class DateTimeOffsetConverter : IYamlTypeConverter
 {
-    private static readonly Type MemberInfo = typeof(MessageIdentity);
+    private static readonly Type MemberInfo = typeof(DateTimeOffset);
     public bool Accepts(Type type)
     {
         return type == MemberInfo;
@@ -17,7 +16,7 @@ public class MessageIdentityConverter : IYamlTypeConverter
     {
         var s = parser.Consume<Scalar>();
         var str = s.Value;
-        return MessageIdentity.Parse(str);
+        return DateTimeOffset.Parse(str);
     }
 
     public void WriteYaml(IEmitter emitter, object? value, Type type)
