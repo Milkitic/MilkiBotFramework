@@ -40,7 +40,7 @@ namespace MilkiBotFramework.Tasking
             }
 
             var taskInstance = new TaskInstance(option);
-            taskInstance.Task = Task.Factory.StartNew(() => TaskLoop(taskInstance));
+            taskInstance.Task = Task.Run(() => TaskLoop(taskInstance));
             _tasks.Add(option.Id, taskInstance);
         }
 
