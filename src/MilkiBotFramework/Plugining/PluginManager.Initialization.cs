@@ -42,6 +42,7 @@ public partial class PluginManager
             );
         }
 
+        _logger.LogInformation("Activating singleton plugins...");
         foreach (var loaderContext in _loaderContexts.Values)
         {
             var serviceProvider = loaderContext.BuildServiceProvider();
@@ -175,10 +176,10 @@ public partial class PluginManager
                             }
 
                             _logger.LogInformation($"Add plugin \"{metadata.Name}\"" +
+                                                   $" ({pluginInfo.Lifetime} {pluginInfo.BaseType.Name})" +
                                                    (defaultAuthor == metadata.Authors
                                                        ? ""
-                                                       : $" by {metadata.Authors}") +
-                                                   $" ({pluginInfo.Lifetime} {pluginInfo.BaseType.Name})");
+                                                       : $" by {metadata.Authors}"));
                             isValid = true;
                         }
                         catch (Exception ex)
@@ -285,26 +286,10 @@ public partial class PluginManager
 
         loaderContext.ServiceCollection.AddSingleton(typeof(IConfiguration<>), typeof(Configuration<>));
         loaderContext.ServiceCollection.AddSingleton(loaderContext);
-        //var tExt = typeof(SqliteServiceCollectionExtensions);
-        //var method = tExt.GetMethod("AddSqlite");
-        //if (method != null)
-        //{           
-        //var dbFolder = Path.Combine(_botOptions.PluginDataDir, loaderContext.Name);
-        //var dbFilename = Path.GetFileNameWithoutExtension(assemblyContext.Key) + "." + dbContextType.Name +
-        //                 ".sqlite3";
-        //var dbPath = Path.Combine(dbFolder, dbFilename);
-        //if (!Directory.Exists(dbFolder)) Directory.CreateDirectory(dbFolder);
-        //var genericMethod = method.MakeGenericMethod(dbContextType);
-        //genericMethod.Invoke(null, new object?[]
-        //{
-        //    loaderContext.ServiceCollection, dbPath, null, null
-        //});
-        //}
         foreach (var assemblyContext in loaderContext.AssemblyContexts)
         {
             foreach (var dbContextType in assemblyContext.Value.DbContextTypes)
             {
-
                 try
                 {
                     loaderContext.ServiceCollection.AddScoped(dbContextType);
@@ -331,11 +316,12 @@ public partial class PluginManager
                 dbContext.TemporaryDbPath = dbPath;
                 try
                 {
-                    _logger.LogInformation("Migrating database: " + dbPath);
+                    var fn = Path.GetFileNameWithoutExtension(dbFilename);
+                    _logger.LogInformation("Migrating database: " + fn);
                     var sw = Stopwatch.StartNew();
                     await dbContext.Database.MigrateAsync();
                     await dbContext.Database.CloseConnectionAsync();
-                    _logger.LogDebug($"Done migration in {sw.ElapsedMilliseconds}ms");
+                    _logger.LogInformation($"Done {fn}'s migration in {sw.ElapsedMilliseconds}ms");
                 }
                 catch (Exception ex)
                 {

@@ -62,7 +62,7 @@ namespace MilkiBotFramework.Plugining.Configuration
             if (!File.Exists(path))
             {
                 config = CreateDefaultConfigByPath(type, path, converter);
-                logger?.LogWarning($"{Utilities.GetRelativePath(path)} config file not found. " +
+                logger?.LogWarning($"Config file \"{Path.GetFileName(path)}\" was not found. " +
                                   $"Default config was created and used.");
             }
             else
@@ -73,7 +73,7 @@ namespace MilkiBotFramework.Plugining.Configuration
                 {
                     config = converter.DeserializeSettings(content, type);
                     SaveConfig(config, path, converter);
-                    logger?.LogInformation($"{Utilities.GetRelativePath(path)} config file was loaded.");
+                    logger?.LogDebug($"Config file \"{Path.GetFileName(path)}\" was loaded.");
                 }
                 //catch (YamlException ex)
                 //{
