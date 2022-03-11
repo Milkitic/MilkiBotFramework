@@ -24,13 +24,6 @@ public partial class PluginManager
         if (!Directory.Exists(pluginBaseDir)) Directory.CreateDirectory(pluginBaseDir);
         var directories = Directory.GetDirectories(pluginBaseDir);
 
-        foreach (var directory in directories)
-        {
-            var files = Directory.GetFiles(directory, "*.dll");
-            var contextName = Path.GetFileName(directory);
-            await CreateContextAndAddPlugins(contextName, files);
-        }
-
         var entryAsm = Assembly.GetEntryAssembly();
         if (entryAsm != null)
         {
@@ -40,6 +33,13 @@ public partial class PluginManager
                 .Where(k => !k.IsDynamic && k.Location.StartsWith(dir))
                 .Select(k => k.Location)
             );
+        }
+
+        foreach (var directory in directories)
+        {
+            var files = Directory.GetFiles(directory, "*.dll");
+            var contextName = Path.GetFileName(directory);
+            await CreateContextAndAddPlugins(contextName, files);
         }
 
         _logger.LogInformation("Activating singleton plugins...");
