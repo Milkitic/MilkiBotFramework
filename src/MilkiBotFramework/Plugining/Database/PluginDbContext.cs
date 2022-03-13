@@ -7,6 +7,11 @@ namespace MilkiBotFramework.Plugining.Database
     {
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+            if (optionsBuilder.IsConfigured)
+            {
+                return;
+            }
+
             var connectionStringBuilder = new SqliteConnectionStringBuilder
             {
                 DataSource = TemporaryDbPath,

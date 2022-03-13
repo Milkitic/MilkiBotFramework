@@ -294,9 +294,18 @@ public partial class PluginManager
         {
             foreach (var dbContextType in assemblyContext.Value.DbContextTypes)
             {
+                var dbFolder = _botOptions.PluginDatabaseDir/*Path.Combine(_botOptions.PluginDatabaseDir, loaderContext.Name)*/;
+                var dbFilename = $"{loaderContext.Name}.{Path.GetFileNameWithoutExtension(assemblyContext.Key)}.{dbContextType.Name}.db";
+                var dbPath = Path.Combine(dbFolder, dbFilename);
+                if (!Directory.Exists(dbFolder)) Directory.CreateDirectory(dbFolder);
                 try
                 {
-                    loaderContext.ServiceCollection.AddScoped(dbContextType);
+                    loaderContext.ServiceCollection.AddScoped(dbContextType, (s) =>
+                    {
+                        var instance = (PluginDbContext)Activator.CreateInstance(dbContextType)!;
+                        instance.TemporaryDbPath = dbPath;
+                        return instance;
+                    });
                 }
                 catch (Exception ex)
                 {
@@ -311,21 +320,15 @@ public partial class PluginManager
         {
             foreach (var dbContextType in assemblyContext.Value.DbContextTypes)
             {
-                var dbFolder = _botOptions.PluginDatabaseDir/*Path.Combine(_botOptions.PluginDatabaseDir, loaderContext.Name)*/;
-                var dbFilename = $"{loaderContext.Name}.{Path.GetFileNameWithoutExtension(assemblyContext.Key)}.{dbContextType.Name}.db";
-                var dbPath = Path.Combine(dbFolder, dbFilename);
-                var dbContext = (PluginDbContext)scope.ServiceProvider.GetService(dbContextType)!;
-                if (!Directory.Exists(dbFolder)) Directory.CreateDirectory(dbFolder);
 
-                dbContext.TemporaryDbPath = dbPath;
+                var dbContext = (PluginDbContext)scope.ServiceProvider.GetService(dbContextType)!;
                 try
                 {
-                    var fn = Path.GetFileNameWithoutExtension(dbFilename);
-                    _logger.LogInformation("Migrating database: " + fn);
+                    _logger.LogInformation("Migrating database: " + dbContextType);
                     var sw = Stopwatch.StartNew();
                     await dbContext.Database.MigrateAsync();
                     await dbContext.Database.CloseConnectionAsync();
-                    _logger.LogInformation($"Done {fn}'s migration in {sw.ElapsedMilliseconds}ms");
+                    _logger.LogInformation($"Done {dbContextType}'s migration in {sw.ElapsedMilliseconds}ms");
                 }
                 catch (Exception ex)
                 {
