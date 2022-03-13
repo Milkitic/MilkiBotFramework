@@ -93,7 +93,7 @@ public partial class PluginManager
             IsRuntimeContext = isRuntimeContext,
             AssemblyContexts = new ReadOnlyDictionary<string, AssemblyContext>(dict)
         };
-        foreach (var assemblyResult in assemblyResults)
+
         foreach (var assemblyResult in assemblyResults.OrderBy(k => k.TypeResults.Length)) // Load dependency first
         {
             var assemblyPath = assemblyResult.AssemblyPath;
