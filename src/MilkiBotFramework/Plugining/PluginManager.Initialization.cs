@@ -94,6 +94,7 @@ public partial class PluginManager
             AssemblyContexts = new ReadOnlyDictionary<string, AssemblyContext>(dict)
         };
         foreach (var assemblyResult in assemblyResults)
+        foreach (var assemblyResult in assemblyResults.OrderBy(k => k.TypeResults.Length)) // Load dependency first
         {
             var assemblyPath = assemblyResult.AssemblyPath;
             var assemblyFullName = assemblyResult.AssemblyFullName;
@@ -201,8 +202,11 @@ public partial class PluginManager
                         {
                             var type = assembly.GetType(dbContext);
                             if (type == null)
+                            {
+                                Debug.Assert(type != null);
                                 _logger.LogError("Cannot resolve DbContext: " + dbContext +
-                                                 ". This will lead to further errors.");
+                                               ". This will lead to further errors.");
+                            }
                             return type!;
                         }).Where(k => k != null!).ToArray(),
                         PluginInfos = pluginInfos.ToArray(),

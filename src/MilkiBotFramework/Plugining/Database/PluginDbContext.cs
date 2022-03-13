@@ -5,7 +5,7 @@ namespace MilkiBotFramework.Plugining.Database
 {
     public abstract class PluginDbContext : DbContext
     {
-        protected sealed override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             var connectionStringBuilder = new SqliteConnectionStringBuilder
             {
