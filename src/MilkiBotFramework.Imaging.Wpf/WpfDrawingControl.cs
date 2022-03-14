@@ -40,6 +40,7 @@ public abstract class WpfDrawingControl : UserControl
         BitmapEncoder encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bmp));
         encoder.Save(stream);
+        stream.Position = 0;
         return Task.FromResult(stream);
     }
 
@@ -64,7 +65,7 @@ public abstract class WpfDrawingControl : UserControl
     {
         var source = PresentationSource.FromVisual(this);
 
-        double dpiX = 0, dpiY = 0;
+        double dpiX = 96.0, dpiY = 96.0;
         if (source is { CompositionTarget: { } })
         {
             dpiX = 96.0 * source.CompositionTarget.TransformToDevice.M11;

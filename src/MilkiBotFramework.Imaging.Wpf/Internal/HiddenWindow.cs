@@ -13,7 +13,6 @@ internal class HiddenWindow : Window
         AllowsTransparency = true;
         WindowStyle = WindowStyle.None;
         ShowInTaskbar = false;
-        //Visibility = Visibility.Hidden;
         Opacity = 0;
     }
 
