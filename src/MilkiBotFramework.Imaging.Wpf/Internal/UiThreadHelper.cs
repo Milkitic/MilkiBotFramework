@@ -4,14 +4,14 @@ using MilkiBotFramework.Utils;
 
 namespace MilkiBotFramework.Imaging.Wpf.Internal;
 
-internal static class UiThreadHelper
+public static class UiThreadHelper
 {
     private static Thread? _uiThread;
     internal static Application? Application;
     private static readonly AsyncLock _asyncLock = new();
     private static readonly TaskCompletionSource<bool> WaitComplete = new();
 
-    internal static async Task EnsureUiThreadAsync()
+    public static async Task EnsureUiThreadAsync()
     {
         using (await _asyncLock.LockAsync())
         {
