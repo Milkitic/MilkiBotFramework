@@ -20,6 +20,6 @@ public class LinkImage : IRichMessage
     public virtual async ValueTask<string> EncodeAsync() => $"[Image: {Uri}]";
     public override string ToString()
     {
-        return "[图片]";
+        return "[网址图片]";
     }
 }

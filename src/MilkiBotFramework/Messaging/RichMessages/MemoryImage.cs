@@ -1,5 +1,4 @@
 ﻿using MilkiBotFramework.Imaging;
-using MilkiBotFramework.Utils;
 using SixLabors.ImageSharp;
 
 namespace MilkiBotFramework.Messaging.RichMessages;
@@ -16,4 +15,8 @@ public class MemoryImage : IRichMessage, IDisposable
     public ImageType ImageType { get; }
     public void Dispose() => ImageSource?.Dispose();
     public virtual async ValueTask<string> EncodeAsync() => "[Image]";
+    public override string ToString()
+    {
+        return "[合成图片]";
+    }
 }
