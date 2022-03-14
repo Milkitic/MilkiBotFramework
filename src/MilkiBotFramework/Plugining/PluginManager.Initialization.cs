@@ -371,9 +371,10 @@ public partial class PluginManager
         var description = type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "Nothing here.";
         //var version = type.GetCustomAttribute<VersionAttribute>()?.Version ?? "0.0.1-alpha";
         //var authors = type.GetCustomAttribute<AuthorAttribute>()?.Author ?? DefaultAuthors;
+        var scope = identifierAttribute.Scope ?? type.Assembly.GetName().Name ?? "DynamicScope";
         var authors = identifierAttribute.Authors ?? defaultAuthor ?? "anonym";
 
-        var metadata = new PluginMetadata(Guid.Parse(guid), name, description, authors);
+        var metadata = new PluginMetadata(Guid.Parse(guid), name, description, authors, scope);
 
         var pluginHome = Path.Combine(_botOptions.PluginHomeDir, $"{metadata.Guid:B}");
         if (!Directory.Exists(pluginHome))

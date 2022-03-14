@@ -9,6 +9,7 @@ public sealed class PluginIdentifierAttribute : Attribute
         Name = name;
     }
 
+    public string? Scope { get; init; }
     public string Guid { get; }
     public string? Name { get; }
     public string? Authors { get; init; }
