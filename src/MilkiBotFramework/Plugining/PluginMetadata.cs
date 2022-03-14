@@ -2,7 +2,7 @@
 
 public class PluginMetadata
 {
-    public PluginMetadata(Guid guid, string name, string description, string authors, string scope)
+    public PluginMetadata(Guid guid, string name, string? description, string authors, string scope)
     {
         Guid = guid;
         Name = name;
@@ -13,7 +13,7 @@ public class PluginMetadata
 
     public Guid Guid { get; }
     public string Name { get; }
-    public string Description { get; }
+    public string? Description { get; }
     public string Authors { get; }
     public string Scope { get; }
 }

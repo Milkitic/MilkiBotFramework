@@ -368,7 +368,7 @@ public partial class PluginManager
         var index = identifierAttribute.Index;
         var name = identifierAttribute.Name ?? type.Name;
         var allowDisable = identifierAttribute.AllowDisable;
-        var description = type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "Nothing here.";
+        var description = type.GetCustomAttribute<DescriptionAttribute>()?.Description;
         //var version = type.GetCustomAttribute<VersionAttribute>()?.Version ?? "0.0.1-alpha";
         //var authors = type.GetCustomAttribute<AuthorAttribute>()?.Author ?? DefaultAuthors;
         var scope = identifierAttribute.Scope ?? type.Assembly.GetName().Name ?? "DynamicScope";
@@ -446,7 +446,8 @@ public partial class PluginManager
             commands.Add(command, commandInfo);
         }
 
-        return new PluginInfo(metadata, type, baseType, lifetime, commands, index, pluginHome, allowDisable);
+        return new PluginInfo(metadata, type, baseType, lifetime, new ReadOnlyDictionary<string, CommandInfo>(commands),
+            index, pluginHome, allowDisable);
     }
 
     private CommandParameterInfo GetParameterInfo(object[] attrs, Type targetType,

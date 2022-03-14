@@ -1,4 +1,6 @@
-﻿namespace MilkiBotFramework.Plugining.Loading;
+﻿using System.Collections.ObjectModel;
+
+namespace MilkiBotFramework.Plugining.Loading;
 
 public sealed class PluginInfo
 {
@@ -6,7 +8,7 @@ public sealed class PluginInfo
         Type type,
         Type baseType,
         PluginLifetime lifetime,
-        IReadOnlyDictionary<string, CommandInfo> commands,
+        ReadOnlyDictionary<string, CommandInfo> commands,
         int index,
         string pluginHome,
         bool allowDisable)
@@ -33,7 +35,7 @@ public sealed class PluginInfo
     public Type Type { get; }
     public Type BaseType { get; }
     public PluginLifetime Lifetime { get; }
-    public IReadOnlyDictionary<string, CommandInfo> Commands { get; }
+    public ReadOnlyDictionary<string, CommandInfo> Commands { get; }
     public int Index { get; }
     public string PluginHome { get; }
     public bool AllowDisable { get; }
