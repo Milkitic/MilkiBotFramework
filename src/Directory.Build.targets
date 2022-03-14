@@ -1,0 +1,8 @@
+<Project>
+    <ItemGroup Condition="$(MSBuildProjectName.StartsWith('MilkiBotFramework')) == 'true'">
+        <PackageReference Include="MinVer" Version="3.0.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+</Project>
