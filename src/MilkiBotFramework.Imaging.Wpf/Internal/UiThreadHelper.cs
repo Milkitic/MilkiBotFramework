@@ -28,15 +28,25 @@ internal static class UiThreadHelper
                 };
 
                 Application.Startup += (_, _) => WaitComplete.SetResult(true);
-                try
+                Application.DispatcherUnhandledException += (_, e) =>
                 {
-                    Application.Run();
-                }
-                catch (Exception ex)
+                    Debug.Fail("UI线程异常", e.Exception.ToString());
+                    e.Handled = true;
+                };
+
+                for (int i = 0; i < 10; i++)
                 {
-                    Debug.Fail("UI线程异常", ex.ToString());
-                    Application.Shutdown();
+                    try
+                    {
+                        Application.Run();
+                    }
+                    catch
+                    {
+                        Application.Shutdown();
+                    }
                 }
+
+                throw new Exception("UI thread failing for too much times.");
             })
             {
                 IsBackground = true
