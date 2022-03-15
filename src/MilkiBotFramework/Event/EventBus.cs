@@ -11,7 +11,7 @@ namespace MilkiBotFramework.Event
         private readonly ILogger<EventBus> _logger;
 
         // payloadtype - list of action<T>s, where T is payload type
-        private readonly ConcurrentDictionary<Type, List<Func<IEventBusEvent, Task>>> _subscriptions = new();
+        private readonly ConcurrentDictionary<Type, Dictionary<Guid, Func<IEventBusEvent, Task>>> _subscriptions = new();
         public EventBus(ILogger<EventBus> logger)
         {
             _logger = logger;
@@ -44,17 +44,21 @@ namespace MilkiBotFramework.Event
                         .AsParallel()
                         .Select(async (func, i) =>
                         {
-                            await func(payload);
+                            await func.Value(payload);
                         });
 
                     await Task.WhenAll(query);
                 }
                 else // 依次执行，模拟原生event.Invoke()
                 {
-                    for (var i = 0; i < funcList.Count; i++)
+                    foreach (var func in funcList.Values)
                     {
-                        await funcList[i](payload);
+                        await func(payload);
                     }
+                    //for (var i = 0; i < funcList.Values.Count; i++)
+                    //{
+                    //    await funcList[i](payload);
+                    //}
                 }
             }
         }
@@ -72,19 +76,29 @@ namespace MilkiBotFramework.Event
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="action"></param>
-        public void Subscribe<T>(Action<T> action) where T : IEventBusEvent
+        public void Subscribe<T>(Action<T> action, Guid guid) where T : IEventBusEvent
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
+            if (guid == default)
+                guid = Guid.NewGuid();
 
             var type = typeof(T);
             var list = _subscriptions.GetOrAdd(type, _ => new());
 
-            list.Add(e =>
+            list.Add(guid, e =>
             {
                 action((T)e);
                 return Task.CompletedTask;
             });
+        }
+
+        public void Unsubscribe<T>(Guid guid) where T : IEventBusEvent
+        {
+            var type = typeof(T);
+            var list = _subscriptions.GetOrAdd(type, _ => new());
+
+            list.Remove(guid, out _);
         }
 
         /// <summary>
@@ -94,15 +108,17 @@ namespace MilkiBotFramework.Event
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="func"></param>
-        public void Subscribe<T>(Func<T, Task> func) where T : IEventBusEvent
+        public void Subscribe<T>(Func<T, Task> func, Guid guid = default) where T : IEventBusEvent
         {
             if (func == null)
                 throw new ArgumentNullException(nameof(func));
+            if (guid == default)
+                guid = Guid.NewGuid();
 
             var type = typeof(T);
             var list = _subscriptions.GetOrAdd(type, _ => new());
 
-            list.Add(async e => await func((T)e).ConfigureAwait(false));
+            list.Add(guid, async e => await func((T)e).ConfigureAwait(false));
         }
 
         public struct PublishOptions
