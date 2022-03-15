@@ -15,6 +15,7 @@ public abstract class WpfDrawingControl : UserControl
     protected readonly Image? SourceImage;
     protected readonly BitmapSource? SourceBitmapImage;
     protected readonly object ViewModel;
+    private readonly TaskCompletionSource _tcs;
 
     public WpfDrawingControl(object viewModel, Image? sourceImage = null)
     {
@@ -22,6 +23,8 @@ public abstract class WpfDrawingControl : UserControl
         DataContext = ViewModel = viewModel;
         if (sourceImage != null)
             SourceBitmapImage = WpfImageHelper.GetBitmapImageFromImageSharp(sourceImage);
+        _tcs = new TaskCompletionSource();
+        RenderFinished += async (_, _) => _tcs.SetResult();
     }
 
     public virtual Task<MemoryStream> ProcessOnceAsync()
@@ -47,6 +50,11 @@ public abstract class WpfDrawingControl : UserControl
     public virtual async IAsyncEnumerable<MemoryStream> ProcessMultiFramesAsync()
     {
         yield break;
+    }
+
+    public Task GetDrawingTask()
+    {
+        return _tcs.Task;
     }
 
     protected internal virtual Visual GetDrawingVisual(out Size size)

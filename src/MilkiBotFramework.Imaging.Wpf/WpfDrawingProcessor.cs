@@ -42,19 +42,10 @@ public class WpfDrawingProcessor<TViewModel, TProcessControl> : IDrawingProcesso
             if (double.IsNaN(subProcessor.Width) || double.IsNaN(subProcessor.Height) || _enableWindowRendering)
             {
                 var window = new HiddenWindow { Content = new DpiDecorator { Child = subProcessor } };
-
-                var tcs = new TaskCompletionSource();
-                subProcessor.RenderFinished += async (_, _) =>
-                {
-                    await window.WaitForShown();
-                    //await Task.Delay(_delayTime); // Todo: Needs to delay?
-
-                    retStream = await subProcessor.ProcessOnceAsync();
-                    tcs.SetResult();
-                };
                 window.Show();
-
-                await tcs.Task;
+                await subProcessor.GetDrawingTask();
+                await window.WaitForShown();
+                retStream = await subProcessor.ProcessOnceAsync();
                 window.Close();
             }
             else
@@ -63,6 +54,7 @@ public class WpfDrawingProcessor<TViewModel, TProcessControl> : IDrawingProcesso
                 subProcessor.Measure(size);
                 subProcessor.Arrange(new Rect(size));
                 subProcessor.UpdateLayout();
+                await subProcessor.GetDrawingTask();
                 retStream = await subProcessor.ProcessOnceAsync();
             }
 
