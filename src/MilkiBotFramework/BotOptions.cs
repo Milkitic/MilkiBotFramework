@@ -1,10 +1,19 @@
 ﻿using System.ComponentModel;
+using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Plugining.Configuration;
 
 namespace MilkiBotFramework;
 
 public class BotOptions : ConfigurationBase
 {
+    private LightHttpClientCreationOptions? _httpOptions;
+
+    public LightHttpClientCreationOptions HttpOptions
+    {
+        get => _httpOptions ?? new LightHttpClientCreationOptions();
+        set => _httpOptions = value;
+    }
+
     [Description("Root权限账号")]
     public HashSet<string> RootAccounts { get; set; } = new();
     [Description("插件目录")]

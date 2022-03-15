@@ -19,7 +19,6 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     private BotOptions? _botOptions;
     private Action<ILoggingBuilder>? _configureLogger;
-    private Action<LightHttpClientCreationOptions>? _configureHttp;
     private Action<IConnectorConfigurable>? _configureConnector;
     private Type? _connectorType;
     private Type? _dispatcherType;
@@ -61,12 +60,6 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     public TBuilder ConfigureLogger(Action<ILoggingBuilder> configureLogger)
     {
         _configureLogger = configureLogger;
-        return (TBuilder)this;
-    }
-
-    public TBuilder ConfigureHttpClient(Action<LightHttpClientCreationOptions> configureHttp)
-    {
-        _configureHttp = configureHttp;
         return (TBuilder)this;
     }
 
@@ -160,13 +153,9 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     protected virtual void ConfigServices(IServiceCollection serviceCollection)
     {
         var configureLogger = _configureLogger ??= CreateDefaultLoggerConfiguration();
-        var configureHttp = _configureHttp ??= CreateDefaultHttpConfiguration();
-        var httpOptions = new LightHttpClientCreationOptions();
-        configureHttp(httpOptions);
         serviceCollection
             .AddLogging(k => configureLogger(k))
             .AddSingleton(GetOptionInstance())
-            .AddSingleton(httpOptions)
             .AddSingleton<BotTaskScheduler>()
             .AddSingleton<EventBus>()
             .AddSingleton<LightHttpClient>()
@@ -199,11 +188,6 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         }
 
         serviceCollection.AddSingleton(serviceCollection);
-    }
-
-    private Action<LightHttpClientCreationOptions> CreateDefaultHttpConfiguration()
-    {
-        return _ => { };
     }
 
     protected virtual IServiceCollection GetServiceCollection()

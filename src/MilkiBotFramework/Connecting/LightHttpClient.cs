@@ -30,8 +30,9 @@ public class LightHttpClient
     private static HttpClient _httpClient;
     private readonly LightHttpClientCreationOptions _clientCreationOptions;
 
-    public LightHttpClient(LightHttpClientCreationOptions clientCreationOptions)
+    public LightHttpClient(BotOptions botOptions)
     {
+        var clientCreationOptions = botOptions.HttpOptions;
         _clientCreationOptions = clientCreationOptions;
         if (_httpClient != null!) return;
         HttpMessageHandler handler;
