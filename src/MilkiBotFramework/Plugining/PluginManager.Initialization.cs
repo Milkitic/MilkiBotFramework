@@ -56,7 +56,7 @@ public partial class PluginManager
                     try
                     {
                         var instance = (PluginBase)serviceProvider.GetService(pluginInfo.Type);
-                        InitializePlugin(instance, pluginInfo);
+                        await InitializePlugin(instance, pluginInfo);
                     }
                     catch (Exception ex)
                     {
@@ -340,12 +340,12 @@ public partial class PluginManager
         _loaderContexts.Add(loaderContext.Name, loaderContext);
     }
 
-    private void InitializePlugin(PluginBase instance, PluginInfo pluginInfo)
+    private async Task InitializePlugin(PluginBase instance, PluginInfo pluginInfo)
     {
         instance.Metadata = pluginInfo.Metadata;
         instance.PluginHome = pluginInfo.PluginHome;
         instance.IsInitialized = true;
-        instance.OnInitialized();
+        await instance.OnInitialized();
     }
 
     private PluginInfo GetPluginInfo(Type type, Type baseType, string? defaultAuthor)

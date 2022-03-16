@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Imaging;
 using MilkiBotFramework.Utils;
 using SixLabors.ImageSharp;
@@ -12,6 +13,8 @@ namespace MilkiBotFramework.Connecting;
 
 public class LightHttpClient
 {
+    private readonly ILogger<LightHttpClient> _logger;
+
     private enum RequestMethod
     {
         Get, Post, Put, Delete
@@ -25,18 +28,20 @@ public class LightHttpClient
             _httpClient?.Dispose();
         };
         _httpClient = null!;
+        _clientCreationOptions = null!;
     }
 
     private static HttpClient _httpClient;
-    private readonly LightHttpClientCreationOptions _clientCreationOptions;
+    private static LightHttpClientCreationOptions _clientCreationOptions;
 
-    public LightHttpClient(BotOptions botOptions)
+    public LightHttpClient(ILogger<LightHttpClient> logger, BotOptions botOptions)
     {
+        _logger = logger;
+        if (_httpClient != null!) return;
         var clientCreationOptions = botOptions.HttpOptions;
         _clientCreationOptions = clientCreationOptions;
-        if (_httpClient != null!) return;
         HttpMessageHandler handler;
-        if (clientCreationOptions.ProxyUrl != null)
+        if (clientCreationOptions.ProxyUrl == null)
         {
             handler = new HttpClientHandler
             {
@@ -216,7 +221,7 @@ public class LightHttpClient
                 }
                 else
                 {
-                    Debug.WriteLine(string.Format("Tried {0} time{1}. (>{2}ms): {3}",
+                    _logger.LogDebug(string.Format("Tried {0} time{1}. (>{2}ms): {3}",
                         i + 1,
                         i + 1 > 1 ? "s" : "",
                         _clientCreationOptions.Timeout,

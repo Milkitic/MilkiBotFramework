@@ -73,10 +73,9 @@ public partial class PluginManager
 
     private async Task HandleNoticeMessage(MessageContext messageContext)
     {
-        var scopes = GetExecutionList(
-            out _,
-            out var serviceExecutionInfos,
-            true);
+        var (scopes,
+            basicExecutionInfos,
+            serviceExecutionInfos) = await GetExecutionList(true);
 
         bool handled = false;
         foreach (var serviceExecutionInfo in serviceExecutionInfos)
@@ -143,10 +142,9 @@ public partial class PluginManager
             return;
         }
 
-        var scopes = GetExecutionList(
-            out var basicExecutionInfos,
-            out var serviceExecutionInfos,
-            false);
+        var (scopes,
+            basicExecutionInfos,
+            serviceExecutionInfos) = await GetExecutionList(false);
 
         var message = messageContext.TextMessage;
         var success = _commandLineAnalyzer.TryAnalyze(message, out var commandLineResult, out var exception);
@@ -358,14 +356,14 @@ public partial class PluginManager
         }
     }
 
-    private HashSet<IServiceScope> GetExecutionList(
-        out List<PluginExecutionInfo> plugins,
-        out List<PluginExecutionInfo> servicePlugins,
-        bool isServiceOnly)
+    private async Task<(HashSet<IServiceScope> scopes,
+            List<PluginExecutionInfo> plugins,
+            List<PluginExecutionInfo> servicePlugins)> GetExecutionList(
+            bool isServiceOnly)
     {
         var scopes = new HashSet<IServiceScope>();
-        servicePlugins = new List<PluginExecutionInfo>();
-        plugins = new List<PluginExecutionInfo>();
+        var servicePlugins = new List<PluginExecutionInfo>();
+        var plugins = new List<PluginExecutionInfo>();
 
         foreach (var loaderContext in _loaderContexts.Values)
         {
@@ -391,7 +389,7 @@ public partial class PluginManager
                     {
                         try
                         {
-                            InitializePlugin(pluginInstance, pluginInfo);
+                            await InitializePlugin(pluginInstance, pluginInfo);
                             plugins.Add(new PluginExecutionInfo(pluginInstance, pluginInfo, true, serviceScope));
                         }
                         catch (Exception ex)
@@ -409,7 +407,7 @@ public partial class PluginManager
 
         plugins.Sort();
         servicePlugins.Sort();
-        return scopes;
+        return (scopes, plugins, servicePlugins);
     }
 
     private class PluginExecutionInfo : IComparable<PluginExecutionInfo>
