@@ -24,12 +24,8 @@ public static class UiThreadHelper
 
             _uiThread = new Thread(() =>
             {
-                Application = GetApplication == null
-                    ? new Application
-                    {
-                        ShutdownMode = ShutdownMode.OnExplicitShutdown
-                    }
-                    : GetApplication();
+                Application = GetApplication == null ? new Application() : GetApplication();
+                Application.ShutdownMode = ShutdownMode.OnExplicitShutdown;
                 Application.Startup += (_, _) => WaitComplete.SetResult(true);
                 Application.DispatcherUnhandledException += (_, e) =>
                 {
