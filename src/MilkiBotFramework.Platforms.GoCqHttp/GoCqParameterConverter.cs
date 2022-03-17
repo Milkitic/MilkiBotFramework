@@ -3,7 +3,7 @@ using MilkiBotFramework.Plugining.Loading;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp;
 
-internal class GoCqParameterConverter : DefaultParameterConverter
+public class GoCqParameterConverter : DefaultParameterConverter
 {
     public override object Convert(Type targetType, ReadOnlyMemory<char> source)
     {
@@ -21,6 +21,6 @@ internal class GoCqParameterConverter : DefaultParameterConverter
         if (endIndex == -1)
             return base.Convert(targetType, source);
 
-        return new LinkImage(span.Slice(index + 5, endIndex - index - 5).ToString());
+        return new LinkImage(subSpan.Slice(5, endIndex - 5).ToString());
     }
 }
