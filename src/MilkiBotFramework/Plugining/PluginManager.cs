@@ -307,6 +307,31 @@ public partial class PluginManager
 
     private async Task AutoReply(MessageContext messageContext, IResponse response)
     {
+        if (_botOptions.Variables.Count > 0)
+        {
+            switch (response.Message)
+            {
+                case Text t:
+                    foreach (var (key, value) in _botOptions.Variables)
+                    {
+                        t.Content = t.Content.Replace($"${{{key}}}", value);
+                    }
+
+                    break;
+                case RichMessage richMessage:
+                    foreach (var message in richMessage)
+                    {
+                        if (message is not Text text) continue;
+                        foreach (var (key, value) in _botOptions.Variables)
+                        {
+                            text.Content = text.Content.Replace($"${{{key}}}", value);
+                        }
+                    }
+
+                    break;
+            }
+        }
+
         if (response.Id == null)
         {
             var identity = messageContext.MessageIdentity;

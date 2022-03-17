@@ -14,6 +14,13 @@ public class BotOptions : ConfigurationBase
         set => _httpOptions = value;
     }
 
+    [Description("自定义变量，支持在插件的 [DescriptionAttribute] 和 IResponse(Text) 中进行替换")]
+    public Dictionary<string, string> Variables { get; set; } = new()
+    {
+        ["BotCode"] = "MilkiBot",
+        ["BotNick"] = "MilkiBot",
+    };
+
     [Description("Root权限账号")]
     public HashSet<string> RootAccounts { get; set; } = new();
     [Description("插件目录")]

@@ -368,9 +368,7 @@ public partial class PluginManager
         var index = identifierAttribute.Index;
         var name = identifierAttribute.Name ?? type.Name;
         var allowDisable = identifierAttribute.AllowDisable;
-        var description = type.GetCustomAttribute<DescriptionAttribute>()?.Description;
-        //var version = type.GetCustomAttribute<VersionAttribute>()?.Version ?? "0.0.1-alpha";
-        //var authors = type.GetCustomAttribute<AuthorAttribute>()?.Author ?? DefaultAuthors;
+        var description = ReplaceVariable(type.GetCustomAttribute<DescriptionAttribute>()?.Description);
         var scope = identifierAttribute.Scope ?? type.Assembly.GetName().Name ?? "DynamicScope";
         var authors = identifierAttribute.Authors ?? defaultAuthor ?? "anonym";
 
@@ -486,7 +484,7 @@ public partial class PluginManager
             }
             else if (attr is DescriptionAttribute description)
             {
-                parameterInfo.Description = description.Description;
+                parameterInfo.Description = ReplaceVariable(description.Description);
                 //parameterInfo.HelpAuthority = help.Authority;
             }
         }
@@ -498,5 +496,19 @@ public partial class PluginManager
         }
 
         return parameterInfo;
+    }
+
+    private string? ReplaceVariable(string? content)
+    {
+        if (content == null) return content;
+        if (_botOptions.Variables.Count > 0)
+        {
+            foreach (var (key, value) in _botOptions.Variables)
+            {
+                content = content.Replace($"${{{key}}}", value);
+            }
+        }
+
+        return content;
     }
 }
