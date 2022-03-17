@@ -32,6 +32,15 @@ public abstract class WpfDrawingControl : UserControl
         var dpi = GetDpi();
         var visual = GetDrawingVisual(out var size);
 
+        if (dpi.X == 0 || dpi.Y == 0)
+            throw new Exception("The DPI cannot be zero.");
+        if (double.IsNaN(dpi.X) || double.IsNaN(dpi.Y))
+            throw new Exception("The DPI cannot be NaN.");
+        if (size.Width == 0 || size.Height == 0)
+            throw new Exception("The size cannot be zero.");
+        if (double.IsNaN(size.Width) || double.IsNaN(size.Height))
+            throw new Exception("The size cannot be NaN.");
+
         var bmp = new RenderTargetBitmap(
             (int)(size.Width * dpi.X / 96), (int)(size.Height * dpi.Y / 96),
             dpi.X, dpi.Y, PixelFormats.Pbgra32

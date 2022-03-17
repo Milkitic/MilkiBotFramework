@@ -15,7 +15,6 @@ public class WpfDrawingProcessor<TViewModel, TProcessControl> : IDrawingProcesso
     private readonly bool _enableWindowRendering;
     private readonly Func<TViewModel, Image?, WpfDrawingControl>? _templateControlCreation;
     private readonly Type? _type;
-    //private readonly TimeSpan _delayTime = TimeSpan.FromMilliseconds(500);
 
     public WpfDrawingProcessor(bool enableWindowRendering = false)
     {
