@@ -36,7 +36,10 @@ using MilkiBotFramework.Platforms.GoCqHttp;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Attributes;
 
-await new BotBuilder().UseGoCqHttp("ws://127.0.0.1:6700").Build().RunAsync();
+return await new BotBuilder()
+      .UseGoCqHttp(GoCqConnection.WebSocket("ws://127.0.0.1:6700"))
+      .Build()
+      .RunAsync();
 
 [PluginIdentifier(guid: "e4c18c40-afe0-447b-b7eb-b84f842520b4", name: "HelloWorld Demo")]
 public class HelloWorld : BasicPlugin
@@ -55,7 +58,7 @@ public class HelloWorld : BasicPlugin
       Connected to websocket server.
 ......
 11:06:14.26+08 info: MilkiBotFramework.Plugining.PluginManager[0]
-      Add plugin "HelloWorld Demo": Author=anonym; Version=0.0.1-alpha; Lifetime=Scoped (BasicPlugin)
+      Add plugin "HelloWorld Demo" (Scoped BasicPlugin)
 11:06:14.28+08 info: MilkiBotFramework.Plugining.PluginManager[0]
       Plugin initialization done in 0.360s!
 ```
