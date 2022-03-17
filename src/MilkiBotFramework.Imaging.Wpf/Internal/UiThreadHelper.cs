@@ -11,6 +11,8 @@ public static class UiThreadHelper
     private static readonly AsyncLock _asyncLock = new();
     private static readonly TaskCompletionSource<bool> WaitComplete = new();
 
+    public static Func<Application>? GetApplication;
+
     public static async Task EnsureUiThreadAsync()
     {
         using (await _asyncLock.LockAsync())
@@ -22,11 +24,12 @@ public static class UiThreadHelper
 
             _uiThread = new Thread(() =>
             {
-                Application = new Application
-                {
-                    ShutdownMode = ShutdownMode.OnExplicitShutdown
-                };
-
+                Application = GetApplication == null
+                    ? new Application
+                    {
+                        ShutdownMode = ShutdownMode.OnExplicitShutdown
+                    }
+                    : GetApplication();
                 Application.Startup += (_, _) => WaitComplete.SetResult(true);
                 Application.DispatcherUnhandledException += (_, e) =>
                 {
@@ -39,6 +42,7 @@ public static class UiThreadHelper
                     try
                     {
                         Application.Run();
+                        return;
                     }
                     catch
                     {
