@@ -7,12 +7,12 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
 {
     public IParameterConverter DefaultParameterConverter { get; set; } = Loading.DefaultParameterConverter.Instance;
 
-    private const char CommandFlag = '/';
+    protected const char CommandFlag = '/';
     private static readonly HashSet<char> OptionFlags = new() { '-' };
     private static readonly HashSet<char> QuoteFlags = new() { '\"', '\'', '`' };
     private static readonly HashSet<char> SplitterFlags = new() { ' ' };
 
-    public bool TryAnalyze(string input,
+    public virtual bool TryAnalyze(string input,
         [NotNullWhen(true)] out CommandLineResult? result,
         out CommandLineException? exception)
     {
