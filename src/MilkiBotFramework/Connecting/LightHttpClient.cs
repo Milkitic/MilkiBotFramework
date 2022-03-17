@@ -114,14 +114,14 @@ public class LightHttpClient
         return await SendAsync<T>(url, null, content, headers, RequestMethod.Put);
     }
 
-    public async Task<(byte[], ImageType)> GetImageBytesFromUrlAsync(string uri)
+    public async Task<(byte[] ImageBytes, ImageType ImageType)> GetImageBytesFromUrlAsync(string uri)
     {
         byte[] urlContents = await _httpClient.GetByteArrayAsync(uri);
         var type = ImageHelper.GetKnownImageType(urlContents);
         return (urlContents, type);
     }
 
-    public async Task<(Image, ImageType)> GetImageFromUrlAsync(string uri)
+    public async Task<(Image InMemoryImage, ImageType ImageType)> GetImageFromUrlAsync(string uri)
     {
         byte[] urlContents = await _httpClient.GetByteArrayAsync(uri);
         var type = ImageHelper.GetKnownImageType(urlContents);
