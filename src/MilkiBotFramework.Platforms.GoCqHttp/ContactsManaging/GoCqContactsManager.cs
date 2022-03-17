@@ -128,7 +128,8 @@ public sealed class GoCqContactsManager : ContactsManagerBase
             var stranger = await _goCqApi.GetStrangerInfo(long.Parse(userId));
             var privateInfo = new PrivateInfo(userId)
             {
-                Nickname = string.IsNullOrEmpty(stranger.Nickname) ? null : stranger.Nickname
+                Nickname = string.IsNullOrEmpty(stranger.Nickname) ? null : stranger.Nickname,
+                Remark = stranger.Nickname
             };
             PrivateMapping.AddOrUpdate(privateInfo.UserId, privateInfo, (_, _) => privateInfo);
             return new PrivateInfoResult { IsSuccess = true, PrivateInfo = privateInfo };
