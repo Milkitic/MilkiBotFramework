@@ -37,11 +37,11 @@ public static class ImageHelper
         return ImageType.Unknown;
     }
 
-    public static string CompressToFile(string gifSiclePath, string saveFolder, Image source, Color[]? palette = null)
+    public static async Task<string> CompressToFileAsync(string gifSiclePath, string saveFolder, Image source, Color[]? palette = null)
     {
         var tempPath = Path.Combine(saveFolder, Path.GetRandomFileName() + ".gif");
 
-        ImageHelper.SaveGifToFileAsync(tempPath, source, palette).Wait();
+        await ImageHelper.SaveGifToFileAsync(tempPath, source, palette);
         var newPath = CompressToFile(gifSiclePath, tempPath);
         return newPath;
     }

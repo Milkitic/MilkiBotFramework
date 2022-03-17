@@ -5,13 +5,14 @@ namespace MilkiBotFramework.Imaging;
 public sealed class GifFrame
 {
     public readonly Image Image;
-    public readonly TimeSpan Delay;
 
     public GifFrame(Image image, TimeSpan delay)
     {
         Image = image;
         Delay = delay;
     }
+
+    public TimeSpan Delay { get; set; }
 
     public void Deconstruct(out Image image, out TimeSpan delay)
     {
