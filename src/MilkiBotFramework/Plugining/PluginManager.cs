@@ -71,6 +71,7 @@ public partial class PluginManager
         }
     }
 
+    // Todo: Any common notice handling?
     private async Task HandleNoticeMessage(MessageContext messageContext)
     {
         var (scopes,
@@ -81,7 +82,7 @@ public partial class PluginManager
         foreach (var serviceExecutionInfo in serviceExecutionInfos)
         {
             var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
-            var response = await servicePlugin.OnNoticeReceived(messageContext);
+            var response = await servicePlugin.OnNoticeReceived(messageContext); // Todo: Check which OnNoticeReceived has been inherited in initialization.
             await SendAndCheckResponse(serviceExecutionInfo.PluginInfo, response);
 
             if (handled) break;
@@ -102,7 +103,7 @@ public partial class PluginManager
                 foreach (var serviceExecutionInfo in serviceExecutionInfos)
                 {
                     var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
-                    var result = await servicePlugin.BeforeSend(pluginInfo, response);
+                    var result = await servicePlugin.BeforeSend(pluginInfo, response); // Todo: Check which BeforeSend has been inherited in initialization.
                     if (!result)
                     {
                         response.IsHandled = true;
@@ -132,10 +133,10 @@ public partial class PluginManager
             asyncMsg.SetMessage(new AsyncMessageResponse(messageContext.MessageId!,
                 messageContext.TextMessage!,
                 messageContext.ReceivedTime,
-                s => _richMessageConverter.Decode(s.AsMemory()),
+                s => _richMessageConverter.Decode(s.AsMemory()), // Todo: Auto cache
                 s =>
                 {
-                    _commandLineAnalyzer.TryAnalyze(s, out var result, out var ex);
+                    _commandLineAnalyzer.TryAnalyze(s, out var result, out var ex); // Todo: Auto cache
                     if (ex != null) throw ex;
                     return result;
                 }));
@@ -155,8 +156,10 @@ public partial class PluginManager
             messageContext.CommandLineResult = commandLineResult!;
         }
         else if (exception != null)
+        {
             _logger.LogWarning("Error occurs while analyzing command: " + (exception?.Message ?? "Unknown reason"));
-
+        }
+        
         messageContext.NextPlugins = new List<PluginInfo>(basicExecutionInfos.Count);
         var nextPlugins = messageContext.NextPlugins;
         var executedPlugins = (List<PluginInfo>)messageContext.ExecutedPlugins;
@@ -169,7 +172,7 @@ public partial class PluginManager
             var pluginInfo = pluginExecutionInfo.PluginInfo;
             var serviceProvider = pluginExecutionInfo.BasedServiceScope.ServiceProvider;
 
-            if (!nextPlugins.Contains(pluginInfo)) continue;
+            if (!nextPlugins.Contains(pluginInfo)) continue; // Todo: better for Hashset?
 
             nextPlugins.Remove(pluginInfo);
             executedPlugins.Add(pluginInfo);
@@ -202,7 +205,7 @@ public partial class PluginManager
                         var response = await messagePlugin.OnBindingFailed(ex, messageContext);
                         if (response == null!)
                         {
-                            foreach (var serviceExecutionInfo in serviceExecutionInfos)
+                            foreach (var serviceExecutionInfo in serviceExecutionInfos) // Todo: Check which OnBindingFailed has been inherited in initialization.
                             {
                                 var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
                                 var result = await servicePlugin.OnBindingFailed(ex, messageContext);
@@ -219,7 +222,7 @@ public partial class PluginManager
                 else
                 {
                     var messagePlugin = (IMessagePlugin)pluginInstance;
-                    var asyncEnumerable = messagePlugin.OnMessageReceived(messageContext);
+                    var asyncEnumerable = messagePlugin.OnMessageReceived(messageContext); // Todo: Check which OnMessageReceived has been inherited in initialization.
                     await foreach (var response in asyncEnumerable)
                     {
                         await SendAndCheckResponse(pluginInfo, response);
@@ -237,7 +240,7 @@ public partial class PluginManager
                 }
                 else
                 {
-                    foreach (var serviceExecutionInfo in serviceExecutionInfos)
+                    foreach (var serviceExecutionInfo in serviceExecutionInfos) // Todo: Check which OnPluginException has been inherited in initialization.
                     {
                         var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
                         var result = await servicePlugin.OnPluginException(ex.InnerException ?? ex, messageContext);
@@ -281,7 +284,7 @@ public partial class PluginManager
                 foreach (var serviceExecutionInfo in serviceExecutionInfos)
                 {
                     var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
-                    var result = await servicePlugin.BeforeSend(pluginInfo, response);
+                    var result = await servicePlugin.BeforeSend(pluginInfo, response); // Todo: Check which BeforeSend has been inherited in initialization.
                     if (!result)
                     {
                         response.IsHandled = true;
@@ -407,9 +410,9 @@ public partial class PluginManager
             List<PluginExecutionInfo> servicePlugins)> GetExecutionList(
             bool isServiceOnly)
     {
-        var scopes = new HashSet<IServiceScope>();
-        var servicePlugins = new List<PluginExecutionInfo>();
-        var plugins = new List<PluginExecutionInfo>();
+        var scopes = new HashSet<IServiceScope>(); // Todo: Fill by default capacity
+        var servicePlugins = new List<PluginExecutionInfo>(); // Todo: Fill by default capacity
+        var plugins = new List<PluginExecutionInfo>(); // Todo: Fill by default capacity
 
         foreach (var loaderContext in _loaderContexts.Values)
         {
@@ -451,8 +454,8 @@ public partial class PluginManager
             }
         }
 
-        plugins.Sort();
-        servicePlugins.Sort();
+        plugins.Sort(); // Todo: No need to sort for each time
+        servicePlugins.Sort(); // Todo: No need to sort for each time
         return (scopes, plugins, servicePlugins);
     }
 
