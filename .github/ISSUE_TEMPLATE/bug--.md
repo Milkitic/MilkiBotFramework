@@ -22,7 +22,7 @@ assignees: ''
 
 
 **环境**
- - .NET版本: [e.g. iOS]
+ - .NET版本: [e.g. 6.0.200]
  - 操作系统: [e.g. Windows 10 21H2]
 
 **其他补充**
