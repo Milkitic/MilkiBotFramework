@@ -2,7 +2,7 @@
 name: bug报告
 about: 请提交一个明确是bug的报告。若非明确bug，请至discussion
 title: "[BUG]"
-labels: bug
+labels: bug-pending
 assignees: ''
 
 ---
