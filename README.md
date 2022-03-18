@@ -1,10 +1,10 @@
 # MilkiBotFramework
 简称Milki。易于使用与快速开发，基于.net 6的高性能机器人框架（内置OneBot实现）
 
-本项目源自旧项目 https://github.com/Milkitic/Daylily 的彻底改造。
-其基本的系统逻辑不变，但是提升了代码可维护度、工程合理度、拓展性、性能、稳定性，以及最重要的，将框架本身独立，并与Bot逻辑不相干。
+本项目源自旧项目 https://github.com/Milkitic/daylily/tree/archived/v2 的彻底改造。
 
-**注：项目处于早期集中开发中，但大部分特性已可用。**
+其基本的系统逻辑不变，但是提升了代码可维护度、工程合理度、拓展性、性能、稳定性，以及最重要的，将框架本身独立，并与Bot逻辑不相干。
+> 现旧项目已基于本框架重构，可作为示例仓库，更多请见[项目主页](https://github.com/Milkitic/daylily)
 
 ## 特色
 1. 插件式开发。对于Bot编写者，只需完成插件类的开发。包含消息、事件、服务处理。（当然，也支持比较原始的`EventHandler`方式）
