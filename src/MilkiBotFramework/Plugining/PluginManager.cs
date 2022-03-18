@@ -169,8 +169,7 @@ public partial class PluginManager
             var pluginInfo = pluginExecutionInfo.PluginInfo;
             var serviceProvider = pluginExecutionInfo.BasedServiceScope.ServiceProvider;
 
-            if (!nextPlugins.Contains(pluginInfo))
-                continue;
+            if (!nextPlugins.Contains(pluginInfo)) continue;
 
             nextPlugins.Remove(pluginInfo);
             executedPlugins.Add(pluginInfo);
@@ -252,7 +251,9 @@ public partial class PluginManager
             }
 
             if (messageContext.MessageUserIdentity != null)
+            {
                 _asyncMessageDict.TryRemove(messageContext.MessageUserIdentity, out _);
+            }
 
             if (handled) break;
         }
@@ -260,7 +261,9 @@ public partial class PluginManager
         foreach (var pluginExecutionInfo in basicExecutionInfos)
         {
             if (pluginExecutionInfo.NeedToDispose)
+            {
                 await pluginExecutionInfo.PluginInstance.OnUninitialized();
+            }
         }
 
         foreach (var serviceScope in scopes)
@@ -307,31 +310,7 @@ public partial class PluginManager
 
     private async Task AutoReply(MessageContext messageContext, IResponse response)
     {
-        if (_botOptions.Variables.Count > 0)
-        {
-            switch (response.Message)
-            {
-                case Text t:
-                    foreach (var (key, value) in _botOptions.Variables)
-                    {
-                        t.Content = t.Content.Replace($"${{{key}}}", value);
-                    }
-
-                    break;
-                case RichMessage richMessage:
-                    foreach (var message in richMessage)
-                    {
-                        if (message is not Text text) continue;
-                        foreach (var (key, value) in _botOptions.Variables)
-                        {
-                            text.Content = text.Content.Replace($"${{{key}}}", value);
-                        }
-                    }
-
-                    break;
-            }
-        }
-
+        ReplaceContentIfPossible(response);
         if (response.Id == null)
         {
             var identity = messageContext.MessageIdentity;
@@ -351,9 +330,13 @@ public partial class PluginManager
                 identity != MessageIdentity.NoticeMessage)
             {
                 if (identity.MessageType == MessageType.Private)
+                {
                     await _messageApi.SendPrivateMessageAsync(identity.Id!, plainMessage);
+                }
                 else
+                {
                     await _messageApi.SendChannelMessageAsync(identity.Id!, plainMessage, identity.SubId);
+                }
             }
             else
             {
@@ -373,11 +356,49 @@ public partial class PluginManager
 
             var plainMessage = await _richMessageConverter.EncodeAsync(response.Message);
             if (response.MessageType == MessageType.Private)
+            {
                 await _messageApi.SendPrivateMessageAsync(response.Id!, plainMessage);
+            }
             else if (response.MessageType == MessageType.Channel)
+            {
                 await _messageApi.SendChannelMessageAsync(response.Id!, plainMessage, response.SubId);
+            }
             else
+            {
                 _logger.LogWarning("Send failed: destination undefined.");
+            }
+        }
+    }
+
+    private void ReplaceContentIfPossible(IResponse response)
+    {
+        if (_botOptions.Variables.Count <= 0) return;
+        switch (response.Message)
+        {
+            case Text text:
+                ReplaceContent(text);
+                break;
+            case RichMessage richMessage:
+                foreach (var message in richMessage)
+                {
+                    if (message is not Text t) continue;
+                    ReplaceContent(t);
+                }
+
+                break;
+        }
+    }
+
+    private void ReplaceContent(Text text)
+    {
+        if (text.Content == null) return;
+
+        var index = text.Content.IndexOf("${", StringComparison.Ordinal);
+        if (index < 0 || text.Content.IndexOf("}", index, StringComparison.Ordinal) < 0) return;
+
+        foreach (var (key, value) in _botOptions.Variables)
+        {
+            text.Content = text.Content.Replace($"${{{key}}}", value);
         }
     }
 
