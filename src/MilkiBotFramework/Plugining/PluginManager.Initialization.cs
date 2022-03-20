@@ -133,9 +133,7 @@ public partial class PluginManager
 
             try
             {
-                Assembly? assembly = isRuntimeContext
-                    ? Assembly.GetEntryAssembly()
-                    : ctx.LoadFromAssemblyPath(assemblyPath);
+                Assembly? assembly = ctx.LoadFromAssemblyPath(assemblyPath);
                 if (assembly != null)
                 {
                     var defaultAuthor = assembly.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company;
@@ -155,7 +153,8 @@ public partial class PluginManager
                         try
                         {
                             var type = assembly.GetType(typeFullName);
-                            if (type == null) throw new Exception("Can't resolve type: " + typeFullName);
+                            if (type == null)
+                                throw new Exception("Can't resolve type: " + typeFullName);
 
                             typeName = type.Name;
                             pluginInfo = GetPluginInfo(type, baseType, defaultAuthor);
