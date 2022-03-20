@@ -365,7 +365,7 @@ public partial class PluginManager
                                   throw new Exception("The plugin identifier is undefined: " + type.FullName);
         var guid = identifierAttribute.Guid;
         var index = identifierAttribute.Index;
-        var name = identifierAttribute.Name ?? type.Name;
+        var name = ReplaceVariable(identifierAttribute.Name) ?? type.Name;
         var allowDisable = identifierAttribute.AllowDisable;
         var description = ReplaceVariable(type.GetCustomAttribute<DescriptionAttribute>()?.Description);
         var scope = identifierAttribute.Scope ?? type.Assembly.GetName().Name ?? "DynamicScope";
