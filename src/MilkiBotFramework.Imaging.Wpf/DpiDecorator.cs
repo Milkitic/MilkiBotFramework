@@ -2,9 +2,9 @@
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace MilkiBotFramework.Imaging.Wpf.Internal;
+namespace MilkiBotFramework.Imaging.Wpf;
 
-internal class DpiDecorator : Decorator
+public class DpiDecorator : Decorator
 {
     public DpiDecorator()
     {
