@@ -1,5 +1,4 @@
 ﻿using System.Buffers;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
@@ -17,16 +16,16 @@ public class LightHttpClient
 
     private enum RequestMethod
     {
-        Get, Post, Put, Delete
+        Get,
+        Post,
+        Put,
+        Delete
     }
 
     static LightHttpClient()
     {
         ServicePointManager.ServerCertificateValidationCallback = (_, _, _, _) => true;
-        AppDomain.CurrentDomain.ProcessExit += (_, _) =>
-        {
-            _httpClient?.Dispose();
-        };
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => { _httpClient?.Dispose(); };
         _httpClient = null!;
         _clientCreationOptions = null!;
     }
@@ -61,12 +60,35 @@ public class LightHttpClient
     }
 
 
-    public async Task<T> HttpGet<T>(
+    public async Task<string> HttpGet(
         string url,
         IReadOnlyDictionary<string, string>? queries = null,
         IReadOnlyDictionary<string, string>? headers = null)
     {
+        return await SendAsync<string>(url, queries, null, headers, RequestMethod.Get);
+    }
+
+    public async Task<T> HttpGet<T>(
+        string url,
+        IReadOnlyDictionary<string, string>? queries = null,
+        IReadOnlyDictionary<string, string>? headers = null) where T : class
+    {
         return await SendAsync<T>(url, queries, null, headers, RequestMethod.Get);
+    }
+
+    /// <summary>
+    /// DELETE with value-pairs.
+    /// </summary>
+    /// <param name="url">Http uri.</param>
+    /// <param name="queries">Parameter dictionary.</param>
+    /// <param name="headers">Header dictionary.</param>
+    /// <returns></returns>
+    public async Task<string> HttpDelete(
+        string url,
+        IReadOnlyDictionary<string, string>? queries = null,
+        IReadOnlyDictionary<string, string>? headers = null)
+    {
+        return await SendAsync<string>(url, queries, null, headers, RequestMethod.Delete);
     }
 
     /// <summary>
@@ -79,7 +101,7 @@ public class LightHttpClient
     public async Task<T> HttpDelete<T>(
         string url,
         IReadOnlyDictionary<string, string>? queries = null,
-        IReadOnlyDictionary<string, string>? headers = null)
+        IReadOnlyDictionary<string, string>? headers = null) where T : class
     {
         return await SendAsync<T>(url, queries, null, headers, RequestMethod.Delete);
     }
@@ -88,11 +110,32 @@ public class LightHttpClient
     /// POST with Json.
     /// </summary>
     /// <param name="url">Http uri.</param>
-    /// <param name="obj">object</param>
+    /// <param name="obj">Body string.</param>
+    /// <param name="headers">Header dictionary.</param>
+    /// <param name="contentType">Content type.</param>
+    /// <returns></returns>
+    public async Task<string> HttpPost(string url, string obj,
+        IReadOnlyDictionary<string, string>? headers = null,
+        string? contentType = null)
+    {
+        HttpContent content = new StringContent(obj);
+        if (contentType != null)
+        {
+            content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        }
+
+        return await SendAsync<string>(url, null, content, headers, RequestMethod.Post);
+    }
+
+    /// <summary>
+    /// POST.
+    /// </summary>
+    /// <param name="url">Http uri.</param>
+    /// <param name="obj">object.</param>
     /// <param name="headers">Header dictionary.</param>
     /// <returns></returns>
     public async Task<T> HttpPost<T>(string url, object obj,
-        IReadOnlyDictionary<string, string>? headers = null)
+        IReadOnlyDictionary<string, string>? headers = null) where T : class
     {
         HttpContent content = new StringContent(JsonSerializer.Serialize(obj));
         content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
@@ -100,14 +143,35 @@ public class LightHttpClient
     }
 
     /// <summary>
-    /// POST with Json.
+    /// PUT.
+    /// </summary>
+    /// <param name="url">Http uri.</param>
+    /// <param name="body">Body string.</param>
+    /// <param name="headers">Header dictionary.</param>
+    /// <param name="contentType">Content type.</param>
+    /// <returns></returns>
+    public async Task<string> HttpPut(string url, string body,
+        IReadOnlyDictionary<string, string>? headers = null,
+        string? contentType = null)
+    {
+        HttpContent content = new StringContent(body);
+        if (contentType != null)
+        {
+            content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        }
+
+        return await SendAsync<string>(url, null, content, headers, RequestMethod.Put);
+    }
+
+    /// <summary>
+    /// PUT with Json.
     /// </summary>
     /// <param name="url">Http uri.</param>
     /// <param name="obj">object</param>
     /// <param name="headers">Header dictionary.</param>
     /// <returns></returns>
     public async Task<T> HttpPut<T>(string url, object obj,
-        IReadOnlyDictionary<string, string>? headers = null)
+        IReadOnlyDictionary<string, string>? headers = null) where T : class
     {
         HttpContent content = new StringContent(JsonSerializer.Serialize(obj));
         content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
@@ -153,10 +217,10 @@ public class LightHttpClient
         IReadOnlyDictionary<string, string>? args,
         HttpContent? content,
         IReadOnlyDictionary<string, string>? argsHeader,
-        RequestMethod requestMethod)
+        RequestMethod requestMethod) where T : class
     {
         var context = new RequestContext(url + BuildQueries(args));
-        return await RunWithRetry(context, async () =>
+        return (T)await RunWithRetry(context, async () =>
         {
             var uri = context.RequestUri;
             var request = requestMethod switch
@@ -194,8 +258,15 @@ public class LightHttpClient
                     context.RequestUri = response.RequestMessage.RequestUri.ToString();
                 response.EnsureSuccessStatusCode();
 
-                await using var responseStream = await response.Content.ReadAsStreamAsync();
-                return (await JsonSerializer.DeserializeAsync<T>(responseStream))!;
+                if (typeof(T) == StaticTypes.String)
+                {
+                    return (object)await response.Content.ReadAsStringAsync();
+                }
+                else
+                {
+                    await using var responseStream = await response.Content.ReadAsStreamAsync();
+                    return (await JsonSerializer.DeserializeAsync<T>(responseStream))!;
+                }
             }
             finally
             {
@@ -204,7 +275,7 @@ public class LightHttpClient
         });
     }
 
-    private async Task<T> RunWithRetry<T>(RequestContext context, Func<Task<T>> func)
+    private async Task<object> RunWithRetry<T>(RequestContext context, Func<Task<T>> func)
     {
         for (int i = 0; i < _clientCreationOptions.RetryCount; i++)
         {
