@@ -9,9 +9,7 @@ using MilkiBotFramework.Plugining.Loading;
 
 namespace DemoPlugin;
 
-[PluginIdentifier("e5b9df0a-3954-49e3-a119-aace9af22cfa")]
-[Author("test")]
-[Version("1.0.0-beta.1")]
+[PluginIdentifier("e5b9df0a-3954-49e3-a119-aace9af22cfa", Authors = "test")]
 [Description("asdfasfdsfasdf")]
 public class AnotherServicePlugin : ServicePlugin
 {

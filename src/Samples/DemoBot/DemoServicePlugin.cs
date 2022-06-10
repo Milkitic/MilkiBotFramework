@@ -7,9 +7,7 @@ using MilkiBotFramework.Plugining.Attributes;
 
 namespace DemoBot;
 
-[PluginIdentifier("850cea3e-b448-4f45-a2c7-c6bc708ccb3f")]
-[Author("Milkitic")]
-[Version("1.0.0")]
+[PluginIdentifier("850cea3e-b448-4f45-a2c7-c6bc708ccb3f", Authors = "Milkitic")]
 [Description("Demo service plugin description here!")]
 public class DemoServicePlugin : ServicePlugin
 {
