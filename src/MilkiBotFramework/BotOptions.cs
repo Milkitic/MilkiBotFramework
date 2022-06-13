@@ -22,6 +22,7 @@ public class BotOptions : ConfigurationBase
     };
 
     [Description("Root权限账号")]
+    // ReSharper disable once CollectionNeverUpdated.Global
     public HashSet<string> RootAccounts { get; set; } = new();
 
     [Description("插件目录")]
