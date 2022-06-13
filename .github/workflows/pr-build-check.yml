@@ -31,7 +31,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ${{ github.workspace }}/inspectcode
-        key: inspectcode-${{ hashFiles('src/.config/dotnet-tools.json', '.github/workflows/pr-build-check.yml', 'src/MilkiBotFramework.sln*') }}
+        key: inspectcode-${{ hashFiles('.config/dotnet-tools.json', '.github/workflows/pr-build-check.yml', 'src/MilkiBotFramework.sln*') }}
 
     - name: Restore dependencies
       run: dotnet restore ./src
