@@ -7,6 +7,6 @@ namespace MilkiBotFramework.Event
     /// </summary>
     public interface IEventBusEvent
     {
-        public string? ToString() => JsonSerializer.Serialize(this);
+        public string ToString() => JsonSerializer.Serialize(this);
     }
 }

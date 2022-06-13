@@ -6,6 +6,6 @@ public class Text : IRichMessage
     public string Content { get; set; }
 
     public static implicit operator Text(string content) => new(content);
-    public virtual async ValueTask<string> EncodeAsync() => Content;
+    public virtual ValueTask<string> EncodeAsync() => ValueTask.FromResult(Content);
     public override string ToString() => Content;
 }

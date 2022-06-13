@@ -1,5 +1,4 @@
 ﻿using MilkiBotFramework.Imaging;
-using MilkiBotFramework.Utils;
 using SixLabors.ImageSharp;
 
 namespace MilkiBotFramework.Messaging.RichMessages;
@@ -19,5 +18,5 @@ public class FileImage : IRichMessage
         return new MemoryImage(bitmap, imageType);
     }
 
-    public virtual async ValueTask<string> EncodeAsync() => "[FileImage]";
+    public virtual ValueTask<string> EncodeAsync() => ValueTask.FromResult("[FileImage]");
 }

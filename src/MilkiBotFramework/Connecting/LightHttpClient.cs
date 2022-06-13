@@ -282,7 +282,7 @@ public class LightHttpClient
             var uri = context.RequestUri;
             try
             {
-                return await func();
+                return (await func())!;
             }
             catch (Exception ex)
             {
