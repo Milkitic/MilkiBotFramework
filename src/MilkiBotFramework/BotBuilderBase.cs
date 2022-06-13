@@ -167,7 +167,6 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
                 _commandAnalyzerType ?? typeof(CommandLineAnalyzer))
             .AddSingleton(typeof(IRichMessageConverter),
                 _richMessageConverterType ?? typeof(DefaultRichMessageConverter))
-
             .AddSingleton(typeof(IDispatcher),
                 _dispatcherType ?? throw new ArgumentNullException(nameof(IDispatcher),
                     "The IDispatcher implementation is not specified."))

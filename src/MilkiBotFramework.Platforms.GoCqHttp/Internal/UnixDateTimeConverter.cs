@@ -11,7 +11,6 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Internal
         public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert,
             JsonSerializerOptions options)
         {
-
             long result;
             if (reader.TokenType == JsonTokenType.Number)
             {

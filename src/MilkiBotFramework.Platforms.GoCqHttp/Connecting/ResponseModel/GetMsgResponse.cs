@@ -39,6 +39,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel
         [JsonConverter(typeof(UnixDateTimeConverter))]
         public DateTimeOffset Time { get; set; }
     }
+
     public class Sender
     {
         [JsonPropertyName("nickname")]

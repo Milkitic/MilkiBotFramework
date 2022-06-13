@@ -56,6 +56,5 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel
 
         [JsonPropertyName("card_changeable")]
         public bool CardChangeable { get; set; }
-
     }
 }

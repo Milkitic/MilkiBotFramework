@@ -8,8 +8,10 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel
     {
         [JsonPropertyName("user_id")]
         public long UserId { get; set; }
+    
         [JsonPropertyName("message")]
         public string Message { get; set; }
+    
         [JsonPropertyName("auto_escape")]
         public bool AutoEscape { get; set; }
 

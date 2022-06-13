@@ -7,6 +7,7 @@ public class FileImage : IRichMessage
 {
     public FileImage(string path) => Path = path;
     public string Path { get; set; }
+
     public async Task<MemoryImage> ToMemoryImageAsync()
     {
         var bytes = await File.ReadAllBytesAsync(Path);

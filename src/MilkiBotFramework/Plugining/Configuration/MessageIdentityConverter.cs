@@ -8,6 +8,7 @@ namespace MilkiBotFramework.Plugining.Configuration;
 public class MessageIdentityConverter : IYamlTypeConverter
 {
     private static readonly Type MemberInfo = typeof(MessageIdentity);
+
     public bool Accepts(Type type)
     {
         return type == MemberInfo;

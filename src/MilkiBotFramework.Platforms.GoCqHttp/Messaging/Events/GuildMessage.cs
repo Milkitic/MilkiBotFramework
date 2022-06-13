@@ -13,6 +13,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events
         [JsonPropertyName("guild_id")]
         [JsonConverter(typeof(Int64ToStringConverter))]
         public string GuildId { get; set; }
+
         /// <summary>
         /// 子频道号。
         /// </summary>

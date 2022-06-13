@@ -7,6 +7,7 @@ namespace MilkiBotFramework.Plugining.Configuration;
 public class DateTimeOffsetConverter : IYamlTypeConverter
 {
     private static readonly Type MemberInfo = typeof(DateTimeOffset);
+
     public bool Accepts(Type type)
     {
         return type == MemberInfo;

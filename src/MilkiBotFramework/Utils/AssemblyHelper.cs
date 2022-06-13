@@ -88,8 +88,8 @@ internal static class AssemblyHelper
         {
             if (k.FullName.Contains("MyPluginDbContext"))
             {
-
             }
+
             ITypeDefOrRef? baseType = k;
 
             while (baseType != null && TypeDbContext.Name != baseType.ReflectionName)

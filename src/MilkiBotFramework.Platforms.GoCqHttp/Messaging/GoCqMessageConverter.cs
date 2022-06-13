@@ -55,6 +55,7 @@ public class GoCqMessageConverter : IRichMessageConverter
 
             return await CQImage.FromBytes(ms.ToArray()).EncodeAsync();
         }
+
         return await message.EncodeAsync();
     }
 

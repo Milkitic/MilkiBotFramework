@@ -7,6 +7,7 @@ public abstract class PluginBase
 {
     protected static IResponse Handled() => new MessageResponse(true);
     protected static IResponse Reply(string message, out IAsyncMessage nextMessage, bool reply = true) => Reply(new Text(message), out nextMessage, reply);
+
     protected static IResponse Reply(IRichMessage message, out IAsyncMessage nextMessage, bool reply = true)
     {
         var nextResponse = new AsyncMessage();

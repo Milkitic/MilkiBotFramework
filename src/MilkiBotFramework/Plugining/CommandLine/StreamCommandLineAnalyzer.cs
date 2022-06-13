@@ -76,8 +76,11 @@ public class StreamCommandLineAnalyzer : ICommandLineAnalyzer
                     builder.Append(c);
                     value = ReadUntilSpaceOrEndOrCqCodeOrColon(reader, builder);
                 }
+
                 if (commandName == null)
+                {
                     commandName = value;
+                }
                 else
                 {
                     if (isReadingArgOrSwitch && placeHolder != null) // placeHolder is arg

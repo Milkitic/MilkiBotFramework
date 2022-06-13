@@ -120,6 +120,7 @@ internal static class HttpEncoder
         {
             return false;
         }
+
         if (bytes == null)
         {
             throw new ArgumentNullException(nameof(bytes));

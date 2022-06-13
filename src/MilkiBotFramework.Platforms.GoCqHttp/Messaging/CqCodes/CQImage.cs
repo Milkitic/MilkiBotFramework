@@ -174,6 +174,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
             ImageFileBytes = imageFileBytes;
             LocalGoFilename = Path.GetRandomFileName();
         }
+
         private CQImage(string localGoFilename)
         {
             LocalGoFilename = localGoFilename;

@@ -20,6 +20,7 @@ public interface IResponse
         IsHandled = true;
         return this;
     }
+
     public IResponse AvoidRepeat()
     {
         IsForced = false;
@@ -31,6 +32,7 @@ public interface IResponse
         IsForced = true;
         return this;
     }
+
     public IResponse At(string? id)
     {
         TryAt = id;

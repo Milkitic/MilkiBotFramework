@@ -28,6 +28,7 @@ public static class InvokableViewModelExtensions
         {
             reactiveObject.RaisePropertyChanged(member);
         }
+
         return newValue;
     }
 }

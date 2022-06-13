@@ -40,6 +40,7 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
     /// 对于一些长消息超时的情况，请适量增大此值。
     /// </summary>
     public TimeSpan MessageTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
     public Encoding? Encoding { get; set; }
 
     public Task ConnectAsync()

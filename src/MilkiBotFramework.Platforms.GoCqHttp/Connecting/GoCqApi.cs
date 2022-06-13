@@ -52,6 +52,7 @@ public class GoCqApi : IMessageApi
 
         public const string GetStrangerInfo = "get_stranger_info";
         public const string GetFriendList = "get_friend_list";
+
         // ReSharper restore InconsistentNaming
     }
 

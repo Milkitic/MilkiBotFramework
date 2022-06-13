@@ -7,6 +7,7 @@ namespace MilkiBotFramework.Event
     /// </summary>
     public interface IEventBusEvent
     {
-        public string ToString() => JsonSerializer.Serialize(this);
+        // ReSharper disable once ReturnTypeCanBeNotNullable
+        public string? ToString() => JsonSerializer.Serialize(this);
     }
 }
