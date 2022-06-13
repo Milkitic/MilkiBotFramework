@@ -24,6 +24,7 @@ public abstract class ContactsManagerBase : IContactsManager
     protected SelfInfo? SelfInfo;
 
     protected readonly ConcurrentDictionary<string, ConcurrentDictionary<string, ChannelInfo>>
+        // ReSharper disable once CollectionNeverUpdated.Global
         SubChannelMapping = new();
 
     protected readonly ConcurrentDictionary<string, ChannelInfo> ChannelMapping = new();
@@ -346,6 +347,7 @@ public abstract class ContactsManagerBase : IContactsManager
     private void RefreshContacts(TaskContext context, CancellationToken token)
     {
         GetContactsCore(out var channels,
+            // ReSharper disable once UnusedVariable
             out var subChannels,
             out var privates);
 

@@ -5,12 +5,13 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
     /// <summary>
     /// @某人
     /// </summary>
+    // ReSharper disable once InconsistentNaming
     public class CQAt : At
     {
-        /// <summary>
-        /// 被@的群成员QQ。
-        /// </summary>
-        public string UserId { get; }
+        ///// <summary>
+        ///// 被@的群成员QQ。
+        ///// </summary>
+        //public string UserId { get; }
 
         /// <summary>
         /// @某人。
@@ -35,6 +36,6 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
         }
 
         public override string ToString() => "@" + (UserId == "-1" ? "<全体成员>" : UserId);
-        public override async ValueTask<string> EncodeAsync() => $"[CQ:at,qq={UserId}]";
+        public override ValueTask<string> EncodeAsync() => ValueTask.FromResult($"[CQ:at,qq={UserId}]");
     }
 }

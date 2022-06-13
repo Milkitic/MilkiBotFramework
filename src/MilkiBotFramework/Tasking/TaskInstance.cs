@@ -18,7 +18,7 @@
         /// <summary>
         /// 后台执行的实际任务
         /// </summary>
-        public Task Task { get; set; }
+        public Task Task { get; set; } = null!;
 
         /// <summary>
         /// 任务的<see cref="System.Threading.CancellationTokenSource"/>信号

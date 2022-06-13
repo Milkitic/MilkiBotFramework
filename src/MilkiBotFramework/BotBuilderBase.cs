@@ -112,7 +112,8 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     public TBuilder ConfigureServices(Action<IServiceCollection> configureServices)
     {
-        configureServices?.Invoke(GetServiceCollection());
+        if (configureServices == null) throw new ArgumentNullException(nameof(configureServices));
+        configureServices.Invoke(GetServiceCollection());
         return (TBuilder)this;
     }
 
@@ -121,6 +122,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         var serviceCollection = GetServiceCollection();
         ConfigServices(serviceCollection);
         IServiceProvider? serviceProvider = null;
+        // ReSharper disable once AccessToModifiedClosure
         serviceCollection.AddSingleton(typeof(IServiceProvider), _ => serviceProvider!);
         serviceProvider = BuildCore(serviceCollection);
         ConfigureApp(serviceProvider);
@@ -139,14 +141,14 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     protected virtual void ConfigureApp(IServiceProvider serviceProvider)
     {
         // RichMessageConverter
-        var richMessageConverter = serviceProvider.GetService<IRichMessageConverter>()!;
+        _ = serviceProvider.GetService<IRichMessageConverter>()!;
 
         // CommandLineAnalyzer
         var commandLineAnalyzer = serviceProvider.GetService<ICommandLineAnalyzer>()!;
         if (_defaultConverter != null) commandLineAnalyzer.DefaultParameterConverter = _defaultConverter;
 
         // Connector
-        var connector = (IConnector)serviceProvider.GetService(typeof(IConnector));
+        var connector = (IConnector)serviceProvider.GetService(typeof(IConnector))!;
         _configureConnector?.Invoke(connector);
     }
 
@@ -165,7 +167,6 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
                 _commandAnalyzerType ?? typeof(CommandLineAnalyzer))
             .AddSingleton(typeof(IRichMessageConverter),
                 _richMessageConverterType ?? typeof(DefaultRichMessageConverter))
-
             .AddSingleton(typeof(IDispatcher),
                 _dispatcherType ?? throw new ArgumentNullException(nameof(IDispatcher),
                     "The IDispatcher implementation is not specified."))

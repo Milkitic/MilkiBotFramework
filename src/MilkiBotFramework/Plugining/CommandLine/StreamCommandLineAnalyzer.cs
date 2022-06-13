@@ -76,8 +76,11 @@ public class StreamCommandLineAnalyzer : ICommandLineAnalyzer
                     builder.Append(c);
                     value = ReadUntilSpaceOrEndOrCqCodeOrColon(reader, builder);
                 }
+
                 if (commandName == null)
+                {
                     commandName = value;
+                }
                 else
                 {
                     if (isReadingArgOrSwitch && placeHolder != null) // placeHolder is arg
@@ -117,6 +120,7 @@ public class StreamCommandLineAnalyzer : ICommandLineAnalyzer
     }
 
 
+    // ReSharper disable once UnusedMember.Local
     private static string ReadUntilCharOrEnd(TextReader reader, StringBuilder builder, char ch)
     {
         return ReadUntilChars(reader, builder, new[] { ch, unchecked((char)-1) });

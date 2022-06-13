@@ -1,7 +1,10 @@
-﻿using System.Text.Json.Serialization;
+﻿#nullable disable
+
+using System.Text.Json.Serialization;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel.Guild;
 
+// ReSharper disable once InconsistentNaming
 public class GetGuildMembersResponse
 {
     [JsonPropertyName("admins")]
@@ -18,6 +21,7 @@ public class GuildServiceProfile
 {
     [JsonPropertyName("nickname")]
     public string Nickname { get; set; }
+
     [JsonPropertyName("tiny_id")]
     public long TinyId { get; set; }
 

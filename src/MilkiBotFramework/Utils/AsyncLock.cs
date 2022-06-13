@@ -35,7 +35,7 @@ public class AsyncLock : IDisposable
         return task.IsCompleted
             ? _completeTask
             : task.ContinueWith(
-                (_, state) => (IDisposable)((AsyncLock)state)._asyncLockImpl,
+                (_, state) => (IDisposable)((AsyncLock)state!)._asyncLockImpl,
                 this, CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     }

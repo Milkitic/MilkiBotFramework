@@ -1,4 +1,8 @@
-﻿using System.ComponentModel;
+﻿// ReSharper disable All
+#pragma warning disable CS1998
+#nullable disable
+
+using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Messaging;
@@ -55,7 +59,7 @@ public class DemoPlugin : BasicPlugin
         return Reply("hello " + content);
     }
 
-    public override async Task<IResponse?> OnBindingFailed(BindingException bindingException, MessageContext context)
+    public override async Task<IResponse> OnBindingFailed(BindingException bindingException, MessageContext context)
     {
         if (bindingException.BindingSource.CommandInfo.Command == "hello")
         {

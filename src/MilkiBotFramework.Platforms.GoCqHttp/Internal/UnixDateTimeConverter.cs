@@ -11,7 +11,6 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Internal
         public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert,
             JsonSerializerOptions options)
         {
-
             long result;
             if (reader.TokenType == JsonTokenType.Number)
             {
@@ -44,6 +43,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Internal
             writer.WriteNumberValue(totalSeconds);
         }
 
+        // ReSharper disable once UnusedMember.Local
         private static bool IsNullable(Type t)
         {
             return !t.IsValueType || IsNullableType(t);

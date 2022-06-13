@@ -15,5 +15,5 @@ public interface IConnectorConfigurable
     /// </summary>
     public TimeSpan MessageTimeout { get; set; }
 
-    public Encoding Encoding { get; set; }
+    public Encoding? Encoding { get; set; }
 }

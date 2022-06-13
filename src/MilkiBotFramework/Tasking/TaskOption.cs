@@ -13,7 +13,7 @@
         /// <summary>
         /// 任务名称
         /// </summary>
-        public string Name { get; init; }
+        public string Name { get; init; } = null!;
 
         /// <summary>
         /// 是否在初始化时执行任务

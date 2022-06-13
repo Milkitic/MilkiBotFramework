@@ -6,11 +6,10 @@ public static class EncodingHelper
     {
         if (stream.Position != 0) stream.Position = 0;
 
-        byte[] array;
         var length = stream.Length;
         Span<byte> span = length <= FrameworkConstants.MaxStackArrayLength
             ? stackalloc byte[(int)length]
-            : array = new byte[length];
+            : new byte[length];
         _ = stream.Read(span);
         return Convert.ToBase64String(span);
     }

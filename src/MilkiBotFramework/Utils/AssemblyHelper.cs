@@ -10,10 +10,10 @@ internal static class AssemblyHelper
 {
     public class AssemblyResult
     {
-        public string AssemblyFullName { get; init; }
-        public string AssemblyPath { get; init; }
-        public TypeResult[] TypeResults { get; init; }
-        public string[] DbContexts { get; init; }
+        public string AssemblyFullName { get; init; } = null!;
+        public string AssemblyPath { get; init; } = null!;
+        public TypeResult[] TypeResults { get; init; } = null!;
+        public string[] DbContexts { get; init; } = null!;
     }
 
     public class TypeResult
@@ -35,14 +35,15 @@ internal static class AssemblyHelper
         ILogger logger,
         IEnumerable<string> assemblyFiles)
     {
-        var first = assemblyFiles.FirstOrDefault();
+        var asmPaths = assemblyFiles as ICollection<string> ?? assemblyFiles.ToArray();
+        var first = asmPaths.FirstOrDefault();
         if (first == null)
             return Array.Empty<AssemblyResult>();
         var folder = Path.GetFileName(Path.GetDirectoryName(first));
         //using var scope = logger.BeginScope($"Quick search in directory \"{folder}\"");
         var availableDictionary = new List<AssemblyResult>();
 
-        foreach (var asmPath in assemblyFiles)
+        foreach (var asmPath in asmPaths)
         {
             AnalyzeSingle(logger, asmPath, folder, availableDictionary);
         }
@@ -87,11 +88,10 @@ internal static class AssemblyHelper
         {
             if (k.FullName.Contains("MyPluginDbContext"))
             {
-
             }
+
             ITypeDefOrRef? baseType = k;
 
-            Type? pluginType = null;
             while (baseType != null && TypeDbContext.Name != baseType.ReflectionName)
             {
                 var typeDef = baseType as TypeDef;
@@ -118,7 +118,7 @@ internal static class AssemblyHelper
                         TypeDbContext.Name == baseType.Name;
             var result = valid ? k : null;
             return result?.FullName;
-        }).Where(k => k != null).Select(k => k).ToArray();
+        }).Where(k => k != null).Select(k => k!).ToArray();
         return typeResults;
     }
 

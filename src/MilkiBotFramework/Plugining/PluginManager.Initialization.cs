@@ -133,90 +133,88 @@ public partial class PluginManager
 
             try
             {
-                Assembly? assembly = ctx.LoadFromAssemblyPath(assemblyPath);
-                if (assembly != null)
+                Assembly assembly = ctx.LoadFromAssemblyPath(assemblyPath);
+                var defaultAuthor = assembly.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company;
+                var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                    ?.InformationalVersion ?? "0.0.1-alpha";
+                var product = assembly.GetCustomAttribute<AssemblyProductAttribute>()
+                    ?.Product;
+                _logger.LogInformation($"Plugin library: {product} {version} by " + defaultAuthor);
+
+                var pluginInfos = new List<PluginInfo>();
+                foreach (var typeResult in typeResults)
                 {
-                    var defaultAuthor = assembly.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company;
-                    var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-                        ?.InformationalVersion ?? "0.0.1-alpha";
-                    var product = assembly.GetCustomAttribute<AssemblyProductAttribute>()
-                        ?.Product;
-                    _logger.LogInformation($"Plugin library: {product} {version} by " + defaultAuthor);
-
-                    var pluginInfos = new List<PluginInfo>();
-                    foreach (var typeResult in typeResults)
+                    var typeFullName = typeResult.TypeFullName!;
+                    var baseType = typeResult.BaseType!;
+                    string typeName = "";
+                    PluginInfo? pluginInfo = null;
+                    try
                     {
-                        var typeFullName = typeResult.TypeFullName!;
-                        var baseType = typeResult.BaseType!;
-                        string typeName = "";
-                        PluginInfo? pluginInfo = null;
-                        try
+                        var type = assembly.GetType(typeFullName);
+                        if (type == null)
+                            throw new Exception("Can't resolve type: " + typeFullName);
+
+                        typeName = type.Name;
+                        pluginInfo = GetPluginInfo(type, baseType, defaultAuthor);
+                        var metadata = pluginInfo.Metadata;
+
+                        switch (pluginInfo.Lifetime)
                         {
-                            var type = assembly.GetType(typeFullName);
-                            if (type == null)
-                                throw new Exception("Can't resolve type: " + typeFullName);
-
-                            typeName = type.Name;
-                            pluginInfo = GetPluginInfo(type, baseType, defaultAuthor);
-                            var metadata = pluginInfo.Metadata;
-
-                            switch (pluginInfo.Lifetime)
-                            {
-                                case PluginLifetime.Singleton:
-                                    loaderContext.ServiceCollection.AddSingleton(type);
-                                    break;
-                                case PluginLifetime.Scoped:
-                                    loaderContext.ServiceCollection.AddScoped(type);
-                                    break;
-                                case PluginLifetime.Transient:
-                                    loaderContext.ServiceCollection.AddTransient(type);
-                                    break;
-                                default:
-                                    throw new ArgumentOutOfRangeException();
-                            }
-
-                            _logger.LogInformation($"Add plugin \"{metadata.Name}\"" +
-                                                   $" ({pluginInfo.Lifetime} {pluginInfo.BaseType.Name})" +
-                                                   (defaultAuthor == metadata.Authors
-                                                       ? ""
-                                                       : $" by {metadata.Authors}"));
-                            isValid = true;
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Error occurs while loading plugin: " + typeName);
+                            case PluginLifetime.Singleton:
+                                loaderContext.ServiceCollection.AddSingleton(type);
+                                break;
+                            case PluginLifetime.Scoped:
+                                loaderContext.ServiceCollection.AddScoped(type);
+                                break;
+                            case PluginLifetime.Transient:
+                                loaderContext.ServiceCollection.AddTransient(type);
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
                         }
 
-                        if (pluginInfo != null)
-                        {
-                            pluginInfos.Add(pluginInfo);
-                            _plugins.Add(pluginInfo);
-                        }
+                        _logger.LogInformation($"Add plugin \"{metadata.Name}\"" +
+                                               $" ({pluginInfo.Lifetime} {pluginInfo.BaseType.Name})" +
+                                               (defaultAuthor == metadata.Authors
+                                                   ? ""
+                                                   : $" by {metadata.Authors}"));
+                        isValid = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error occurs while loading plugin: " + typeName);
                     }
 
-                    var asmContext = new AssemblyContext
+                    if (pluginInfo != null)
                     {
-                        Assembly = assembly,
-                        DbContextTypes = assemblyResult.DbContexts.Select(dbContext =>
-                        {
-                            var type = assembly.GetType(dbContext);
-                            if (type == null)
-                            {
-                                Debug.Assert(type != null);
-                                _logger.LogError("Cannot resolve DbContext: " + dbContext +
-                                               ". This will lead to further errors.");
-                            }
-                            return type!;
-                        }).Where(k => k != null!).ToArray(),
-                        PluginInfos = pluginInfos.ToArray(),
-                        Version = version,
-                        Product = product
-                    };
-
-                    if (isValid)
-                    {
-                        dict.Add(assemblyFilename, asmContext);
+                        pluginInfos.Add(pluginInfo);
+                        _plugins.Add(pluginInfo);
                     }
+                }
+
+                var asmContext = new AssemblyContext
+                {
+                    Assembly = assembly,
+                    DbContextTypes = assemblyResult.DbContexts.Select(dbContext =>
+                    {
+                        var type = assembly.GetType(dbContext);
+                        if (type == null)
+                        {
+                            Debug.Assert(type != null);
+                            _logger.LogError("Cannot resolve DbContext: " + dbContext +
+                                             ". This will lead to further errors.");
+                        }
+
+                        return type;
+                    }).Where(k => k != null!).ToArray(),
+                    PluginInfos = pluginInfos.ToArray(),
+                    Version = version,
+                    Product = product
+                };
+
+                if (isValid)
+                {
+                    dict.Add(assemblyFilename, asmContext);
                 }
             }
             catch (Exception ex)
@@ -253,8 +251,8 @@ public partial class PluginManager
             .Where(o => o.Lifetime == ServiceLifetime.Singleton);
         foreach (var serviceDescriptor in allTypes)
         {
-            var ns = serviceDescriptor.ServiceType.Namespace;
-            var fullName = serviceDescriptor.ServiceType.FullName;
+            var ns = serviceDescriptor.ServiceType.Namespace!;
+            var fullName = serviceDescriptor.ServiceType.FullName!;
             if (serviceDescriptor.ImplementationType == serviceDescriptor.ServiceType)
             {
                 if (ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
@@ -285,7 +283,7 @@ public partial class PluginManager
 
         var configLoggerProvider = _serviceProvider.GetService<ConfigLoggerProvider>();
         if (configLoggerProvider != null)
-            loaderContext.ServiceCollection.AddLogging(o => configLoggerProvider.ConfigureLogger!(o));
+            loaderContext.ServiceCollection.AddLogging(o => configLoggerProvider.ConfigureLogger(o));
 
         loaderContext.ServiceCollection.AddSingleton(typeof(IConfiguration<>), typeof(Configuration<>));
         loaderContext.ServiceCollection.AddSingleton(loaderContext);
@@ -293,13 +291,15 @@ public partial class PluginManager
         {
             foreach (var dbContextType in assemblyContext.Value.DbContextTypes)
             {
-                var dbFolder = _botOptions.PluginDatabaseDir/*Path.Combine(_botOptions.PluginDatabaseDir, loaderContext.Name)*/;
-                var dbFilename = $"{loaderContext.Name}.{Path.GetFileNameWithoutExtension(assemblyContext.Key)}.{dbContextType.Name}.db";
+                var dbFolder =
+                    _botOptions.PluginDatabaseDir /*Path.Combine(_botOptions.PluginDatabaseDir, loaderContext.Name)*/;
+                var dbFilename =
+                    $"{loaderContext.Name}.{Path.GetFileNameWithoutExtension(assemblyContext.Key)}.{dbContextType.Name}.db";
                 var dbPath = Path.Combine(dbFolder, dbFilename);
                 if (!Directory.Exists(dbFolder)) Directory.CreateDirectory(dbFolder);
                 try
                 {
-                    loaderContext.ServiceCollection.AddScoped(dbContextType, (s) =>
+                    loaderContext.ServiceCollection.AddScoped(dbContextType, _ =>
                     {
                         var instance = (PluginDbContext)Activator.CreateInstance(dbContextType)!;
                         instance.TemporaryDbPath = dbPath;
@@ -319,7 +319,6 @@ public partial class PluginManager
         {
             foreach (var dbContextType in assemblyContext.Value.DbContextTypes)
             {
-
                 var dbContext = (PluginDbContext)scope.ServiceProvider.GetService(dbContextType)!;
                 try
                 {

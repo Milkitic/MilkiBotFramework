@@ -22,6 +22,7 @@ public class GoCqConnection
 
     [Description("目标接口链接。当 ConnectionType 为 Http, WebSocket 时生效")]
     public string? TargetUri { get; set; } = "ws://127.0.0.1:5700";
+
     [Description("服务器绑定Url。当 ConnectionType 为 Http, ReverseWebSocket 时生效")]
     public string? ServerBindUrl { get; set; } = "http://0.0.0.0:2333";
 

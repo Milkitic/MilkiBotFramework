@@ -15,7 +15,7 @@ namespace MilkiBotFramework.Tasking
         /// <summary>
         /// 任务名称
         /// </summary>
-        public string TaskName { get; init; }
+        public string TaskName { get; init; } = null!;
 
         /// <summary>
         /// 本次任务执行的触发器
@@ -37,18 +37,18 @@ namespace MilkiBotFramework.Tasking
         /// <summary>
         /// 任务触发器列表
         /// </summary>
-        public IReadOnlyList<Trigger> Triggers { get; init; }
+        public IReadOnlyList<Trigger> Triggers { get; init; } = null!;
 
         /// <summary>
         /// 以触发器为单位，上次执行的时间列表
         /// </summary>
-        public IReadOnlyList<DateTime> LastTriggerTimes { get; init; }
+        public IReadOnlyList<DateTime> LastTriggerTimes { get; init; } = null!;
 
         /// <summary>
         /// 以触发器为单位，下次执行的时间列表
         /// </summary>
-        public IReadOnlyList<DateTime> NextTriggerTimes { get; init; }
+        public IReadOnlyList<DateTime> NextTriggerTimes { get; init; } = null!;
 
-        public ILogger Logger { get; set; }
+        public ILogger Logger { get; set; } = null!;
     }
 }

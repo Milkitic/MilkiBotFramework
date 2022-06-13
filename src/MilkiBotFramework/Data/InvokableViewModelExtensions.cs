@@ -21,11 +21,14 @@ public static class InvokableViewModelExtensions
             return newValue;
         }
 
-        reactiveObject?.RaisePropertyChanging(propertyName);
+        reactiveObject.RaisePropertyChanging(propertyName);
         backingField = newValue;
-        reactiveObject?.RaisePropertyChanged(propertyName);
+        reactiveObject.RaisePropertyChanged(propertyName);
         foreach (var member in additionalChangedMembers)
-            reactiveObject?.RaisePropertyChanged(member);
+        {
+            reactiveObject.RaisePropertyChanged(member);
+        }
+
         return newValue;
     }
 }

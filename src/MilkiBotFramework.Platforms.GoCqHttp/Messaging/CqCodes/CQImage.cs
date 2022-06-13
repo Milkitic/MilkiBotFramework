@@ -1,7 +1,6 @@
 ﻿using MilkiBotFramework.Imaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.GoCqHttp.Utils;
-using MilkiBotFramework.Utils;
 using SixLabors.ImageSharp;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
@@ -46,7 +45,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
             return EncodingHelper.EncodeFileToBase64(ms);
         }
 
-        public async Task<string> EnsureImageBytesAndCaches()
+        public Task<string> EnsureImageBytesAndCaches()
         {
             throw new NotImplementedException();
             //bool writeCache = ImageFileBytes == null;
@@ -175,6 +174,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
             ImageFileBytes = imageFileBytes;
             LocalGoFilename = Path.GetRandomFileName();
         }
+
         private CQImage(string localGoFilename)
         {
             LocalGoFilename = localGoFilename;

@@ -26,12 +26,13 @@ namespace MilkiBotFramework.Tasking
         /// <param name="options">任务设置</param>
         public void AddTask(string name, Action<TaskOptionBuilder> options)
         {
+            if (options == null) throw new ArgumentNullException(nameof(options));
             var builder = new TaskOptionBuilder(new TaskOption
             {
                 Id = Guid.NewGuid(),
                 Name = name
             });
-            options?.Invoke(builder);
+            options.Invoke(builder);
             var option = builder.Option;
 
             if (option.Triggers.Count == 0)

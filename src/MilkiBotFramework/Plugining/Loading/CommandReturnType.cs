@@ -1,4 +1,6 @@
-﻿namespace MilkiBotFramework.Plugining.Loading;
+﻿// ReSharper disable InconsistentNaming
+
+namespace MilkiBotFramework.Plugining.Loading;
 
 public enum CommandReturnType
 {

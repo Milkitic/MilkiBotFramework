@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿#nullable disable
+
+using System;
+using System.Collections.Generic;
 using System.IO;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
@@ -38,6 +41,7 @@ public class UrlEncodeTest
     }
 
     [Benchmark]
+    [Obsolete("Obsolete")]
     public object Old()
     {
         return _lines.ToUrlParamString();

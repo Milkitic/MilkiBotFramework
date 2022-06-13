@@ -2,12 +2,6 @@
 
 namespace MilkiBotFramework.ContactsManaging.Models;
 
-public sealed class SelfInfo
-{
-    public string UserId { get; set; }
-    public string? Nickname { get; set; }
-}
-
 public sealed class ChannelInfo
 {
     public ChannelInfo(string channelId, IEnumerable<MemberInfo>? members = null)

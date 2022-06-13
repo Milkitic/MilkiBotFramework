@@ -24,7 +24,11 @@ public abstract class WpfDrawingControl : UserControl
         if (sourceImage != null)
             SourceBitmapImage = WpfImageHelper.GetBitmapImageFromImageSharp(sourceImage);
         _tcs = new TaskCompletionSource();
-        RenderFinished += async (_, _) => _tcs.SetResult();
+        RenderFinished += (_, _) =>
+        {
+            _tcs.SetResult();
+            return Task.CompletedTask;
+        };
     }
 
     public virtual Task<MemoryStream> ProcessOnceAsync()
@@ -56,7 +60,9 @@ public abstract class WpfDrawingControl : UserControl
         return Task.FromResult(stream);
     }
 
+#pragma warning disable CS1998
     public virtual async IAsyncEnumerable<MemoryStream> ProcessMultiFramesAsync()
+#pragma warning restore CS1998
     {
         yield break;
     }

@@ -59,7 +59,6 @@ namespace MilkiBotFramework.Messaging.RichMessages
             return RichMessages.Count > 0 &&
                        (RichMessages[0] is At at && at.UserId == userId ||
                         RichMessages[0] is RichMessage rich && rich.FirstIsAt(userId));
-
         }
 
         public void Dispose()

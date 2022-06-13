@@ -23,7 +23,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
             MessageId = messageId;
         }
 
-        internal new static CQReply Parse(ReadOnlyMemory<char> content)
+        internal static CQReply Parse(ReadOnlyMemory<char> content)
         {
             const int flagLen = 5;
             var s = content.Slice(5 + flagLen, content.Length - 6 - flagLen).ToString();
@@ -37,6 +37,6 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
         }
 
         public override string ToString() => $"[回复]";
-        public async ValueTask<string> EncodeAsync() => $"[CQ:reply,id={MessageId}]";
+        public ValueTask<string> EncodeAsync() => ValueTask.FromResult($"[CQ:reply,id={MessageId}]");
     }
 }

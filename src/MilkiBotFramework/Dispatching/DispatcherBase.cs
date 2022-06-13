@@ -90,7 +90,10 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                     messageContext.PrivateInfo = privateResult.PrivateInfo;
                 }
                 else
+                {
                     _logger.LogWarning("Failed to fill PrivateInfo automatically. This may leads to further plugin errors.");
+                }
+
                 break;
             case MessageType.Channel:
                 if (messageIdentity.Id == null) throw new ArgumentNullException(nameof(MessageIdentity.Id));
@@ -116,7 +119,10 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
                     messageContext.MemberInfo = memberResult.MemberInfo;
                 }
                 else
+                {
                     _logger.LogWarning("Failed to MemberInfo automatically. This may leads to further plugin errors.");
+                }
+
                 break;
             case MessageType.Notice:
                 break;

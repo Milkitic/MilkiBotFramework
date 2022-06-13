@@ -5,6 +5,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
     /// <summary>
     /// QQ表情
     /// </summary>
+    // ReSharper disable once InconsistentNaming
     public class CQFace : IRichMessage
     {
         /// <summary>
@@ -24,7 +25,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
             FaceId = faceId;
         }
 
-        public async ValueTask<string> EncodeAsync() => $"[CQ:face,id={FaceId}]";
+        public ValueTask<string> EncodeAsync() => ValueTask.FromResult($"[CQ:face,id={FaceId}]");
 
         public override string ToString() => $"[表情{FaceId}]";
 

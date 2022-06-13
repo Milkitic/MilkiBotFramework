@@ -7,6 +7,7 @@ public class LinkImage : IRichMessage
 {
     public LinkImage(string uri) => Uri = uri;
     public string Uri { get; set; }
+
     public async Task<MemoryImage> ToMemoryImageAsync(LightHttpClient client)
     {
         var (bytes, imageType) = await client.GetImageBytesFromUrlAsync(Uri);
@@ -17,7 +18,8 @@ public class LinkImage : IRichMessage
         return new MemoryImage(bitmap, imageType);
     }
 
-    public virtual async ValueTask<string> EncodeAsync() => $"[Image: {Uri}]";
+    public virtual ValueTask<string> EncodeAsync() => ValueTask.FromResult($"[Image: {Uri}]");
+
     public override string ToString()
     {
         return "[网址图片]";

@@ -16,7 +16,6 @@ public partial class PluginManager
     private readonly IServiceProvider _serviceProvider;
     private readonly IServiceCollection _serviceCollection;
     private readonly BotOptions _botOptions;
-    private readonly IDispatcher _dispatcher;
     private readonly IMessageApi _messageApi;
     private readonly IRichMessageConverter _richMessageConverter;
     private readonly ILogger<PluginManager> _logger;
@@ -30,8 +29,7 @@ public partial class PluginManager
 
     private readonly ConcurrentDictionary<MessageUserIdentity, AsyncMessage> _asyncMessageDict = new();
 
-    public PluginManager(IDispatcher dispatcher,
-        IMessageApi messageApi,
+    public PluginManager(IMessageApi messageApi,
         IRichMessageConverter richMessageConverter,
         ILogger<PluginManager> logger,
         ICommandLineAnalyzer commandLineAnalyzer,
@@ -43,7 +41,6 @@ public partial class PluginManager
         _serviceProvider = serviceProvider;
         _serviceCollection = serviceCollection;
         _botOptions = botOptions;
-        _dispatcher = dispatcher;
         _messageApi = messageApi;
         _richMessageConverter = richMessageConverter;
         _logger = logger;
@@ -74,9 +71,7 @@ public partial class PluginManager
     // Todo: Any common notice handling?
     private async Task HandleNoticeMessage(MessageContext messageContext)
     {
-        var (scopes,
-            basicExecutionInfos,
-            serviceExecutionInfos) = await GetExecutionList(true);
+        var (scopes, _, serviceExecutionInfos) = await GetExecutionList(true);
 
         bool handled = false;
         foreach (var serviceExecutionInfo in serviceExecutionInfos)
@@ -148,18 +143,22 @@ public partial class PluginManager
             serviceExecutionInfos) = await GetExecutionList(false);
 
         var message = messageContext.TextMessage;
-        var success = _commandLineAnalyzer.TryAnalyze(message, out var commandLineResult, out var exception);
         string? commandName = null;
-        if (success)
+        CommandLineResult? commandLineResult = null;
+        if (message != null)
         {
-            commandName = commandLineResult?.Command.ToString();
-            messageContext.CommandLineResult = commandLineResult!;
+            var success = _commandLineAnalyzer.TryAnalyze(message, out commandLineResult, out var exception);
+            if (success)
+            {
+                commandName = commandLineResult?.Command.ToString();
+                messageContext.CommandLineResult = commandLineResult!;
+            }
+            else if (exception != null)
+            {
+                _logger.LogWarning("Error occurs while analyzing command: " + exception.Message);
+            }
         }
-        else if (exception != null)
-        {
-            _logger.LogWarning("Error occurs while analyzing command: " + (exception?.Message ?? "Unknown reason"));
-        }
-        
+
         messageContext.NextPlugins = new List<PluginInfo>(basicExecutionInfos.Count);
         var nextPlugins = messageContext.NextPlugins;
         var executedPlugins = (List<PluginInfo>)messageContext.ExecutedPlugins;
@@ -297,7 +296,7 @@ public partial class PluginManager
 
                 if (!handled && response.AsyncMessage is AsyncMessage asyncMessage)
                 {
-                    _asyncMessageDict.AddOrUpdate(messageContext.MessageUserIdentity, asyncMessage, (_, _) => asyncMessage);
+                    _asyncMessageDict.AddOrUpdate(messageContext.MessageUserIdentity!, asyncMessage, (_, _) => asyncMessage);
                 }
 
                 if (response.Message == null) return;
@@ -314,19 +313,20 @@ public partial class PluginManager
     private async Task AutoReply(MessageContext messageContext, IResponse response)
     {
         ReplaceContentIfPossible(response);
+        var responseMessage = response.Message ?? new Text("");
         if (response.Id == null)
         {
             var identity = messageContext.MessageIdentity;
             if (identity?.MessageType == MessageType.Channel &&
                 response.TryReply == true &&
-                response.Message is not RichMessage { FirstIsReply: true } &&
-                response.Message is not Reply)
+                responseMessage is not RichMessage { FirstIsReply: true } &&
+                responseMessage is not Reply)
             {
                 response.Message =
-                    new RichMessage(new Reply(messageContext.MessageId!), response.Message);
+                    new RichMessage(new Reply(messageContext.MessageId!), responseMessage);
             }
 
-            var plainMessage = await _richMessageConverter.EncodeAsync(response.Message);
+            var plainMessage = await _richMessageConverter.EncodeAsync(responseMessage);
 
             if (identity != null &&
                 identity != MessageIdentity.MetaMessage &&
@@ -350,14 +350,14 @@ public partial class PluginManager
         {
             if (response.MessageType == MessageType.Channel &&
                 response.TryAt != null &&
-                (response.Message is not RichMessage r || !r.FirstIsAt(response.TryAt!)) &&
-                (response.Message is not At at || at.UserId != response.TryAt))
+                (responseMessage is not RichMessage r || !r.FirstIsAt(response.TryAt!)) &&
+                (responseMessage is not At at || at.UserId != response.TryAt))
             {
                 response.Message =
-                    new RichMessage(new At(response.TryAt), response.Message);
+                    new RichMessage(new At(response.TryAt), responseMessage);
             }
 
-            var plainMessage = await _richMessageConverter.EncodeAsync(response.Message);
+            var plainMessage = await _richMessageConverter.EncodeAsync(responseMessage);
             if (response.MessageType == MessageType.Private)
             {
                 await _messageApi.SendPrivateMessageAsync(response.Id!, plainMessage);
@@ -394,7 +394,7 @@ public partial class PluginManager
 
     private void ReplaceContent(Text text)
     {
-        if (text.Content == null) return;
+        if (text.Content == null!) return;
 
         var index = text.Content.IndexOf("${", StringComparison.Ordinal);
         if (index < 0 || text.Content.IndexOf("}", index, StringComparison.Ordinal) < 0) return;
@@ -405,10 +405,8 @@ public partial class PluginManager
         }
     }
 
-    private async Task<(HashSet<IServiceScope> scopes,
-            List<PluginExecutionInfo> plugins,
-            List<PluginExecutionInfo> servicePlugins)> GetExecutionList(
-            bool isServiceOnly)
+    private async Task<(HashSet<IServiceScope> scopes, List<PluginExecutionInfo> basicExecutionInfos,
+        List<PluginExecutionInfo> serviceExecutionInfos)> GetExecutionList(bool isServiceOnly)
     {
         var scopes = new HashSet<IServiceScope>(); // Todo: Fill by default capacity
         var servicePlugins = new List<PluginExecutionInfo>(); // Todo: Fill by default capacity

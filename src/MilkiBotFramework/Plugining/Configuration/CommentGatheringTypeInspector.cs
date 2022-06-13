@@ -64,6 +64,7 @@ public class CommentGatheringTypeInspector : TypeInspectorSkeleton
         public IObjectDescriptor Read(object target)
         {
             var description = _baseDescriptor.GetCustomAttribute<DescriptionAttribute>();
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             return description != null
                 ? new CommentsObjectDescriptor(_baseDescriptor.Read(target), description.Description)
                 : _baseDescriptor.Read(target);

@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿#nullable disable
+
+using System.Text.Json.Serialization;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events
 {
@@ -12,16 +14,19 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events
         /// </summary>
         [JsonPropertyName("notice_type")]
         public string NoticeType { get; set; }
+
         /// <summary>
         /// 事件子类型，分别表示设置和取消管理员。
         /// </summary>
         [JsonPropertyName("sub_type")]
         public string SubType { get; set; }
+
         /// <summary>
         /// 群号。
         /// </summary>
         [JsonPropertyName("group_id")]
         public long GroupId { get; set; }
+
         /// <summary>
         /// 管理员 QQ 号。
         /// </summary>

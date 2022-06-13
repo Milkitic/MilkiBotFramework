@@ -17,7 +17,7 @@ public class YamlConverter
 
         var ymlDeserializer = builder.Build();
 
-        return (ConfigurationBase)ymlDeserializer.Deserialize(content, type);
+        return (ConfigurationBase)ymlDeserializer.Deserialize(content, type)!;
     }
 
     public string SerializeSettings(ConfigurationBase @object)
@@ -40,8 +40,9 @@ public class YamlConverter
     {
         foreach (var type in list)
         {
-            builder.WithTagMapping("tag:yaml.org,2002:" +
-                                   PascalCaseNamingConvention.Instance.Apply(GetStandardGenericName(type)), type);
+            builder.WithTagMapping(
+                "tag:yaml.org,2002:" +
+                PascalCaseNamingConvention.Instance.Apply(GetStandardGenericName(type) ?? string.Empty), type);
         }
     }
 
@@ -57,19 +58,19 @@ public class YamlConverter
         builder.WithTypeConverter(new DateTimeOffsetConverter());
     }
 
-    protected virtual List<Type> ConfigTagMapping()
+    protected virtual List<Type>? ConfigTagMapping()
     {
         return null;
     }
 
-    private static string GetStandardGenericName(Type type)
+    private static string? GetStandardGenericName(Type type)
     {
         // demo: System.Collection.Generic.List`1[System.String] => System.Collection.Generic.List<System.String>
 
         if (!type.IsGenericType) return type.FullName;
 
         var genericType = type.GetGenericTypeDefinition();
-        string fullName = genericType.FullName;
+        string? fullName = genericType.FullName;
         if (fullName?.Contains("`") == true)
         {
             fullName = fullName.Substring(0, fullName.IndexOf("`", StringComparison.Ordinal));

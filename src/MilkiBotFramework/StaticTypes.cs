@@ -1,6 +1,8 @@
 ﻿using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining;
 
+// ReSharper disable InconsistentNaming
+
 namespace MilkiBotFramework;
 
 public static class StaticTypes

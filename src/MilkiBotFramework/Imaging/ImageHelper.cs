@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
 using System.Text;
-using MilkiBotFramework.Utils;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.PixelFormats;
@@ -69,11 +68,11 @@ public static class ImageHelper
                     UseShellExecute = true,
                     WindowStyle = ProcessWindowStyle.Hidden
                 });
-            proc?.WaitForExit();
-            if (proc?.ExitCode != 0) throw new Exception("gifsicle exit with code: " + proc?.ExitCode);
-            proc?.Dispose();
+            proc!.WaitForExit();
+            if (proc.ExitCode != 0) throw new Exception("gifsicle exit with code: " + proc.ExitCode);
+            proc.Dispose();
         }
-        catch (Exception e)
+        catch (Exception)
         {
             return sourcePath;
         }
@@ -89,7 +88,7 @@ public static class ImageHelper
         var pathList = new List<string>();
         foreach (var keyValuePair in images)
         {
-            string outputFilePath = Path.Combine(saveFolder, $"{guid}-{j:00}.png");
+            string outputFilePath = Path.GetFullPath(Path.Combine(saveFolder, $"{guid}-{j:00}.png"));
             await keyValuePair.Image.SaveAsPngAsync(outputFilePath);
             pathList.Add(outputFilePath);
             j++;
@@ -101,7 +100,7 @@ public static class ImageHelper
     public static async Task<Color[]> ComputePalette(string ffmpegPath, string saveFolder, ImageFrameCollection imageFrames)
     {
         var path = await SaveFramesToFileAsync(saveFolder, imageFrames);
-        var sourceFolder = Path.GetDirectoryName(path[0]);
+        var sourceFolder = Path.GetDirectoryName(path[0])!;
         var split = Path.GetFileName(path[0]).Split('-');
         var standardName = split[0];
         var ext = Path.GetExtension(split[1]);

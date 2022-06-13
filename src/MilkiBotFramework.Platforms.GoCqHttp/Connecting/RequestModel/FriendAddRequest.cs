@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿#nullable disable
+
+using System.Text.Json.Serialization;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel
 {
@@ -17,6 +19,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel
         {
             return new FriendAddRequest { Approve = false, Flag = flag };
         }
+
         public static FriendAddRequest GetApprove(string flag, string remark = null)
         {
             return new FriendAddRequest { Approve = true, Flag = flag, Remark = remark };

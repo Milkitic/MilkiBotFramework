@@ -8,14 +8,15 @@ public static class UiThreadHelper
 {
     private static Thread? _uiThread;
     internal static Application? Application;
-    private static readonly AsyncLock _asyncLock = new();
+    private static readonly AsyncLock AsyncLock = new();
     private static readonly TaskCompletionSource<bool> WaitComplete = new();
 
-    public static Func<Application>? GetApplication;
+    // ReSharper disable once InconsistentNaming
+    public static Func<Application>? GetApplicationFunc;
 
     public static async Task EnsureUiThreadAsync()
     {
-        using (await _asyncLock.LockAsync())
+        using (await AsyncLock.LockAsync())
         {
             if (_uiThread is { IsAlive: true })
             {
@@ -24,7 +25,7 @@ public static class UiThreadHelper
 
             _uiThread = new Thread(() =>
             {
-                Application = GetApplication == null ? new Application() : GetApplication();
+                Application = GetApplicationFunc == null ? new Application() : GetApplicationFunc();
                 Application.ShutdownMode = ShutdownMode.OnExplicitShutdown;
                 Application.Startup += (_, _) => WaitComplete.SetResult(true);
                 Application.DispatcherUnhandledException += (_, e) =>

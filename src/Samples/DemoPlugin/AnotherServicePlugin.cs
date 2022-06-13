@@ -1,11 +1,14 @@
-﻿using System.ComponentModel;
+﻿// ReSharper disable All
+#pragma warning disable CS1998
+#nullable disable
+
+using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Attributes;
-using MilkiBotFramework.Plugining.Loading;
 
 namespace DemoPlugin;
 

@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿#nullable disable
+
+using System.Text.Json.Serialization;
 using MilkiBotFramework.Platforms.GoCqHttp.Internal;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events
@@ -11,6 +13,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events
         [JsonPropertyName("guild_id")]
         [JsonConverter(typeof(Int64ToStringConverter))]
         public string GuildId { get; set; }
+
         /// <summary>
         /// 子频道号。
         /// </summary>

@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿#nullable disable
+
+using System.Text.Json.Serialization;
 using MilkiBotFramework.Platforms.GoCqHttp.Internal;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel.Guild;

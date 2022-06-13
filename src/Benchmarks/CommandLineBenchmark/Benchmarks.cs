@@ -1,5 +1,6 @@
-﻿using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
+﻿// ReSharper disable All
+#pragma warning disable CS0414
+using BenchmarkDotNet.Attributes;
 
 namespace CommandLineBenchmark;
 public readonly struct MyImmutableStruct

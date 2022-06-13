@@ -5,13 +5,13 @@ namespace MilkiBotFramework.Plugining.Loading;
 
 public class LoaderContext
 {
-    public string Name { get; init; }
+    public string Name { get; init; } = null!;
     public bool IsRuntimeContext { get; init; }
-    public IReadOnlyDictionary<string, AssemblyContext> AssemblyContexts { get; init; }
+    public IReadOnlyDictionary<string, AssemblyContext> AssemblyContexts { get; init; } = null!;
 
-    internal IServiceCollection ServiceCollection { get; init; }
+    internal IServiceCollection ServiceCollection { get; init; } = null!;
     internal ServiceProvider? ServiceProvider { get; private set; }
-    internal AssemblyLoadContext AssemblyLoadContext { get; init; }
+    internal AssemblyLoadContext AssemblyLoadContext { get; init; } = null!;
 
     internal ServiceProvider BuildServiceProvider()
     {

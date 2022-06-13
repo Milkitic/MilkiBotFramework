@@ -78,7 +78,7 @@ namespace MilkiBotFramework.Aspnetcore
                 _app.UseWebSockets(webSocketOptions);
                 _app.UseMiddleware<ReverseWebSocketMiddleware>();
             }
-            else if (connector!.ConnectionType == ConnectionType.Http)
+            else if (connector.ConnectionType == ConnectionType.Http)
             {
                 _app.UseMiddleware<HttpMiddleware>();
             }

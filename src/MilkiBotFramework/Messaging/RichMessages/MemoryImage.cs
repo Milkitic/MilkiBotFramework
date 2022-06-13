@@ -11,10 +11,11 @@ public class MemoryImage : IRichMessage, IDisposable
         ImageType = imageType;
     }
 
-    public Image ImageSource { get; set; }
+    public Image ImageSource { get; }
     public ImageType ImageType { get; }
-    public void Dispose() => ImageSource?.Dispose();
-    public virtual async ValueTask<string> EncodeAsync() => "[Image]";
+    public void Dispose() => ImageSource.Dispose();
+    public virtual ValueTask<string> EncodeAsync() => ValueTask.FromResult("[Image]");
+
     public override string ToString()
     {
         return "[合成图片]";
