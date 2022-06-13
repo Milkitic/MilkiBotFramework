@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
 
 namespace MilkiBotFramework.Event
 {
@@ -8,14 +7,8 @@ namespace MilkiBotFramework.Event
     /// </summary>
     public sealed class EventBus
     {
-        private readonly ILogger<EventBus> _logger;
-
         // payloadtype - list of action<T>s, where T is payload type
         private readonly ConcurrentDictionary<Type, Dictionary<Guid, Func<IEventBusEvent, Task>>> _subscriptions = new();
-        public EventBus(ILogger<EventBus> logger)
-        {
-            _logger = logger;
-        }
 
         /// <summary>
         /// awaitable event.Invoke()
@@ -28,7 +21,6 @@ namespace MilkiBotFramework.Event
         public async Task PublishAsync<T>(T payload, PublishOptions options = default, bool smt = true)
             where T : class, IEventBusEvent
         {
-            var timestamp = DateTime.Now;
             if (payload == null)
                 throw new ArgumentNullException(nameof(payload));
 
@@ -42,7 +34,7 @@ namespace MilkiBotFramework.Event
                     // ParallelQuery，可以自动管理线程
                     var query = funcList
                         .AsParallel()
-                        .Select(async (func, i) =>
+                        .Select(async (func, _) =>
                         {
                             await func.Value(payload);
                         });
@@ -76,6 +68,7 @@ namespace MilkiBotFramework.Event
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="action"></param>
+        /// <param name="guid"></param>
         public void Subscribe<T>(Action<T> action, Guid guid) where T : IEventBusEvent
         {
             if (action == null)
@@ -108,6 +101,7 @@ namespace MilkiBotFramework.Event
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="func"></param>
+        /// <param name="guid"></param>
         public void Subscribe<T>(Func<T, Task> func, Guid guid = default) where T : IEventBusEvent
         {
             if (func == null)

@@ -1,4 +1,6 @@
-﻿namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events
+﻿#nullable disable
+
+namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.Events
 {
     public interface IDetailedSenderMessage
     {

@@ -5,6 +5,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
     /// <summary>
     /// 发送链接分享
     /// </summary>
+    // ReSharper disable once InconsistentNaming
     public class CQShare : IRichMessage
     {
         /// <summary>
@@ -44,8 +45,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 
         public override string ToString() => "[链接分享]";
 
-        public async ValueTask<string> EncodeAsync() =>
-            string.Format("[CQ:share,url={0},title={1},content={2},image={3}]",
-                LinkUrl, Title, Content, ImageUrl);
+        public ValueTask<string> EncodeAsync() => ValueTask.FromResult(
+            string.Format("[CQ:share,url={0},title={1},content={2},image={3}]", LinkUrl, Title, Content, ImageUrl));
     }
 }

@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Fleck;
 using Microsoft.Extensions.Logging;
@@ -14,7 +13,6 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
 
     private IWebSocketConnection? _socket;
     private WebSocketServer? _server;
-    private readonly ConcurrentDictionary<string, WebSocketMessageSession> _sessions = new();
     private readonly List<TaskCompletionSource> _messageWaiters = new();
     private readonly WebSocketMessageSessionManager _sessionManager;
 
@@ -77,6 +75,7 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
                 _socket = null;
                 _logger.LogInformation("WebSocket client disconnected.");
             };
+            // ReSharper disable once AsyncVoidLambda
             socket.OnMessage = async message =>
             {
                 await _sessionManager.InvokeMessageReceive(message);

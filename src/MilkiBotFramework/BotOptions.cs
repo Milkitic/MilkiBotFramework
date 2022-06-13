@@ -34,7 +34,7 @@ public class BotOptions : ConfigurationBase
     [Description("缓存图片目录")]
     public string CacheImageDir { get; set; } = "./caches/images";
     [Description("gifsicle插件位置")]
-    public string GifSiclePath { get; set; }
+    public string? GifSiclePath { get; set; }
     [Description("ffmpeg插件位置")]
-    public string FfMpegPath { get; set; }
+    public string? FfMpegPath { get; set; }
 }

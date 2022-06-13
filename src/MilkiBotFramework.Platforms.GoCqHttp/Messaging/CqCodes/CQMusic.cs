@@ -5,6 +5,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
     /// <summary>
     /// 发送音乐自定义分享
     /// </summary>
+    // ReSharper disable once InconsistentNaming
     public class CQMusic : IRichMessage
     {
         /// <summary>
@@ -51,8 +52,8 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 
         public override string ToString() => "[音乐自定义分享]";
 
-        public async ValueTask<string> EncodeAsync() =>
-            string.Format("[CQ:music,type=custom,url={0},audio={1},title={2},content={3},image={4}]",
-                LinkUrl, AudioUrl, Title, Content, ImageUrl);
+        public ValueTask<string> EncodeAsync() => ValueTask.FromResult(string.Format(
+            "[CQ:music,type=custom,url={0},audio={1},title={2},content={3},image={4}]", LinkUrl, AudioUrl, Title,
+            Content, ImageUrl));
     }
 }

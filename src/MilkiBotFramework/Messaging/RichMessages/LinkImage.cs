@@ -17,7 +17,7 @@ public class LinkImage : IRichMessage
         return new MemoryImage(bitmap, imageType);
     }
 
-    public virtual async ValueTask<string> EncodeAsync() => $"[Image: {Uri}]";
+    public virtual ValueTask<string> EncodeAsync() => ValueTask.FromResult($"[Image: {Uri}]");
     public override string ToString()
     {
         return "[网址图片]";

@@ -12,7 +12,7 @@ public class DateTimeOffsetConverter : IYamlTypeConverter
         return type == MemberInfo;
     }
 
-    public object? ReadYaml(IParser parser, Type type)
+    public object ReadYaml(IParser parser, Type type)
     {
         var s = parser.Consume<Scalar>();
         var str = s.Value;

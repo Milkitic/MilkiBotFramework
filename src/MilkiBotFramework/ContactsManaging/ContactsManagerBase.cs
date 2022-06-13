@@ -346,6 +346,7 @@ public abstract class ContactsManagerBase : IContactsManager
     private void RefreshContacts(TaskContext context, CancellationToken token)
     {
         GetContactsCore(out var channels,
+            // ReSharper disable once UnusedVariable
             out var subChannels,
             out var privates);
 

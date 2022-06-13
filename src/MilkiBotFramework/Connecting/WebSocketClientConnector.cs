@@ -15,15 +15,18 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
 
     private readonly AsyncLock _asyncLock = new();
     private WebsocketClient? _client;
-    private bool _isConnected = false;
+    private bool _isConnected;
     private readonly WebSocketMessageSessionManager _sessionManager;
 
     public WebSocketClientConnector(ILogger<WebSocketClientConnector> logger)
     {
         _logger = logger;
         _sessionManager = new WebSocketMessageSessionManager(logger,
-            () => MessageTimeout,
-            async message => _client?.Send(message),
+            () => MessageTimeout, message =>
+            {
+                _client?.Send(message);
+                return Task.CompletedTask;
+            },
             RawMessageReceived,
             TryGetStateByMessage
         );
@@ -40,7 +43,7 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
     /// </summary>
     public TimeSpan MessageTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
-    public Encoding Encoding { get; set; } = Encoding.UTF8;
+    public Encoding? Encoding { get; set; } = Encoding.UTF8;
 
     public async Task ConnectAsync()
     {
@@ -76,6 +79,7 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
             else
                 _logger.LogWarning($"{action} the websocket server: {info.Type}");
         });
+        // ReSharper disable once AsyncVoidLambda
         _client.MessageReceived.Subscribe(async msg => await OnMessageReceived(msg));
 
         try

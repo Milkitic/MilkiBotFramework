@@ -44,6 +44,7 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Internal
             writer.WriteNumberValue(totalSeconds);
         }
 
+        // ReSharper disable once UnusedMember.Local
         private static bool IsNullable(Type t)
         {
             return !t.IsValueType || IsNullableType(t);

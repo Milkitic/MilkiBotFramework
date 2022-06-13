@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿#nullable disable
+
+using System.Text.Json.Serialization;
 using MilkiBotFramework.Platforms.GoCqHttp.Internal;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel
@@ -14,10 +16,10 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel
         public string UserId { get; set; }
 
         [JsonPropertyName("nickname")]
-        public string? Nickname { get; set; }
+        public string Nickname { get; set; }
 
         [JsonPropertyName("card")]
-        public string? Card { get; set; }
+        public string Card { get; set; }
 
         [JsonPropertyName("sex")]
         public string Sex { get; set; }

@@ -134,7 +134,7 @@ public class LightHttpClient
     /// <param name="obj">object.</param>
     /// <param name="headers">Header dictionary.</param>
     /// <returns></returns>
-    public async Task<T> HttpPost<T>(string url, object obj,
+    public async Task<T> HttpPost<T>(string url, object? obj,
         IReadOnlyDictionary<string, string>? headers = null) where T : class
     {
         HttpContent content = new StringContent(JsonSerializer.Serialize(obj));

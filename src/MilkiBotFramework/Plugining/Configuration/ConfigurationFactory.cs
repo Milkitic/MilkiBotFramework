@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
-using MilkiBotFramework.Utils;
 
 namespace MilkiBotFramework.Plugining.Configuration
 {
@@ -31,7 +30,11 @@ namespace MilkiBotFramework.Plugining.Configuration
             converter ??= new YamlConverter();
             var success = TryLoadConfigFromFile<T>(path, converter, _logger, out var config, out var ex);
             if (!success) throw ex!;
-            config!.SaveAction = async () => SaveConfig(config, path, converter);
+            config!.SaveAction = () =>
+            {
+                SaveConfig(config, path, converter);
+                return Task.CompletedTask;
+            };
             _cachedDict.Add(t, config);
             return config;
         }

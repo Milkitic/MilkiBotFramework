@@ -3,6 +3,7 @@ using MilkiBotFramework.Platforms.GoCqHttp.Utils;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes;
 
+// ReSharper disable once InconsistentNaming
 public class CQRecord : IRichMessage
 {
     private string? _downloadUri;
@@ -29,7 +30,7 @@ public class CQRecord : IRichMessage
         return EncodingHelper.EncodeFileToBase64(ms);
     }
 
-    public async Task<string> EnsureRecordBytesAndCaches()
+    public Task<string> EnsureRecordBytesAndCaches()
     {
         throw new NotImplementedException();
         //bool writeCache = RecordFileBytes == null;

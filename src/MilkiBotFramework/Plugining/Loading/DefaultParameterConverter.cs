@@ -37,7 +37,7 @@ public class DefaultParameterConverter : IParameterConverter
 
         if (type.IsSubclassOf(StaticTypes.Enum))
         {
-            if (int.TryParse(source.Span, out var value))
+            if (int.TryParse(source.Span, out _))
             {
                 var convert = Enum.ToObject(type, int.Parse(source.Span));
                 if (!Enum.IsDefined(type, convert))

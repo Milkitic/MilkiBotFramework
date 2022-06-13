@@ -252,7 +252,7 @@ public class CommandInjector
     {
         var parameterInfo = new CommandParameterInfo
         {
-            ParameterName = property.Name!,
+            ParameterName = property.Name,
             ParameterType = targetType,
             PropertyInfo = property
         };
@@ -344,7 +344,7 @@ public class CommandInjector
         CommandParameterInfo paramDef)
     {
         object? optionValue;
-        if (options.TryGetValue(paramDef.Name, out var value))
+        if (options.TryGetValue(paramDef.Name!, out var value))
         {
             try
             {

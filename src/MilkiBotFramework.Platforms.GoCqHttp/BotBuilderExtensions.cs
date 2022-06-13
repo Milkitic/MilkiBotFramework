@@ -45,7 +45,8 @@ public static class BotBuilderExtensions
     {
         if (connection.ConnectionType == ConnectionType.WebSocket)
         {
-            builder.UseConnector<GoCqClient>(connection.TargetUri);
+            builder.UseConnector<GoCqClient>(connection.TargetUri ??
+                                             throw new ArgumentNullException(nameof(connection.TargetUri)));
         }
         else if (connection.ConnectionType == ConnectionType.ReverseWebSocket)
         {
@@ -63,7 +64,8 @@ public static class BotBuilderExtensions
     {
         if (aspBuilder.BindUrls == AspnetcoreBotBuilder.DefaultUris)
         {
-            aspBuilder.UseUrl(connection.ServerBindUrl);
+            aspBuilder.UseUrl(connection.ServerBindUrl ??
+                              throw new ArgumentNullException(nameof(connection.ServerBindUrl)));
         }
 
         builder.UseConnector<GoCqKestrelConnector>(k =>

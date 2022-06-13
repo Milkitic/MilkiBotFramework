@@ -2,6 +2,7 @@
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
 {
+    // ReSharper disable once InconsistentNaming
     public class CQUnknown : IRichMessage
     {
         public string Type { get; }
@@ -14,6 +15,6 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes
         }
 
         public override string ToString() => $"[不支持的消息:{Type}]";
-        public async ValueTask<string> EncodeAsync() => Content;
+        public ValueTask<string> EncodeAsync() => ValueTask.FromResult(Content);
     }
 }

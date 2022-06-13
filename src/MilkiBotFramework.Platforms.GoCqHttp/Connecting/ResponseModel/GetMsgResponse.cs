@@ -1,8 +1,11 @@
-﻿using System.Text.Json.Serialization;
+﻿#nullable disable
+
+using System.Text.Json.Serialization;
 using MilkiBotFramework.Platforms.GoCqHttp.Internal;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel
 {
+    // ReSharper disable once InconsistentNaming
     public class GetMsgResponse
     {
         [JsonPropertyName("group")]

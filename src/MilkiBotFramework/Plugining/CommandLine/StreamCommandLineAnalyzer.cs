@@ -117,6 +117,7 @@ public class StreamCommandLineAnalyzer : ICommandLineAnalyzer
     }
 
 
+    // ReSharper disable once UnusedMember.Local
     private static string ReadUntilCharOrEnd(TextReader reader, StringBuilder builder, char ch)
     {
         return ReadUntilChars(reader, builder, new[] { ch, unchecked((char)-1) });

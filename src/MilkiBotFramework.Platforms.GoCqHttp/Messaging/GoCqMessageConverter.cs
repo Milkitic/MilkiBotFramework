@@ -4,7 +4,6 @@ using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.GoCqHttp.Messaging.CqCodes;
 using MilkiBotFramework.Platforms.GoCqHttp.Utils;
-using MilkiBotFramework.Utils;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Jpeg;
@@ -123,7 +122,7 @@ public class GoCqMessageConverter : IRichMessageConverter
         int preIndex = 0;
         for (var i = 0; i < ranges.Count; i++)
         {
-            var (index, count, type) = ranges[i];
+            var (index, count, _) = ranges[i];
             if (index != preIndex)
             {
                 var len = index - preIndex;
