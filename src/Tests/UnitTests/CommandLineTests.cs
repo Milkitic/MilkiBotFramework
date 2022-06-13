@@ -1,3 +1,7 @@
+// ReSharper disable All
+#pragma warning disable CS1998
+#nullable disable
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -31,6 +35,7 @@ namespace UnitTests
         }
 
         [Fact]
+        [Obsolete("Obsolete")]
         public void Test1()
         {
             var str1 = _lines.ToUrlParamString();
@@ -58,6 +63,7 @@ namespace UnitTests
         [InlineData("/test  -a asdf")]
         [InlineData("/recent:3 30")]
         [InlineData(" /test:1 -option   [2]  -wow -what  234 -hehe \"tt:t ttadfv\"  125 fdgdsahf \"114514 191980:\" -heihei:3 -sbsb ")]
+        [Obsolete("Obsolete")]
         public void Test1(string command)
         {
             var b = new CommandLineAnalyzer();
@@ -76,6 +82,7 @@ namespace UnitTests
 
         [Theory]
         [InlineData("/test -test -3+-3 asdf 24123 -haha")]
+        [Obsolete("Obsolete")]
         public void TestNe(string command)
         {
             var a = new StreamCommandLineAnalyzer();

@@ -1,4 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿// ReSharper disable All
+#pragma warning disable CS1998
+#nullable disable
+
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 using MilkiBotFramework.Plugining;

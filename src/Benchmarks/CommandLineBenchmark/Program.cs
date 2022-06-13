@@ -1,5 +1,8 @@
-﻿using System;
-using System.Text.Json;
+﻿// ReSharper disable All
+#pragma warning disable CS1998
+#nullable disable
+
+using System;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Order;
@@ -12,7 +15,7 @@ namespace CommandLineBenchmark
     {
         static void Main(string[] args)
         {
-            var summary = BenchmarkRunner.Run<Benchmarks>();
+            _ = BenchmarkRunner.Run<Benchmarks>();
             //var summary = BenchmarkRunner.Run<UrlEncodeTest>();
         }
     }
@@ -31,6 +34,7 @@ namespace CommandLineBenchmark
         }
 
         [Benchmark]
+        [Obsolete("Obsolete")]
         public object OldAnalyzer()
         {
             var a = new StreamCommandLineAnalyzer();
