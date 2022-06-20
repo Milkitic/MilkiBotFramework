@@ -12,5 +12,3 @@ updates:
     target-branch: "master"
     labels:
       - "dependency"
-    reviewers:
-      - "Milkitic"
