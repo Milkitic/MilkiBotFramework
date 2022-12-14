@@ -55,8 +55,8 @@ public partial class PluginManager
                 {
                     try
                     {
-                        var instance = (PluginBase)serviceProvider.GetService(pluginInfo.Type);
-                        await InitializePlugin(instance, pluginInfo);
+                        var instance = (PluginBase?)serviceProvider.GetService(pluginInfo.Type);
+                        if (instance != null) await InitializePlugin(instance, pluginInfo);
                     }
                     catch (Exception ex)
                     {
