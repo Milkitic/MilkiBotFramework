@@ -16,13 +16,13 @@ var bot = new AspnetcoreBotBuilder()
         builder.AddFilter((ns, level) =>
         {
 #if !DEBUG
-            if (ns.StartsWith("Microsoft") && level < LogLevel.Warning)
+            if (ns?.StartsWith("Microsoft") == true && level < LogLevel.Warning)
                 return false;
             if (level < LogLevel.Information)
                 return false;
             return true;
 #else
-            if (ns.StartsWith("Microsoft") && level < LogLevel.Information)
+            if (ns?.StartsWith("Microsoft") == true && level < LogLevel.Information)
                 return false;
             return true;
 #endif
