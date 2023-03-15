@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
     <!-- ReSharper disable once VulnerablePackage -->
-    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.3" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.0.0" />
     <PackageReference Include="Websocket.Client" Version="4.6.1" />
     <PackageReference Include="YamlDotNet" Version="13.0.2" />
   </ItemGroup>
