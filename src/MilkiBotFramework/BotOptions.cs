@@ -21,6 +21,9 @@ public class BotOptions : ConfigurationBase
         ["BotNick"] = "MilkiBot",
     };
 
+    [Description("命令触发前缀")]
+    public char CommandFlag { get; set; } = '/';
+
     [Description("Root权限账号")]
     // ReSharper disable once CollectionNeverUpdated.Global
     public HashSet<string> RootAccounts { get; set; } = new();

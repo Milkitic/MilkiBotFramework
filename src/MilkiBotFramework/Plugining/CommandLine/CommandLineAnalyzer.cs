@@ -5,19 +5,26 @@ namespace MilkiBotFramework.Plugining.CommandLine;
 
 public class CommandLineAnalyzer : ICommandLineAnalyzer
 {
+    private readonly BotOptions _botOptions;
     public IParameterConverter DefaultParameterConverter { get; set; } = Loading.DefaultParameterConverter.Instance;
 
-    protected const char CommandFlag = '/';
     private static readonly HashSet<char> OptionFlags = new() { '-' };
     private static readonly HashSet<char> QuoteFlags = new() { '\"', '\'', '`' };
     private static readonly HashSet<char> SplitterFlags = new() { ' ' };
+
+    public CommandLineAnalyzer(BotOptions botOptions)
+    {
+        _botOptions = botOptions;
+    }
 
     public virtual bool TryAnalyze(string input,
         [NotNullWhen(true)] out CommandLineResult? result,
         out CommandLineException? exception)
     {
+        var commandFlag = GetCommandFlag();
+
         var memory = input.AsMemory().Trim();
-        if (memory.Length <= 1 || memory.Span[0] != CommandFlag)
+        if (memory.Length <= 1 || memory.Span[0] != commandFlag)
         {
             result = null;
             exception = null;
@@ -147,6 +154,11 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
                 simpleArgStart ??= index;
             }
         }
+    }
+
+    protected virtual char GetCommandFlag()
+    {
+        return _botOptions.CommandFlag;
     }
 
     private static bool IsNumber(char c)
