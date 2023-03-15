@@ -7,6 +7,7 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Order;
 using BenchmarkDotNet.Running;
+using MilkiBotFramework;
 using MilkiBotFramework.Plugining.CommandLine;
 
 namespace CommandLineBenchmark
@@ -45,7 +46,7 @@ namespace CommandLineBenchmark
         [Benchmark(Baseline = true)]
         public object NewAnalyzer()
         {
-            var a = new CommandLineAnalyzer();
+            var a = new CommandLineAnalyzer(new BotOptions());
             a.TryAnalyze(_command, out var result, out _);
             return result;
         }

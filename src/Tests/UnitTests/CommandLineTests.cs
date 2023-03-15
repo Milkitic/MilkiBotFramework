@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using MilkiBotFramework;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Utils;
@@ -66,7 +67,7 @@ namespace UnitTests
         [Obsolete("Obsolete")]
         public void Test1(string command)
         {
-            var b = new CommandLineAnalyzer();
+            var b = new CommandLineAnalyzer(new BotOptions());
             b.TryAnalyze(command, out var result2, out _);
             var a = new StreamCommandLineAnalyzer();
             a.TryAnalyze(command, out var result, out _);
@@ -87,7 +88,7 @@ namespace UnitTests
         {
             var a = new StreamCommandLineAnalyzer();
             a.TryAnalyze(command, out var result, out _);
-            var b = new CommandLineAnalyzer();
+            var b = new CommandLineAnalyzer(new BotOptions());
             b.TryAnalyze(command, out var result2, out _);
 
             var json1 = result.ToString();

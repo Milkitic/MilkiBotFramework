@@ -56,7 +56,7 @@ public class CommentGatheringTypeInspector : TypeInspectorSkeleton
             _baseDescriptor.Write(target, value);
         }
 
-        public T GetCustomAttribute<T>() where T : Attribute
+        public T? GetCustomAttribute<T>() where T : Attribute
         {
             return _baseDescriptor.GetCustomAttribute<T>();
         }
