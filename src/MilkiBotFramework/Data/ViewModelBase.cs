@@ -14,6 +14,14 @@ public abstract class ViewModelBase : IInvokableViewModel, INotifyPropertyChange
     /// <inheritdoc />
     public event PropertyChangingEventHandler? PropertyChanging;
 
+    protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        field = value;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
+
     /// <summary>
     /// 通知UI更新操作
     /// </summary>
