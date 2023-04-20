@@ -25,14 +25,12 @@ namespace MilkiBotFramework.Event
                 throw new ArgumentNullException(nameof(payload));
 
             var type = payload.GetType();
-            if (_subscriptions.ContainsKey(type))
+            if (_subscriptions.TryGetValue(type, out var subscription))
             {
-                var funcList = _subscriptions[type];
-
                 if (smt) // 多线程执行
                 {
                     // ParallelQuery，可以自动管理线程
-                    var query = funcList
+                    var query = subscription
                         .AsParallel()
                         .Select(async (func, _) =>
                         {
@@ -43,7 +41,7 @@ namespace MilkiBotFramework.Event
                 }
                 else // 依次执行，模拟原生event.Invoke()
                 {
-                    foreach (var func in funcList.Values)
+                    foreach (var func in subscription.Values)
                     {
                         await func(payload);
                     }
