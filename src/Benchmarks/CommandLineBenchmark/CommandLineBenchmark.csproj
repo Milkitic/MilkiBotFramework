@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <!-- ReSharper disable once VulnerablePackage -->
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.5" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.10" />
   </ItemGroup>
 
   <ItemGroup>
