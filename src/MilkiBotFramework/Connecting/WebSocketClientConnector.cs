@@ -103,7 +103,7 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
 
             if (_client != null)
             {
-                await _client.StopOrFail(WebSocketCloseStatus.Empty, null).ConfigureAwait(false);
+                await _client.StopOrFail(WebSocketCloseStatus.Empty, null!).ConfigureAwait(false);
                 _client.Dispose();
                 _client = null;
             }

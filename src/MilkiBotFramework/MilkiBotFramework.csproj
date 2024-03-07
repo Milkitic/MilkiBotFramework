@@ -11,12 +11,19 @@
     <PackageReference Include="Fleck" Version="1.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.16" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
     <!-- ReSharper disable once VulnerablePackage -->
     <PackageReference Include="SixLabors.ImageSharp" Version="2.1.7" />
-    <PackageReference Include="Websocket.Client" Version="4.6.1" />
-    <PackageReference Include="YamlDotNet" Version="13.7.1" />
+    <PackageReference Include="Websocket.Client" Version="5.1.1" />
+    <PackageReference Include="YamlDotNet" Version="15.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="MinVer" Version="5.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>
