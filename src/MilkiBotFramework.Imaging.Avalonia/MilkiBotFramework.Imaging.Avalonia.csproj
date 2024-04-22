@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MilkiBotFramework\MilkiBotFramework.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.1.0-beta1" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.1.0-beta1" />
+    <PackageReference Include="Avalonia.Headless" Version="11.1.0-beta1" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.0-beta1" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.0-beta1" />
+    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.1.0-beta1" />
+  </ItemGroup>
+</Project>

@@ -23,7 +23,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DemoPlugin", "Samples\DemoP
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework.Aspnetcore", "MilkiBotFramework.Aspnetcore\MilkiBotFramework.Aspnetcore.csproj", "{19471383-C9B2-4F5A-AAE3-5C241D732681}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MilkiBotFramework.Imaging.Wpf", "MilkiBotFramework.Imaging.Wpf\MilkiBotFramework.Imaging.Wpf.csproj", "{EA5E603A-84F5-4972-ABFC-9A1B7B2A7DA0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework.Imaging.Wpf", "MilkiBotFramework.Imaging.Wpf\MilkiBotFramework.Imaging.Wpf.csproj", "{EA5E603A-84F5-4972-ABFC-9A1B7B2A7DA0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MilkiBotFramework.Imaging.Avalonia", "MilkiBotFramework.Imaging.Avalonia\MilkiBotFramework.Imaging.Avalonia.csproj", "{E9A89D05-C006-4403-8E3F-E3695AB49EED}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,10 @@ Global
 		{EA5E603A-84F5-4972-ABFC-9A1B7B2A7DA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA5E603A-84F5-4972-ABFC-9A1B7B2A7DA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA5E603A-84F5-4972-ABFC-9A1B7B2A7DA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9A89D05-C006-4403-8E3F-E3695AB49EED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9A89D05-C006-4403-8E3F-E3695AB49EED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9A89D05-C006-4403-8E3F-E3695AB49EED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9A89D05-C006-4403-8E3F-E3695AB49EED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
