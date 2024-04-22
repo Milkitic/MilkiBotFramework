@@ -68,7 +68,7 @@ public class WpfDrawingProcessor<TViewModel, TProcessControl> : IDrawingProcesso
 
         try
         {
-            return await Image.LoadAsync(retStream, new PngDecoder());
+            return await PngDecoder.Instance.DecodeAsync(new PngDecoderOptions(), retStream);
         }
         finally
         {
