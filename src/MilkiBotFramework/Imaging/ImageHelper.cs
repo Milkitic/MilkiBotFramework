@@ -136,7 +136,7 @@ public static class ImageHelper
 
     public static Image GetRotatedImage(Image source, float angle, bool crop = false, Size resize = default)
     {
-        if (resize == Size.Empty) resize = source.Size();
+        if (resize == Size.Empty) resize = source.Size;
 
         var returnBitmap = source
             .Clone(k => k
@@ -169,7 +169,7 @@ public static class ImageHelper
 
     public static Image GetTranslatedBitmap(Image source, int x, int y, Size resize = default)
     {
-        if (resize == Size.Empty) resize = source.Size();
+        if (resize == Size.Empty) resize = source.Size;
         var returnBitmap = source
             .Clone(k => k
                 .AutoOrient()
@@ -191,25 +191,18 @@ public static class ImageHelper
         gif.Mutate(k => k.Quantize());
         var encoder = new GifEncoder
         {
-            ColorTableMode = GifColorTableMode.Global,
-            GlobalPixelSamplingStrategy = new ExtensivePixelSamplingStrategy(),
-            Quantizer = new OctreeQuantizer(new QuantizerOptions
-            {
-                DitherScale = QuantizerConstants.MinDitherScale,
-            })
-        };
-
-        if (palettes != null)
-        {
-            encoder.ColorTableMode = GifColorTableMode.Local;
-            encoder.Quantizer = new PaletteQuantizer(new ReadOnlyMemory<Color>(palettes),
-                new QuantizerOptions
+            ColorTableMode = palettes == null ? GifColorTableMode.Global : GifColorTableMode.Local,
+            PixelSamplingStrategy = new ExtensivePixelSamplingStrategy(),
+            Quantizer = palettes == null
+                ? new OctreeQuantizer(new QuantizerOptions
                 {
                     DitherScale = QuantizerConstants.MinDitherScale
-                }
-            );
-        }
-
+                })
+                : new PaletteQuantizer(new ReadOnlyMemory<Color>(palettes), new QuantizerOptions
+                {
+                    DitherScale = QuantizerConstants.MinDitherScale
+                })
+        };
         await gif.SaveAsGifAsync(path, encoder);
     }
 
