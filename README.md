@@ -78,6 +78,10 @@ public class HelloWorld : BasicPlugin
 框架本身设计文档待完善
 
 ## TODO: 
+- [ ] 支持多前端输入，并将结果返回到对应前端中。
+- [ ] 将WPF相关功能迁移至Avalonia
+- [ ] 内置QQ官方API
+## FINISHED: 
 - [x] 基本框架功能
 - [x] 命令解析，自动识别负数，自动合并多个argument
 - [x] 简易session实现 (Reply并out一个IAsyncMessage)
@@ -92,8 +96,8 @@ public class HelloWorld : BasicPlugin
 - [x] 完善内部事件
 - [x] 支持reverse-ws
 - [x] 部分绘制图像共享功能 (包含Maui/WPF绘制框架)
+## NOT DETERMINED: 
 - [ ] 支持基于Github issue的更新
-
 ## TBD:
 **是否支持同时多OneBot实例亦或是其他的客户端，以进行多平台互联？**
 目前该框架设计没有考虑这一点，考虑到其实用性，大概率会以大版本号更新实现。
