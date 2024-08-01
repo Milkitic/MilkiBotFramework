@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Text;
+using JetBrains.Annotations;
 
 namespace MilkiBotFramework.Messaging.RichMessages
 {
@@ -30,6 +31,7 @@ namespace MilkiBotFramework.Messaging.RichMessages
             return sb.ToString();
         }
 
+        [MustDisposeResource]
         public IEnumerator<IRichMessage> GetEnumerator()
         {
             return RichMessages.SelectMany(CollectionSelector).GetEnumerator();
@@ -49,6 +51,7 @@ namespace MilkiBotFramework.Messaging.RichMessages
             return string.Join("", RichMessages.Select(k => k.ToString()));
         }
 
+        [MustDisposeResource]
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
