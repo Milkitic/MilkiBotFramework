@@ -137,7 +137,8 @@ public class LightHttpClient
     public async Task<T> HttpPost<T>(string url, object? obj,
         IReadOnlyDictionary<string, string>? headers = null) where T : class
     {
-        HttpContent content = new StringContent(JsonSerializer.Serialize(obj));
+        var serialize = JsonSerializer.Serialize(obj);
+        HttpContent content = new StringContent(serialize);
         content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         return await SendAsync<T>(url, null, content, headers, RequestMethod.Post);
     }

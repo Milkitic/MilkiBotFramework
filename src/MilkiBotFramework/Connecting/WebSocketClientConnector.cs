@@ -45,7 +45,7 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
 
     public Encoding? Encoding { get; set; } = Encoding.UTF8;
 
-    public async Task ConnectAsync()
+    public virtual async Task ConnectAsync()
     {
         using (await _asyncLock.LockAsync().ConfigureAwait(false))
         {
@@ -94,7 +94,7 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
         }
     }
 
-    public async Task DisconnectAsync()
+    public virtual async Task DisconnectAsync()
     {
         using (await _asyncLock.LockAsync().ConfigureAwait(false))
         {

@@ -1,23 +1,49 @@
-﻿using System.Text;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
+using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 
 namespace MilkiBotFramework.Platforms.QQ.Connecting;
 
-public class QApiConnector : IConnector
+public class QApiConnector : WebSocketClientConnector
 {
-    public QConnection? Connection { get; set; }
-    public ConnectionType ConnectionType { get; set; }
-    public string? TargetUri { get; set; }
-    public string? BindingPath { get; set; }
-    public TimeSpan ConnectionTimeout { get; set; }
-    public TimeSpan MessageTimeout { get; set; }
-    public Encoding? Encoding { get; set; }
-    public event Func<string, Task>? RawMessageReceived;
+    private readonly LightHttpClient _httpClient;
 
-    public Task ConnectAsync()
+    public QApiConnector(LightHttpClient httpClient, ILogger<WebSocketClientConnector> logger) : base(logger)
     {
-        throw new NotImplementedException();
+        _httpClient = httpClient;
     }
+
+    public QConnection? Connection { get; set; }
+
+    public override async Task ConnectAsync()
+    {
+        if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
+        var response = await _httpClient.HttpPost<string>(
+            "https://bots.qq.com/app/getAppAccessToken",
+            new
+            {
+                appId = Connection.AppId,
+                clientSecret = Connection.ClientSecret
+            });
+
+        var jsonNode = JsonNode.Parse(response)!;
+        var code = jsonNode["code"];
+        var message = jsonNode["message"];
+        if (code != null)
+        {
+            throw new QApiException(code.GetValue<int>().ToString(), message?.GetValue<string>());
+        }
+
+        //var s = JsonSerializer.Deserialize<resp_getAppAccessToken>(response);
+        await base.ConnectAsync();
+    }
+    //public Task ConnectAsync()
+    //{
+    //    if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
+
+    //    throw new NotImplementedException();
+    //}
 
     public Task DisconnectAsync()
     {

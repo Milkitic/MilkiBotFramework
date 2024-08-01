@@ -32,6 +32,6 @@ public static class BotBuilderExtensions
 public class QConnection
 {
     public bool IsDevelopment { get; set; }
-    public int AppId { get; set; }
+    public string? AppId { get; set; }
     public string? ClientSecret { get; set; }
 }
