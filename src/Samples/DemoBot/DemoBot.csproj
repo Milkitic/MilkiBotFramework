@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\MilkiBotFramework.Aspnetcore\MilkiBotFramework.Aspnetcore.csproj" />
     <ProjectReference Include="..\..\Platforms\MilkiBotFramework.Platforms.GoCqHttp\MilkiBotFramework.Platforms.GoCqHttp.csproj" />
     <ProjectReference Include="..\..\MilkiBotFramework\MilkiBotFramework.csproj" />
+    <ProjectReference Include="..\..\Platforms\MilkiBotFramework.Platforms.QQ\MilkiBotFramework.Platforms.QQ.csproj" />
   </ItemGroup>
 
   <ItemGroup>
