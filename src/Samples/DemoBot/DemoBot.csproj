@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\MilkiBotFramework.Aspnetcore\MilkiBotFramework.Aspnetcore.csproj" />
-    <ProjectReference Include="..\..\MilkiBotFramework.Platforms.GoCqHttp\MilkiBotFramework.Platforms.GoCqHttp.csproj" />
+    <ProjectReference Include="..\..\Platforms\MilkiBotFramework.Platforms.GoCqHttp\MilkiBotFramework.Platforms.GoCqHttp.csproj" />
     <ProjectReference Include="..\..\MilkiBotFramework\MilkiBotFramework.csproj" />
   </ItemGroup>
 

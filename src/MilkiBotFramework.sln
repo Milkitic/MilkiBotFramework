@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.32126.317
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework", "MilkiBotFramework\MilkiBotFramework.csproj", "{EC607AE2-8633-43C0-9A8A-05ECDEDAACEF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework.Platforms.GoCqHttp", "MilkiBotFramework.Platforms.GoCqHttp\MilkiBotFramework.Platforms.GoCqHttp.csproj", "{91A2977B-FFF4-4D30-8E74-8E7490708EFD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework.Platforms.GoCqHttp", "Platforms\MilkiBotFramework.Platforms.GoCqHttp\MilkiBotFramework.Platforms.GoCqHttp.csproj", "{91A2977B-FFF4-4D30-8E74-8E7490708EFD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{A130D3F4-6E65-4F6C-A0EE-2412DA1D2C7E}"
 EndProject
@@ -28,6 +28,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework.Imaging.Avalonia", "MilkiBotFramework.Imaging.Avalonia\MilkiBotFramework.Imaging.Avalonia.csproj", "{E9A89D05-C006-4403-8E3F-E3695AB49EED}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaHeadlessTest", "Tests\AvaHeadlessTest\AvaHeadlessTest.csproj", "{332404CB-044D-44FA-A1DB-F786DA574BEC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Platforms", "Platforms", "{BCF7067F-759B-4EED-96C8-014AF9E7DAC6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -80,6 +82,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{91A2977B-FFF4-4D30-8E74-8E7490708EFD} = {BCF7067F-759B-4EED-96C8-014AF9E7DAC6}
 		{305E49D5-EABA-4A88-8B79-2F7B1836FC01} = {A130D3F4-6E65-4F6C-A0EE-2412DA1D2C7E}
 		{3A25DA4D-5669-46C5-8E77-0B14666E009B} = {ED8D8D85-3F75-4F6E-80A2-E3AD50E97C8F}
 		{ED346BCE-EEC7-4A86-A923-9473A782F48A} = {94A508B0-181B-4A87-886A-1311F050BCCA}
