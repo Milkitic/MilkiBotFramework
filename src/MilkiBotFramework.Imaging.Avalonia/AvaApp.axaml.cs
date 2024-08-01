@@ -1,23 +1,31 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Styling;
-using Avalonia.Themes.Fluent;
+using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 
-namespace MilkiBotFramework.Imaging.Avalonia.Internal;
+namespace MilkiBotFramework.Imaging.Avalonia;
 
-public class AvaApp : Application
+// ReSharper disable once PartialTypeWithSinglePart
+public partial class AvaApp : Application
 {
     private readonly TaskCompletionSource _setupFinished;
+
+    public AvaApp()
+    {
+        _setupFinished = new TaskCompletionSource();
+    }
 
     public AvaApp(TaskCompletionSource setupFinished)
     {
         _setupFinished = setupFinished;
-        RequestedThemeVariant = ThemeVariant.Light;
-        Styles.Add(new FluentTheme());
+    }
+
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -39,7 +47,7 @@ public class AvaApp : Application
 
     private void UIThread_UnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        Debug.Fail("UI线程异常", e.Exception.ToString());
+        Debug.Fail("Exception on UI thread!", e.Exception.ToString());
         e.Handled = true;
     }
 }

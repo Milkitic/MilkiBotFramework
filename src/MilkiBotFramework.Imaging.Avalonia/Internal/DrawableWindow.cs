@@ -6,27 +6,16 @@ using Avalonia.Media;
 
 namespace MilkiBotFramework.Imaging.Avalonia.Internal;
 
-internal class HiddenWindow : Window
+internal class DrawableWindow : Window
 {
-    public HiddenWindow()
-    {
-        SizeToContent = SizeToContent.WidthAndHeight;
-        Width = 0;
-        Height = 0;
-        ShowInTaskbar = false;
-        ShowActivated = false;
-        Opacity = 0;
-    }
-
     public bool IsShown { get; private set; }
 
     /// <summary>
     /// 窗体显示事件
     /// </summary>
     public static readonly RoutedEvent<RoutedEventArgs> ShownEvent =
-        RoutedEvent.Register<HiddenWindow, RoutedEventArgs>(
-            nameof(Shown),
-            RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
+        RoutedEvent.Register<DrawableWindow, RoutedEventArgs>(
+            nameof(Shown), RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
 
     /// <summary>
     /// 当窗体显示时发生。
