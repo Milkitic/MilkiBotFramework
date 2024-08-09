@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 
@@ -7,7 +6,15 @@ namespace MilkiBotFramework.Platforms.QQ.Connecting;
 
 public class QApiConnector : WebSocketClientConnector
 {
+    private const string ProductHost = "api.sgroup.qq.com";
+    private const string SandboxHost = "sandbox.api.sgroup.qq.com";
+
     private readonly LightHttpClient _httpClient;
+
+    private DateTime _tokenExpireTime;
+    private string? _accessToken;
+
+    private string? _wsUrl;
 
     public QApiConnector(LightHttpClient httpClient, ILogger<WebSocketClientConnector> logger) : base(logger)
     {
@@ -16,27 +23,66 @@ public class QApiConnector : WebSocketClientConnector
 
     public QConnection? Connection { get; set; }
 
+    public string Host
+    {
+        get
+        {
+            if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
+            return Connection.IsDevelopment ? SandboxHost : ProductHost;
+        }
+    }
+
     public override async Task ConnectAsync()
     {
         if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
+        await RequestAccessToken(Connection);
+        await RequestEndpoint();
+
+        TargetUri = _wsUrl;
+
+        //var s = JsonSerializer.Deserialize<resp_getAppAccessToken>(response);
+        await base.ConnectAsync();
+    }
+
+    private async Task RequestAccessToken(QConnection connection)
+    {
         var response = await _httpClient.HttpPost<string>(
             "https://bots.qq.com/app/getAppAccessToken",
             new
             {
-                appId = Connection.AppId,
-                clientSecret = Connection.ClientSecret
+                appId = connection.AppId,
+                clientSecret = connection.ClientSecret
             });
 
         var jsonNode = JsonNode.Parse(response)!;
+        ValidateResult(jsonNode);
+
+        var accessToken = jsonNode["access_token"]!.GetValue<string>();
+        var expiresIn = int.Parse(jsonNode["expires_in"]!.GetValue<string>());
+        _accessToken = accessToken;
+        _tokenExpireTime = DateTime.Now.AddSeconds(expiresIn);
+    }
+
+    private async Task RequestEndpoint()
+    {
+        var response2 = await _httpClient.HttpGet<string>(
+            $"https://{Host}/gateway", headers: new Dictionary<string, string>()
+            {
+                ["Authorization"] = "QQBot " + _accessToken
+            });
+        var jsonNode2 = JsonNode.Parse(response2)!;
+        ValidateResult(jsonNode2);
+        _wsUrl = jsonNode2["url"]!.GetValue<string>();
+    }
+
+    private static void ValidateResult(JsonNode jsonNode)
+    {
         var code = jsonNode["code"];
-        var message = jsonNode["message"];
         if (code != null)
         {
+            var message = jsonNode["message"];
             throw new QApiException(code.GetValue<int>().ToString(), message?.GetValue<string>());
         }
-
-        //var s = JsonSerializer.Deserialize<resp_getAppAccessToken>(response);
-        await base.ConnectAsync();
     }
     //public Task ConnectAsync()
     //{
@@ -45,13 +91,13 @@ public class QApiConnector : WebSocketClientConnector
     //    throw new NotImplementedException();
     //}
 
-    public Task DisconnectAsync()
-    {
-        throw new NotImplementedException();
-    }
+    //public Task DisconnectAsync()
+    //{
+    //    throw new NotImplementedException();
+    //}
 
-    public Task<string> SendMessageAsync(string message, string state)
-    {
-        throw new NotImplementedException();
-    }
+    //public Task<string> SendMessageAsync(string message, string state)
+    //{
+    //    throw new NotImplementedException();
+    //}
 }
