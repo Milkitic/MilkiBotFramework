@@ -6,9 +6,9 @@ using Avalonia;
 using Avalonia.Headless;
 using MilkiBotFramework.Utils;
 
-namespace MilkiBotFramework.Imaging.Avalonia;
+namespace MilkiBotFramework.Imaging.Avalonia.Internal;
 
-public static class UiThreadHelper
+internal static class UiThreadHelper
 {
     private static Thread? _uiThread;
     private static readonly AsyncLock AsyncLock = new();

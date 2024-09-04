@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.ReactiveUI;
 using Avalonia.Threading;
 using MilkiBotFramework.Imaging.Avalonia;
+using MilkiBotFramework.Imaging.Avalonia.Internal;
 
 namespace AvaHeadlessTest;
 
