@@ -27,7 +27,10 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
                 _client?.Send(message);
                 return Task.CompletedTask;
             },
-            RawMessageReceived,
+            async message =>
+            {
+                if (RawMessageReceived != null) await RawMessageReceived.Invoke(message);
+            },
             TryGetStateByMessage
         );
     }
@@ -110,7 +113,7 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
         }
     }
 
-    public Task<string> SendMessageAsync(string message, string state)
+    public Task<string> SendMessageAsync(string message, string? state)
     {
         if (_client == null)
             throw new ArgumentNullException(nameof(_client),

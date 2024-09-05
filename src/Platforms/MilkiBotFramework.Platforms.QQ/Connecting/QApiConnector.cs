@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 
@@ -19,6 +20,11 @@ public class QApiConnector : WebSocketClientConnector
     public QApiConnector(LightHttpClient httpClient, ILogger<WebSocketClientConnector> logger) : base(logger)
     {
         _httpClient = httpClient;
+        RawMessageReceived += QApiConnector_RawMessageReceived;
+    }
+
+    private async Task QApiConnector_RawMessageReceived(string message)
+    {
     }
 
     public QConnection? Connection { get; set; }
@@ -42,6 +48,17 @@ public class QApiConnector : WebSocketClientConnector
 
         //var s = JsonSerializer.Deserialize<resp_getAppAccessToken>(response);
         await base.ConnectAsync();
+        var s = JsonSerializer.Serialize(new
+        {
+            op = 2,
+            d = new
+            {
+                token = $"QQBot {_accessToken}",
+                intents = 1845498883,
+                shard = new[] { 0, 1 },
+            }
+        });
+        await SendMessageAsync(s, null);
     }
 
     private async Task RequestAccessToken(QConnection connection)

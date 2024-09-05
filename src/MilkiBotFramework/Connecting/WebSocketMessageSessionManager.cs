@@ -30,7 +30,7 @@ public class WebSocketMessageSessionManager
         _tryGetStateDelegate = tryGetStateDelegate;
     }
 
-    public async Task<string> SendMessageAsync(string message, string state)
+    public async Task<string?> SendMessageAsync(string message, string? state)
     {
         var tcs = new TaskCompletionSource();
         var messageTimeout = _getMessageTimeout();
@@ -48,23 +48,29 @@ public class WebSocketMessageSessionManager
             }
         });
         var sessionObj = new WebSocketMessageSession(tcs);
-        _sessions.TryAdd(state, sessionObj);
-        await _sendAction(message);
-        try
+        if (state != null)
         {
-            await tcs.Task.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("Timed out for receiving response from websocket server.", ex);
-        }
-        finally
-        {
-            _sessions.TryRemove(state, out _);
+            _sessions.TryAdd(state, sessionObj);
+            await _sendAction(message);
+            try
+            {
+                await tcs.Task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Timed out for receiving response from websocket server.", ex);
+            }
+            finally
+            {
+                _sessions.TryRemove(state, out _);
+            }
+
+            if (sessionObj.Response == null) throw new NullReferenceException();
+            return sessionObj.Response;
         }
 
-        if (sessionObj.Response == null) throw new NullReferenceException();
-        return sessionObj.Response;
+        await _sendAction(message);
+        return null;
     }
 
     public Task InvokeMessageReceive(string msg)
