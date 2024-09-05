@@ -1,4 +1,5 @@
-﻿using Avalonia;
+﻿using System.Diagnostics.CodeAnalysis;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Layout;
@@ -10,21 +11,27 @@ using SixLabors.ImageSharp.Formats.Png;
 
 namespace AvaHeadlessTest;
 
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 internal class Program
 {
     public static async Task Main(string[] args)
     {
-        AvaloniaOptions.GetApplicationFunc = taskCompletionSource => new App(taskCompletionSource);
-        AvaloniaOptions.CustomConfigureFunc = k => k.WithInterFont();
         //BuildAvaloniaApp()
         //    .StartWithClassicDesktopLifetime(args);
+
+        AvaloniaOptions.GetApplicationFunc = taskCompletionSource => new App(taskCompletionSource);
+        AvaloniaOptions.CustomConfigureFunc = k => k.WithInterFont();
         var vm = new AvaTestViewModel();
         var processor = new AvaRenderingProcessor<AvaTestControl>(true);
         var sb = await processor.ProcessAsync(vm);
         await using var fs = File.Create("file.png");
         await sb.SaveAsync(fs, new PngEncoder());
-        return;
+        //return;
+        //await TestRaw();
+    }
 
+    private static async Task TestRaw()
+    {
         await UiThreadHelper.EnsureUiThreadAsync();
         Console.WriteLine("Load finished");
         Dispatcher.UIThread.Invoke(() =>

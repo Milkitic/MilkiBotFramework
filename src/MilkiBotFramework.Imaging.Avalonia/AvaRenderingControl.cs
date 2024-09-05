@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,6 +60,7 @@ public abstract class AvaRenderingControl : UserControl
     public AvaRenderingControl(/*object viewModel, Image? sourceImage = null*/)
     {
         _tcs = new TaskCompletionSource();
+        // ReSharper disable once AsyncVoidLambda
         _timer = new Timer(async _ =>
         {
             await FinishRender();
@@ -72,10 +72,10 @@ public abstract class AvaRenderingControl : UserControl
             _tcs.SetResult();
             return Task.CompletedTask;
         };
-
-        RenderOptions.SetTextRenderingMode(this, TextRenderingMode.Antialias);
+        
         // SubpixelAntialias needs opaque background, and only on windows
         // https://github.com/AvaloniaUI/Avalonia/issues/2464
+        RenderOptions.SetTextRenderingMode(this, TextRenderingMode.Antialias);
     }
 
     public Image? SourceImage

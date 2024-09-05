@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Headless;
 using Avalonia.Threading;
 using MilkiBotFramework.Imaging.Avalonia.Internal;
 using SixLabors.ImageSharp;
@@ -89,8 +88,8 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
             }
             else
             {
-                var window = new DrawingWindow { Content = new DpiDecorator { Child = subProcessor } };
-          
+                _ = new DrawingWindow { Content = new DpiDecorator { Child = subProcessor } };
+
                 var size = new Size(subProcessor.Width, subProcessor.Height);
                 subProcessor.Measure(size);
                 subProcessor.Arrange(new Rect(size));
