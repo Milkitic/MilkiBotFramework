@@ -46,10 +46,26 @@
           <controls:NumberBox Margin="0,0,0,10" Value="114514" />
           <TextBox Margin="0,0,0,10" Text="{Binding Text}" />
           <Button
-            x:Name="Button"
+            x:Name="Button" Classes="red"
             Margin="0,0,0,10"
-            Content="WinUI Button" />
-          <controls:FAColorPicker />
+            Content="WinUI Button" >
+            <Button.Styles>
+              <Style Selector="Button.red">
+                <Setter Property="Background" Value="Red"/>
+                <Style.Animations>
+                  <Animation Duration="0:0:1" IterationCount="1000">
+                    <KeyFrame Cue="0%">
+                      <Setter Property="Opacity" Value="0.0"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                      <Setter Property="Opacity" Value="1.0"/>
+                    </KeyFrame>
+                  </Animation>
+                </Style.Animations>
+              </Style>
+            </Button.Styles>
+          </Button>
+          <controls:FAColorPicker x:Name="ColorPicker" />
         </StackPanel>
       </TabItem>
     </TabControl>

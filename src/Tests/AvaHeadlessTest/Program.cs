@@ -5,6 +5,7 @@ using Avalonia.Headless;
 using Avalonia.Layout;
 using Avalonia.ReactiveUI;
 using Avalonia.Threading;
+using Avalonia.Vulkan;
 using MilkiBotFramework.Imaging.Avalonia;
 using MilkiBotFramework.Imaging.Avalonia.Internal;
 using SixLabors.ImageSharp.Formats.Png;
@@ -21,14 +22,33 @@ internal class Program
         try
         {
             AvaloniaOptions.GetApplicationFunc = taskCompletionSource => new App(taskCompletionSource);
-            AvaloniaOptions.CustomConfigureFunc = k => k.WithInterFont();
+            AvaloniaOptions.CustomConfigureFunc = k => k           .With(new Win32PlatformOptions
+                {
+                    RenderingMode = new []
+                    {
+                        Win32RenderingMode.Vulkan
+                    }
+                })
+                .With(new X11PlatformOptions(){RenderingMode =new[] { X11RenderingMode.Vulkan } })
+                .With(new VulkanOptions()
+                {
+                    VulkanInstanceCreationOptions = new VulkanInstanceCreationOptions()
+                    {
+                        UseDebug = true
+                    }
+                }).WithInterFont();
             var vm = new AvaTestViewModel();
             var processor = new AvaRenderingProcessor<AvaTestControl>(true);
             var sb = await processor.ProcessAsync(vm);
             Console.WriteLine(sb.Bounds);
             Directory.CreateDirectory("output");
             await using var fs = File.Create("output/file.png");
-            await sb.SaveAsync(fs, new PngEncoder());
+            //await using var fs = new MemoryStream();
+            //for (int i = 0; i < 100000; i++)
+            {
+                await sb.SaveAsync(fs, new PngEncoder());
+                //fs.Position = 0;
+            }
         }
         catch (Exception e)
         {
