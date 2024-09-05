@@ -10,4 +10,9 @@
     <!--<FluentTheme />-->
     <styling:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />
   </Application.Styles>
+
+  <!--<Application.Resources>
+    <FontFamily x:Key="Arial">avares://AvaHeadlessTest/Assets/Fonts#Inter</FontFamily>
+  </Application.Resources>-->
+
 </Application>

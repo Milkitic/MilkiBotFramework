@@ -12,6 +12,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\Fonts\readme.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FluentAvaloniaUI" Version="2.1.0" />
   </ItemGroup>
 
