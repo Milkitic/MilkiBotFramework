@@ -18,13 +18,14 @@ public partial class AvaTestControl : AvaRenderingControl<AvaTestViewModel>
     {
         InitializeComponent();
         NavigationView.SelectedItem = NavigationView.MenuItems[0];
-        Button.Focus(NavigationMethod.Tab);
+        //Button.Focus(NavigationMethod.Tab);
         Loaded += AvaTestControl_Loaded;
     }
 
     private async void AvaTestControl_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         //await Task.Delay(200);
+        if (Design.IsDesignMode) return;
         var topLevel = TopLevel.GetTopLevel(this);
         topLevel!.MouseDown(new Point(251, 165), MouseButton.Left);
         //topLevel.MouseDown(new Point(251, 247), MouseButton.Left);
