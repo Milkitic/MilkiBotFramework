@@ -1,37 +1,95 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using MilkiBotFramework.Imaging.Avalonia.Internal;
 using Image = SixLabors.ImageSharp.Image;
 
 namespace MilkiBotFramework.Imaging.Avalonia;
 
-public abstract class AvaDrawingControl : UserControl
+public abstract class AvaRenderingControl<TViewModel> : AvaRenderingControl
+{
+    public static readonly StyledProperty<TViewModel?> ViewModelProperty =
+        AvaloniaProperty.Register<AvaRenderingControl, TViewModel?>(nameof(ViewModel));
+
+    public TViewModel? ViewModel
+    {
+        get => GetValue(ViewModelProperty);
+        set => SetValue(ViewModelProperty, value);
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.Property == DataContextProperty)
+        {
+            if (e.NewValue is TViewModel viewModel)
+            {
+                ViewModel = viewModel;
+            }
+            else
+            {
+                ViewModel = default;
+            }
+        }
+    }
+}
+
+public abstract class AvaRenderingControl : UserControl
 {
     internal event RenderFinishDelegate? RenderFinished;
 
-    protected readonly Image? SourceImage;
-    protected readonly Bitmap? SourceBitmapImage;
-    protected readonly object ViewModel;
-    private readonly TaskCompletionSource _tcs;
+    public static readonly StyledProperty<Bitmap?> SourceBitmapProperty =
+        AvaloniaProperty.Register<AvaRenderingControl, Bitmap?>(nameof(SourceBitmap));
 
-    public AvaDrawingControl(object viewModel, Image? sourceImage = null)
+    public Bitmap? SourceBitmap
     {
-        SourceImage = sourceImage;
-        DataContext = ViewModel = viewModel;
-        if (sourceImage != null)
-            SourceBitmapImage = AvaImageHelper.GetBitmapImageFromImageSharp(sourceImage);
+        get => GetValue(SourceBitmapProperty);
+        set => SetValue(SourceBitmapProperty, value);
+    }
+
+    private readonly TaskCompletionSource _tcs;
+    private readonly Image? _sourceImage;
+    private readonly Timer _timer;
+
+    public AvaRenderingControl(/*object viewModel, Image? sourceImage = null*/)
+    {
         _tcs = new TaskCompletionSource();
+        _timer = new Timer(async _ =>
+        {
+            await FinishRender();
+            _timer?.Dispose();
+        }, null, TimeSpan.FromSeconds(10), Timeout.InfiniteTimeSpan);
+
         RenderFinished += (_, _) =>
         {
             _tcs.SetResult();
             return Task.CompletedTask;
         };
+
+        RenderOptions.SetTextRenderingMode(this, TextRenderingMode.Antialias);
+        // SubpixelAntialias needs opaque background, and only on windows
+        // https://github.com/AvaloniaUI/Avalonia/issues/2464
     }
+
+    public Image? SourceImage
+    {
+        protected get => _sourceImage;
+        init
+        {
+            _sourceImage = value;
+            if (value != null)
+                SourceBitmap = AvaImageHelper.GetBitmapImageFromImageSharp(value);
+        }
+    }
+
+    public Task DrawingTask => _tcs.Task;
 
     public virtual Task<MemoryStream> ProcessOnceAsync()
     {
@@ -68,19 +126,15 @@ public abstract class AvaDrawingControl : UserControl
         yield break;
     }
 
-    public Task GetDrawingTask()
-    {
-        return _tcs.Task;
-    }
-
     protected internal virtual Visual GetDrawingVisual(out Size size)
     {
         size = new Size(Bounds.Width, Bounds.Height);
         return this;
     }
 
-    protected async Task FinishDrawing()
+    protected async Task FinishRender()
     {
+        await _timer.DisposeAsync();
         if (RenderFinished != null)
             await RenderFinished.Invoke(this, EventArgs.Empty);
     }

@@ -6,6 +6,7 @@ using Avalonia.ReactiveUI;
 using Avalonia.Threading;
 using MilkiBotFramework.Imaging.Avalonia;
 using MilkiBotFramework.Imaging.Avalonia.Internal;
+using SixLabors.ImageSharp.Formats.Png;
 
 namespace AvaHeadlessTest;
 
@@ -15,6 +16,13 @@ internal class Program
     {
         //BuildAvaloniaApp()
         //    .StartWithClassicDesktopLifetime(args);
+        var vm = new AvaTestViewModel();
+        var processor = new AvaRenderingProcessor<AvaTestControl>(true);
+        var sb = await processor.ProcessAsync(vm);
+        await using var fs = File.Create("file.png");
+        await sb.SaveAsync(fs, new PngEncoder());
+        return;
+
         await UiThreadHelper.EnsureUiThreadAsync();
         Console.WriteLine("Load finished");
         Dispatcher.UIThread.Invoke(() =>

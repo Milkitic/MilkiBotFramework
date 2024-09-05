@@ -14,29 +14,42 @@ using Size = Avalonia.Size;
 
 namespace MilkiBotFramework.Imaging.Avalonia;
 
-public class AvaDrawingProcessor<TViewModel, TProcessControl> : IDrawingProcessor<TViewModel>
+public class AvaRenderingProcessor<TViewModel, TProcessControl> : AvaRenderingProcessor<TProcessControl>
     where TViewModel : class
-    where TProcessControl : AvaDrawingControl
+    where TProcessControl : AvaRenderingControl
+{
+    public AvaRenderingProcessor(bool enableWindowRendering = false) : base(enableWindowRendering)
+    {
+    }
+
+    public AvaRenderingProcessor(Func<TViewModel, Image?, AvaRenderingControl> templateControlCreation,
+        bool enableWindowRendering = false) : base((obj, img) => templateControlCreation((TViewModel)obj, img),
+        enableWindowRendering)
+    {
+    }
+}
+
+public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
+    where TProcessControl : AvaRenderingControl
 {
     private readonly bool _enableWindowRendering;
-    private readonly Func<TViewModel, Image?, AvaDrawingControl>? _templateControlCreation;
     private readonly Type? _type;
+    private readonly Func<object, Image?, AvaRenderingControl>? _templateControlCreation;
 
-    public AvaDrawingProcessor(bool enableWindowRendering = false)
+    public AvaRenderingProcessor(bool enableWindowRendering = false)
     {
         _type = typeof(TProcessControl);
         _enableWindowRendering = enableWindowRendering;
     }
 
-    public AvaDrawingProcessor(Func<TViewModel, Image?, AvaDrawingControl> templateControlCreation,
+    public AvaRenderingProcessor(Func<object, Image?, AvaRenderingControl> templateControlCreation,
         bool enableWindowRendering = false)
     {
         _templateControlCreation = templateControlCreation;
         _enableWindowRendering = enableWindowRendering;
     }
 
-
-    public async Task<Image> ProcessAsync(TViewModel viewModel, Image? sourceImage = null)
+    public async Task<Image> ProcessAsync(object viewModel, Image? sourceImage = null)
     {
         await UiThreadHelper.EnsureUiThreadAsync();
         MemoryStream? retStream = null;
@@ -49,38 +62,40 @@ public class AvaDrawingProcessor<TViewModel, TProcessControl> : IDrawingProcesso
             {
                 var window = new DrawingWindow { Content = new DpiDecorator { Child = subProcessor } };
                 window.Show();
-                await subProcessor.GetDrawingTask();
+                await subProcessor.DrawingTask;
                 await window.WaitForShown();
-                //retStream = await subProcessor.ProcessOnceAsync();
+                retStream = await subProcessor.ProcessOnceAsync();
 
-                var renderBitmap = window.CaptureRenderedFrame();
-                if (renderBitmap != null)
-                {
-                    try
-                    {
-                        retStream = new MemoryStream();
-                        renderBitmap.Save(retStream);
-                        retStream.Position = 0;
-                    }
-                    finally
-                    {
-                        renderBitmap.Dispose();
-                    }
-                }
-                else
-                {
-                    retStream = await subProcessor.ProcessOnceAsync();
-                }
+                //var renderBitmap = window.CaptureRenderedFrame();
+                //if (renderBitmap != null)
+                //{
+                //    try
+                //    {
+                //        retStream = new MemoryStream();
+                //        renderBitmap.Save(retStream);
+                //        retStream.Position = 0;
+                //    }
+                //    finally
+                //    {
+                //        renderBitmap.Dispose();
+                //    }
+                //}
+                //else
+                //{
+                //    retStream = await subProcessor.ProcessOnceAsync();
+                //}
 
                 window.Close();
             }
             else
             {
+                var window = new DrawingWindow { Content = new DpiDecorator { Child = subProcessor } };
+          
                 var size = new Size(subProcessor.Width, subProcessor.Height);
                 subProcessor.Measure(size);
                 subProcessor.Arrange(new Rect(size));
                 subProcessor.UpdateLayout();
-                await subProcessor.GetDrawingTask();
+                await subProcessor.DrawingTask;
                 retStream = await subProcessor.ProcessOnceAsync();
             }
 
@@ -103,7 +118,7 @@ public class AvaDrawingProcessor<TViewModel, TProcessControl> : IDrawingProcesso
         }
     }
 
-    public async Task<Image> ProcessGifAsync(TViewModel viewModel, TimeSpan interval, Image? sourceImage = null, bool repeat = true)
+    public async Task<Image> ProcessGifAsync(object viewModel, TimeSpan interval, Image? sourceImage = null, bool repeat = true)
     {
         await UiThreadHelper.EnsureUiThreadAsync();
         var retStreams = new List<MemoryStream>();
@@ -177,10 +192,18 @@ public class AvaDrawingProcessor<TViewModel, TProcessControl> : IDrawingProcesso
         }
     }
 
-    private AvaDrawingControl CreateControlInstance(Image? sourceImage, TViewModel model)
+    private AvaRenderingControl CreateControlInstance(Image? sourceImage, object model)
     {
-        return _templateControlCreation == null
-            ? (AvaDrawingControl)Activator.CreateInstance(_type!, model, sourceImage)!
-            : _templateControlCreation(model, sourceImage);
+        if (_templateControlCreation != null) return _templateControlCreation(model, sourceImage);
+
+        var type = _type!;
+        var avaDrawingControl = (AvaRenderingControl)Activator.CreateInstance(type)!;
+        var propImg = type.GetProperty(nameof(AvaRenderingControl.SourceImage));
+        var propCtx = type.GetProperty(nameof(AvaRenderingControl.DataContext));
+
+        propImg?.SetValue(avaDrawingControl, sourceImage);
+        propCtx?.SetValue(avaDrawingControl, model);
+
+        return avaDrawingControl;
     }
 }
