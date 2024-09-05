@@ -26,7 +26,7 @@ public partial class AvaTestControl : AvaRenderingControl<AvaTestViewModel>
     {
         //await Task.Delay(200);
         var topLevel = TopLevel.GetTopLevel(this);
-        topLevel.MouseDown(new Point(251, 165), MouseButton.Left);
+        topLevel!.MouseDown(new Point(251, 165), MouseButton.Left);
         //topLevel.MouseDown(new Point(251, 247), MouseButton.Left);
         //topLevel.MouseUp(new Point(251, 247), MouseButton.Left);
         //topLevel.MouseMove(new Point(271, 165));

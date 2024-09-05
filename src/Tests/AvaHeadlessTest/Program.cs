@@ -18,14 +18,24 @@ internal class Program
     {
         //BuildAvaloniaApp()
         //    .StartWithClassicDesktopLifetime(args);
+        try
+        {
+            AvaloniaOptions.GetApplicationFunc = taskCompletionSource => new App(taskCompletionSource);
+            AvaloniaOptions.CustomConfigureFunc = k => k.WithInterFont();
+            var vm = new AvaTestViewModel();
+            var processor = new AvaRenderingProcessor<AvaTestControl>(true);
+            var sb = await processor.ProcessAsync(vm);
+            Console.WriteLine(sb.Bounds);
+            Directory.CreateDirectory("output");
+            await using var fs = File.Create("output/file.png");
+            await sb.SaveAsync(fs, new PngEncoder());
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
 
-        AvaloniaOptions.GetApplicationFunc = taskCompletionSource => new App(taskCompletionSource);
-        AvaloniaOptions.CustomConfigureFunc = k => k.WithInterFont();
-        var vm = new AvaTestViewModel();
-        var processor = new AvaRenderingProcessor<AvaTestControl>(true);
-        var sb = await processor.ProcessAsync(vm);
-        await using var fs = File.Create("file.png");
-        await sb.SaveAsync(fs, new PngEncoder());
         //return;
         //await TestRaw();
     }
