@@ -14,6 +14,16 @@ public class CommentGatheringTypeInspector : TypeInspectorSkeleton
         _innerTypeDescriptor = innerTypeDescriptor ?? throw new ArgumentNullException(nameof(innerTypeDescriptor));
     }
 
+    public override string GetEnumName(Type enumType, string name)
+    {
+        return _innerTypeDescriptor.GetEnumName(enumType, name);
+    }
+
+    public override string GetEnumValue(object enumValue)
+    {
+        return _innerTypeDescriptor.GetEnumValue(enumValue);
+    }
+
     public override IEnumerable<IPropertyDescriptor> GetProperties(Type type, object? container)
     {
         return _innerTypeDescriptor
@@ -31,8 +41,15 @@ public class CommentGatheringTypeInspector : TypeInspectorSkeleton
             Name = baseDescriptor.Name;
         }
 
-        public string Name { get; set; }
 
+        public void Write(object target, object? value)
+        {
+            _baseDescriptor.Write(target, value);
+        }
+
+        public string Name { get; set; }
+        public bool AllowNulls => _baseDescriptor.AllowNulls;
+        public bool CanWrite => _baseDescriptor.CanWrite;
         public Type Type => _baseDescriptor.Type;
 
         public Type? TypeOverride
@@ -49,12 +66,8 @@ public class CommentGatheringTypeInspector : TypeInspectorSkeleton
             set => _baseDescriptor.ScalarStyle = value;
         }
 
-        public bool CanWrite => _baseDescriptor.CanWrite;
-
-        public void Write(object target, object? value)
-        {
-            _baseDescriptor.Write(target, value);
-        }
+        public bool Required => _baseDescriptor.Required;
+        public Type? ConverterType => _baseDescriptor.ConverterType;
 
         public T? GetCustomAttribute<T>() where T : Attribute
         {
@@ -64,7 +77,6 @@ public class CommentGatheringTypeInspector : TypeInspectorSkeleton
         public IObjectDescriptor Read(object target)
         {
             var description = _baseDescriptor.GetCustomAttribute<DescriptionAttribute>();
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             return description != null
                 ? new CommentsObjectDescriptor(_baseDescriptor.Read(target), description.Description)
                 : _baseDescriptor.Read(target);
