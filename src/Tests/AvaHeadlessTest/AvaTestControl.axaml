@@ -45,7 +45,10 @@
             Value="99" />
           <controls:NumberBox Margin="0,0,0,10" Value="114514" />
           <TextBox Margin="0,0,0,10" Text="{Binding Text}" />
-          <Button Margin="0,0,0,10" Content="WinUI Button" />
+          <Button
+            x:Name="Button"
+            Margin="0,0,0,10"
+            Content="WinUI Button" />
           <controls:FAColorPicker />
         </StackPanel>
       </TabItem>
