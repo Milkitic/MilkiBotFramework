@@ -14,6 +14,8 @@ internal class Program
 {
     public static async Task Main(string[] args)
     {
+        AvaloniaOptions.GetApplicationFunc = taskCompletionSource => new App(taskCompletionSource);
+        AvaloniaOptions.CustomConfigureFunc = k => k.WithInterFont();
         //BuildAvaloniaApp()
         //    .StartWithClassicDesktopLifetime(args);
         var vm = new AvaTestViewModel();
@@ -60,7 +62,7 @@ internal class Program
     public static AppBuilder BuildAvaloniaApp()
     {
         var waitComplete = new TaskCompletionSource();
-        return AppBuilder.Configure(() => new AvaApp(waitComplete))
+        return AppBuilder.Configure(() => new App(waitComplete))
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace()

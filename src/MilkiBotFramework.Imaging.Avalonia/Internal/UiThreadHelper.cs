@@ -14,9 +14,6 @@ internal static class UiThreadHelper
     private static readonly AsyncLock AsyncLock = new();
     private static readonly TaskCompletionSource WaitComplete = new();
 
-    // ReSharper disable once InconsistentNaming
-    public static Func<TaskCompletionSource, AvaApp>? GetApplicationFunc;
-
     public static async Task EnsureUiThreadAsync()
     {
         using (await AsyncLock.LockAsync())
@@ -28,14 +25,15 @@ internal static class UiThreadHelper
 
             _uiThread = new Thread(() =>
             {
-                var appBuilder = AppBuilder.Configure(() => GetApplicationFunc == null
-                       ? new AvaApp(WaitComplete)
-                       : GetApplicationFunc(WaitComplete))
-                   .UseSkia() // enable Skia renderer
-                   .UseHeadless(new AvaloniaHeadlessPlatformOptions
-                   {
-                       UseHeadlessDrawing = false // disable headless drawing
-                   });
+                var appBuilder = AppBuilder.Configure(() => AvaloniaOptions.GetApplicationFunc == null
+                        ? new AvaApp(WaitComplete)
+                        : AvaloniaOptions.GetApplicationFunc(WaitComplete))
+                    .CustomConfigure()
+                    .UseSkia() // enable Skia renderer
+                    .UseHeadless(new AvaloniaHeadlessPlatformOptions
+                    {
+                        UseHeadlessDrawing = false // disable headless drawing
+                    });
 
                 try
                 {
