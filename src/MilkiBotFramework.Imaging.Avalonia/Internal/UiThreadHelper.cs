@@ -6,16 +6,13 @@ using Avalonia;
 using Avalonia.Headless;
 using MilkiBotFramework.Utils;
 
-namespace MilkiBotFramework.Imaging.Avalonia;
+namespace MilkiBotFramework.Imaging.Avalonia.Internal;
 
-public static class UiThreadHelper
+internal static class UiThreadHelper
 {
     private static Thread? _uiThread;
     private static readonly AsyncLock AsyncLock = new();
     private static readonly TaskCompletionSource WaitComplete = new();
-
-    // ReSharper disable once InconsistentNaming
-    public static Func<TaskCompletionSource, AvaApp>? GetApplicationFunc;
 
     public static async Task EnsureUiThreadAsync()
     {
@@ -28,14 +25,15 @@ public static class UiThreadHelper
 
             _uiThread = new Thread(() =>
             {
-                var appBuilder = AppBuilder.Configure(() => GetApplicationFunc == null
-                       ? new AvaApp(WaitComplete)
-                       : GetApplicationFunc(WaitComplete))
-                   .UseSkia() // enable Skia renderer
-                   .UseHeadless(new AvaloniaHeadlessPlatformOptions
-                   {
-                       UseHeadlessDrawing = false // disable headless drawing
-                   });
+                var appBuilder = AppBuilder.Configure(() => AvaloniaOptions.GetApplicationFunc == null
+                        ? new AvaApp(WaitComplete)
+                        : AvaloniaOptions.GetApplicationFunc(WaitComplete))
+                    .CustomConfigure()
+                    .UseSkia() // enable Skia renderer
+                    .UseHeadless(new AvaloniaHeadlessPlatformOptions
+                    {
+                        UseHeadlessDrawing = false // disable headless drawing
+                    });
 
                 try
                 {

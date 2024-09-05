@@ -1,19 +1,37 @@
-﻿using Avalonia;
+﻿using System.Diagnostics.CodeAnalysis;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Layout;
 using Avalonia.ReactiveUI;
 using Avalonia.Threading;
 using MilkiBotFramework.Imaging.Avalonia;
+using MilkiBotFramework.Imaging.Avalonia.Internal;
+using SixLabors.ImageSharp.Formats.Png;
 
 namespace AvaHeadlessTest;
 
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 internal class Program
 {
     public static async Task Main(string[] args)
     {
         //BuildAvaloniaApp()
         //    .StartWithClassicDesktopLifetime(args);
+
+        AvaloniaOptions.GetApplicationFunc = taskCompletionSource => new App(taskCompletionSource);
+        AvaloniaOptions.CustomConfigureFunc = k => k.WithInterFont();
+        var vm = new AvaTestViewModel();
+        var processor = new AvaRenderingProcessor<AvaTestControl>(true);
+        var sb = await processor.ProcessAsync(vm);
+        await using var fs = File.Create("file.png");
+        await sb.SaveAsync(fs, new PngEncoder());
+        //return;
+        //await TestRaw();
+    }
+
+    private static async Task TestRaw()
+    {
         await UiThreadHelper.EnsureUiThreadAsync();
         Console.WriteLine("Load finished");
         Dispatcher.UIThread.Invoke(() =>
@@ -51,7 +69,7 @@ internal class Program
     public static AppBuilder BuildAvaloniaApp()
     {
         var waitComplete = new TaskCompletionSource();
-        return AppBuilder.Configure(() => new AvaApp(waitComplete))
+        return AppBuilder.Configure(() => new App(waitComplete))
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace()
