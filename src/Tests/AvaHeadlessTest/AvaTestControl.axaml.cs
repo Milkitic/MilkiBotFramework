@@ -1,3 +1,4 @@
+using FluentAvalonia.UI.Controls;
 using MilkiBotFramework.Data;
 using MilkiBotFramework.Imaging.Avalonia;
 
@@ -13,6 +14,7 @@ public partial class AvaTestControl : AvaRenderingControl<AvaTestViewModel>
     public AvaTestControl()
     {
         InitializeComponent();
+        NavigationView.SelectedItem = NavigationView.MenuItems[0];
         Loaded += AvaTestControl_Loaded;
     }
 
