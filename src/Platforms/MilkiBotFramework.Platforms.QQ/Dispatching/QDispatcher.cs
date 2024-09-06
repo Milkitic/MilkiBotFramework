@@ -26,8 +26,8 @@ public class QDispatcher : DispatcherBase<QMessageContext>
     {
         if (messageContext.MessageIdentity == MessageIdentity.MetaMessage ||
             messageContext.MessageIdentity == MessageIdentity.NoticeMessage) return false;
-        //messageContext.TextMessage = messageContext.RawMessage.Message;
-        throw new NotImplementedException();
+        messageContext.TextMessage = messageContext.RawMessage;
+        //throw new NotImplementedException();
         return true;
     }
 
@@ -39,13 +39,36 @@ public class QDispatcher : DispatcherBase<QMessageContext>
         strIdentity = null;
 
         var jDoc = JsonDocument.Parse(rawJson);
-        var hasProperty = jDoc.RootElement.TryGetProperty("post_type", out var postTypeElement);
-        if (!hasProperty)
+        messageContext.RawJsonDocument = jDoc;
+
+        var rootElement = jDoc.RootElement;
+        if (rootElement.TryGetProperty("t", out var tProp))
         {
-            messageIdentity = null;
-            return false;
+            if (tProp.GetString() == "GROUP_AT_MESSAGE_CREATE")
+            {
+                if (rootElement.TryGetProperty("d", out var dProp))
+                {
+                    var messageId = dProp.GetProperty("id").GetString()!;
+                    var memberId = dProp.GetProperty("author").GetProperty("member_openid").GetString()!;
+                    var groupId = dProp.GetProperty("group_id").GetString()!;
+                    var content = dProp.GetProperty("content").GetString()!.Trim();
+                    var timestamp = DateTimeOffset.Parse(dProp.GetProperty("timestamp").GetString()!);
+
+                    messageIdentity = new MessageIdentity(groupId, MessageType.Channel);
+
+                    messageContext.RawMessage = content;
+                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageIdentity, memberId);
+                    messageContext.ReceivedTime = timestamp;
+                    messageContext.MessageId = messageId;
+                    return true;
+                }
+            }
+
+            //throw new NotImplementedException();
         }
 
-        throw new NotImplementedException();
+        messageIdentity = null;
+        return false;
+
     }
 }

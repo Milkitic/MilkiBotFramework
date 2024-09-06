@@ -54,8 +54,10 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
             using var scope = _serviceProvider.CreateScope();
             var messageContext = (TMessageContext)scope.ServiceProvider.GetService(typeof(TMessageContext))!;
             messageContext.RawTextMessage = rawMessage;
-            await HandleMessageCore(messageContext);
-            _logger.LogDebug($"Total dispatching elapsed: {sw.Elapsed.TotalMilliseconds:N1}ms");
+            if (await HandleMessageCore(messageContext))
+            {
+                _logger.LogDebug($"Total dispatching elapsed: {sw.Elapsed.TotalMilliseconds:N1}ms");
+            }
         }
         catch (Exception ex)
         {
@@ -63,16 +65,19 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         }
     }
 
-    private async Task HandleMessageCore(TMessageContext messageContext)
+    private async Task<bool> HandleMessageCore(TMessageContext messageContext)
     {
         var hasIdentity = TryGetIdentityByRawMessage(messageContext, out var messageIdentity, out var strIdentity);
         if (!hasIdentity)
         {
             if (strIdentity == null)
-                _logger.LogWarning("Unknown message identity.");
-            else
-                _logger.LogWarning("Unknown message identity: " + strIdentity);
-            return;
+            {
+                //_logger.LogWarning("Unknown message identity.");
+                return false;
+            }
+
+            _logger.LogWarning("Unknown message identity: " + strIdentity);
+            return true;
         }
 
         messageContext.MessageIdentity = messageIdentity;
@@ -134,6 +139,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
 
         TrySetTextMessage(messageContext);
         await _eventBus.PublishAsync(new DispatchMessageEvent(messageContext, messageIdentity.MessageType));
+        return true;
     }
 
     protected abstract bool TrySetTextMessage(TMessageContext messageContext);

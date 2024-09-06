@@ -35,7 +35,7 @@ public class AspnetcoreConnector : IConnector
     public ConnectionType ConnectionType { get; set; }
     public string? TargetUri { get; set; }
     public string? BindingPath { get; set; }
-    public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(30);
+    public TimeSpan ErrorReconnectTimeout { get; set; } = TimeSpan.FromSeconds(30);
     public TimeSpan MessageTimeout { get; set; } = TimeSpan.FromSeconds(30);
     public Encoding? Encoding { get; set; }
 
@@ -243,13 +243,13 @@ public class AspnetcoreConnector : IConnector
         {
             var connectionWaiter = new TaskCompletionSource();
             _messageWaiters.Add(connectionWaiter);
-            using var cts1 = new CancellationTokenSource(ConnectionTimeout);
+            using var cts1 = new CancellationTokenSource(ErrorReconnectTimeout);
             cts1.Token.Register(() =>
             {
                 try
                 {
                     connectionWaiter.SetCanceled();
-                    _logger.LogWarning($"Connection is forced to time out after {ConnectionTimeout.Seconds} seconds.");
+                    _logger.LogWarning($"Connection is forced to time out after {ErrorReconnectTimeout.Seconds} seconds.");
                 }
                 catch
                 {

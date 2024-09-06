@@ -7,7 +7,7 @@ public interface IConnectorConfigurable
     public ConnectionType ConnectionType { get; set; }
     public string? TargetUri { get; set; }
     public string? BindingPath { get; set; }
-    public TimeSpan ConnectionTimeout { get; set; }
+    public TimeSpan ErrorReconnectTimeout { get; set; }
 
     /// <summary>
     /// 消息超时时间。
