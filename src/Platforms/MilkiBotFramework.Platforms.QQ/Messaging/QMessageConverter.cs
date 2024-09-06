@@ -5,13 +5,13 @@ namespace MilkiBotFramework.Platforms.QQ.Messaging;
 
 public class QMessageConverter : IRichMessageConverter
 {
-    public ValueTask<string> EncodeAsync(IRichMessage message)
+    public async ValueTask<string> EncodeAsync(IRichMessage message)
     {
-        throw new NotImplementedException();
+        return await message.EncodeAsync();
     }
 
     public RichMessage Decode(ReadOnlyMemory<char> message)
     {
-        throw new NotImplementedException();
+        return new RichMessage(new Text(message.ToString()));
     }
 }

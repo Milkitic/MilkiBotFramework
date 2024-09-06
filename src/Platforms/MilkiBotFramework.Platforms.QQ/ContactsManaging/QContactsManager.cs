@@ -5,23 +5,20 @@ using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
 using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
-using MilkiBotFramework.Platforms.QQ.Connecting;
 using MilkiBotFramework.Tasking;
 
 namespace MilkiBotFramework.Platforms.QQ.ContactsManaging;
 
 public sealed class QContactsManager : ContactsManagerBase
 {
-    private readonly QApi _goCqApi;
     private readonly ILogger<QContactsManager> _logger;
 
-    public QContactsManager(QApi goCqApi,
+    public QContactsManager(
         BotTaskScheduler botTaskScheduler,
         ILogger<QContactsManager> logger,
         EventBus eventBus)
         : base(botTaskScheduler, logger, eventBus)
     {
-        _goCqApi = goCqApi;
         _logger = logger;
     }
 
