@@ -69,6 +69,5 @@ public class QDispatcher : DispatcherBase<QMessageContext>
 
         messageIdentity = null;
         return false;
-
     }
 }

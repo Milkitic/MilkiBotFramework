@@ -36,6 +36,9 @@ public class QApiConnector : WebSocketClientConnector
         RawMessageReceived += QApiConnector_RawMessageReceived;
     }
 
+    public string Authorization => $"QQBot {_accessToken}";
+    public int MessageSequence => _lastSequence;
+
     private async Task QApiConnector_RawMessageReceived(string message)
     {
         var jsonDocument = JsonDocument.Parse(message);
@@ -147,7 +150,7 @@ public class QApiConnector : WebSocketClientConnector
         var response2 = await _httpClient.HttpGet<string>(
             $"https://{Host}/gateway", headers: new Dictionary<string, string>()
             {
-                ["Authorization"] = "QQBot " + _accessToken
+                ["Authorization"] = Authorization
             });
         var jsonNode2 = JsonNode.Parse(response2)!;
         ValidateResult(jsonNode2);
@@ -164,7 +167,7 @@ public class QApiConnector : WebSocketClientConnector
             op = 2,
             d = new
             {
-                token = $"QQBot {_accessToken}",
+                token = Authorization,
                 intents = intents,
                 shard = new[] { 0, 1 },
             }
@@ -222,7 +225,7 @@ public class QApiConnector : WebSocketClientConnector
             op = 6,
             d = new
             {
-                token = $"QQBot {_accessToken}",
+                token = Authorization,
                 session_id = _lastSessionId,
                 seq = _lastSequence
             }

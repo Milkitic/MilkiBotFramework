@@ -32,7 +32,7 @@ public sealed class QContactsManager : ContactsManagerBase
         var baseResult = await base.TryGetOrUpdateSelfInfo();
         if (baseResult.IsSuccess) return baseResult;
 
-        throw new NotImplementedException();
+        return new SelfInfoResult { IsSuccess = true, SelfInfo = SelfInfo };
     }
 
     public override async Task<ChannelInfoResult> TryGetOrAddChannelInfo(string channelId, string? subChannelId = null)

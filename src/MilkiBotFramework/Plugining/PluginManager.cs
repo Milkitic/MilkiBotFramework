@@ -334,11 +334,11 @@ public partial class PluginManager
             {
                 if (identity.MessageType == MessageType.Private)
                 {
-                    await _messageApi.SendPrivateMessageAsync(identity.Id!, plainMessage, response.Message);
+                    await _messageApi.SendPrivateMessageAsync(identity.Id!, plainMessage, response.Message, messageContext);
                 }
                 else
                 {
-                    await _messageApi.SendChannelMessageAsync(identity.Id!, plainMessage, response.Message, identity.SubId);
+                    await _messageApi.SendChannelMessageAsync(identity.Id!, plainMessage, response.Message, messageContext, identity.SubId);
                 }
             }
             else
@@ -360,11 +360,11 @@ public partial class PluginManager
             var plainMessage = await _richMessageConverter.EncodeAsync(responseMessage);
             if (response.MessageType == MessageType.Private)
             {
-                await _messageApi.SendPrivateMessageAsync(response.Id!, plainMessage, response.Message);
+                await _messageApi.SendPrivateMessageAsync(response.Id!, plainMessage, response.Message, messageContext);
             }
             else if (response.MessageType == MessageType.Channel)
             {
-                await _messageApi.SendChannelMessageAsync(response.Id!, plainMessage, response.Message, response.SubId);
+                await _messageApi.SendChannelMessageAsync(response.Id!, plainMessage, response.Message, messageContext, response.SubId);
             }
             else
             {

@@ -1,4 +1,5 @@
 ﻿using MilkiBotFramework.Connecting;
+using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
@@ -312,12 +313,13 @@ public class GoCqApi : IMessageApi
         return response.Data;
     }
 
-    Task<string> IMessageApi.SendPrivateMessageAsync(string userId, string message, IRichMessage? richMessage)
+    Task<string> IMessageApi.SendPrivateMessageAsync(string userId, string message, IRichMessage? richMessage, MessageContext messageContext)
     {
         return SendPrivateMessageAsync(long.Parse(userId), message);
     }
 
-    Task<string> IMessageApi.SendChannelMessageAsync(string channelId, string message, IRichMessage? richMessage, string? subChannelId)
+    Task<string> IMessageApi.SendChannelMessageAsync(string channelId, string message, IRichMessage? richMessage, MessageContext messageContext,
+        string? subChannelId)
     {
         if (subChannelId == null) return SendGroupMessageAsync(long.Parse(channelId), message);
         return SendGuildChannelMessageAsync(long.Parse(channelId), long.Parse(subChannelId), message);

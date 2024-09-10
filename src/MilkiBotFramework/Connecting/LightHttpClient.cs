@@ -257,7 +257,19 @@ public class LightHttpClient
             {
                 if (response.RequestMessage is { RequestUri: { } })
                     context.RequestUri = response.RequestMessage.RequestUri.ToString();
-                response.EnsureSuccessStatusCode();
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    try
+                    {
+                        response.EnsureSuccessStatusCode();
+                    }
+                    catch (Exception e)
+                    {
+                        if (string.IsNullOrWhiteSpace(error)) throw;
+                        throw new Exception($"HTTP {(int)response.StatusCode} {response.StatusCode}: {error}", e);
+                    }
+                }
 
                 if (typeof(T) == StaticTypes.String)
                 {
