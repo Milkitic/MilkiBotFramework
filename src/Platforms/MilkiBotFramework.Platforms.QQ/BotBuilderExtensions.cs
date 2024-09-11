@@ -28,10 +28,3 @@ public static class BotBuilderExtensions
         return (TBuilder)builder;
     }
 }
-
-public class QConnection
-{
-    public bool IsDevelopment { get; set; }
-    public string? AppId { get; set; }
-    public string? ClientSecret { get; set; }
-}

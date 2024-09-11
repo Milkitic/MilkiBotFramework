@@ -12,8 +12,8 @@ public class WebSocketMessageFilter : IDisposable
     private readonly CancellationTokenSource _cancellationTokenSource;
     private readonly ConcurrentQueue<string> _queue = new();
     private readonly AsyncLock _asyncLock = new();
+    private readonly AutoResetEvent _autoResetEvent = new(false);
 
-    private TaskCompletionSource _tcs = new();
     private bool _isDisposed;
     private bool _disconnected;
 
@@ -41,47 +41,43 @@ public class WebSocketMessageFilter : IDisposable
         webSocketClientConnector.RawMessageReceived += WebSocketClientConnector_RawMessageReceived;
     }
 
-    public async Task<T?> FilterMessageAsync<T>(Func<AsyncWsMessage, T?> filter)
+    public async Task<T?> FilterMessageAsync<T>(Func<WebSocketAsyncMessage, T?> filter)
     {
-        while (!_cancellationTokenSource.IsCancellationRequested)
+        try
         {
-            try
+            while (!_cancellationTokenSource.IsCancellationRequested)
             {
-                await _tcs.Task;
+                await _autoResetEvent.WaitOneAsync(_cancellationTokenSource.Token);
+                while (_queue.TryDequeue(out var message))
+                {
+                    var asyncWsMessage = new WebSocketAsyncMessage(message);
+                    var result = filter(asyncWsMessage);
+                    if (asyncWsMessage.IsHandled) return result;
+                }
             }
-            catch (TaskCanceledException)
-            {
-                return default;
-            }
-
-            using (await _asyncLock.LockAsync(_cancellationTokenSource.Token))
-            {
-                _tcs = new TaskCompletionSource();
-            }
-
-            while (_queue.TryDequeue(out var message))
-            {
-                var asyncWsMessage = new AsyncWsMessage(message);
-                var result = filter(asyncWsMessage);
-                if (asyncWsMessage.IsHandled) return result;
-            }
+        }
+        catch (TaskCanceledException)
+        {
+            return default;
+        }
+        catch (OperationCanceledException)
+        {
+            return default;
         }
 
         return default;
     }
 
-    private async Task PushMessageAsync(string message)
+    private void EnqueueMessage(string message)
     {
         _queue.Enqueue(message);
-        using (await _asyncLock.LockAsync(_cancellationTokenSource.Token))
-        {
-            _tcs.TrySetResult();
-        }
+        _autoResetEvent.Set();
     }
 
-    private async Task WebSocketClientConnector_RawMessageReceived(string message)
+    private Task WebSocketClientConnector_RawMessageReceived(string message)
     {
-        await PushMessageAsync(message);
+        EnqueueMessage(message);
+        return Task.CompletedTask;
     }
 
     private void WebSocketClientConnector_DisconnectionHappened(DisconnectionInfo obj)
@@ -106,19 +102,7 @@ public class WebSocketMessageFilter : IDisposable
         {
         }
 
-        _tcs.TrySetCanceled();
         _asyncLock.Dispose();
         _queue.Clear();
     }
-}
-
-public class AsyncWsMessage
-{
-    public AsyncWsMessage(string message)
-    {
-        Message = message;
-    }
-
-    public string Message { get; set; }
-    public bool IsHandled { get; set; }
 }

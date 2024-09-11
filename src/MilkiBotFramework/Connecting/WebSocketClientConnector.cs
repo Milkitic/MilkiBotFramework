@@ -72,7 +72,7 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
             MessageEncoding = Encoding,
             ReconnectTimeout = ReconnectTimeout
         };
-        Client.ReconnectionHappened.Subscribe(info =>
+        Client.ReconnectionHappened.Subscribe(async info =>
         {
             //if (info.Type == ReconnectionType.NoMessageReceived) return;
             _isConnected = true;
@@ -82,11 +82,18 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
                 _logger.LogInformation("Reconnected to websocket server.");
             if (info.Type != ReconnectionType.Lost)
             {
-                ReconnectionHappened?.Invoke(info);
-                OnReconnectionHappened(info);
+                try
+                {
+                    ReconnectionHappened?.Invoke(info);
+                    await OnReconnectionHappened(info);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error occurs while calling {nameof(ReconnectionHappened)} callback.");
+                }
             }
         });
-        Client.DisconnectionHappened.Subscribe(info =>
+        Client.DisconnectionHappened.Subscribe(async info =>
         {
             //if (info.Type == DisconnectionType.NoMessageReceived) return;
             var action = _isConnected ? "Disconnected from" : "Cannot connect to";
@@ -95,8 +102,15 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
                 _logger.LogWarning($"{action} the websocket server: {info.Exception.Message}");
             else
                 _logger.LogWarning($"{action} the websocket server: {info.Type}");
-            DisconnectionHappened?.Invoke(info);
-            OnDisconnectionHappened(info);
+            try
+            {
+                DisconnectionHappened?.Invoke(info);
+                await OnDisconnectionHappened(info);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error occurs while calling {nameof(DisconnectionHappened)} callback.");
+            }
         });
         // ReSharper disable once AsyncVoidLambda
         Client.MessageReceived.Subscribe(async msg => await OnMessageReceived(msg));
@@ -129,12 +143,14 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
         }
     }
 
-    protected virtual void OnReconnectionHappened(ReconnectionInfo reconnectionInfo)
+    protected virtual ValueTask OnReconnectionHappened(ReconnectionInfo reconnectionInfo)
     {
+        return ValueTask.CompletedTask;
     }
 
-    protected virtual void OnDisconnectionHappened(DisconnectionInfo disconnectionInfo)
+    protected virtual ValueTask OnDisconnectionHappened(DisconnectionInfo disconnectionInfo)
     {
+        return ValueTask.CompletedTask;
     }
 
 

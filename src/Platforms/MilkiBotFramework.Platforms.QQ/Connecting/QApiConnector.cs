@@ -93,7 +93,7 @@ public class QApiConnector : WebSocketClientConnector
         await base.ConnectAsync();
     }
 
-    protected override async void OnReconnectionHappened(ReconnectionInfo reconnectionInfo)
+    protected override async ValueTask OnReconnectionHappened(ReconnectionInfo reconnectionInfo)
     {
         bool isResume;
         if (_isDropped && _lastSessionId != default)
@@ -117,11 +117,11 @@ public class QApiConnector : WebSocketClientConnector
         }
     }
 
-    protected override void OnDisconnectionHappened(DisconnectionInfo disconnectionInfo)
+    protected override async ValueTask OnDisconnectionHappened(DisconnectionInfo disconnectionInfo)
     {
         _isDropped = disconnectionInfo.Type != DisconnectionType.ByServer;
         if (_cts == null) return;
-        _cts.Cancel();
+        await _cts.CancelAsync();
         _cts.Dispose();
         _cts = null;
     }
