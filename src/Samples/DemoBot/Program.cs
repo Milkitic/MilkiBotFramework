@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Aspnetcore;
-using MilkiBotFramework.Platforms.GoCqHttp;
 using MilkiBotFramework.Platforms.QQ;
 
 var bot = new AspnetcoreBotBuilder()

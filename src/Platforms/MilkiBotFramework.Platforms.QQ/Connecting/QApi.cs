@@ -33,7 +33,7 @@ public class QApi : IMessageApi
     public async Task<string> SendChannelMessageAsync(string channelId, string message, IRichMessage? richMessage, MessageContext messageContext, string? subChannelId)
     {
         var messageId = messageContext.MessageId;
-        var userId = messageContext.MessageUserIdentity!.UserId;
+        //var userId = messageContext.MessageUserIdentity!.UserId;
 
         var host = _qApiConnector.Host;
         var reply = richMessage is RichMessage { FirstIsReply: true };
@@ -57,8 +57,6 @@ public class QApi : IMessageApi
             { "Authorization", _qApiConnector.Authorization }
         });
         var str = result.ToString();
-        return "";
-        //throw new NotImplementedException();
-        //_qApiConnector.Send
+        return str ?? "";
     }
 }

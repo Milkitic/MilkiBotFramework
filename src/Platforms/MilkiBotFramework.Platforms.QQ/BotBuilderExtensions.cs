@@ -4,6 +4,7 @@ using MilkiBotFramework.Platforms.QQ.ContactsManaging;
 using MilkiBotFramework.Platforms.QQ.Dispatching;
 using MilkiBotFramework.Platforms.QQ.Messaging;
 using MilkiBotFramework.Plugining.CommandLine;
+using MilkiBotFramework.Plugining.Loading;
 
 namespace MilkiBotFramework.Platforms.QQ;
 
@@ -15,7 +16,7 @@ public static class BotBuilderExtensions
     {
         builder
             .ConfigureServices(k => { k.AddScoped(typeof(QMessageContext)); })
-            .UseCommandLineAnalyzer<CommandLineAnalyzer>(new QParameterConverter())
+            .UseCommandLineAnalyzer<CommandLineAnalyzer>(new DefaultParameterConverter())
             .UseContactsManager<QContactsManager>()
             .UseDispatcher<QDispatcher>()
             .UseMessageApi<QApi>()

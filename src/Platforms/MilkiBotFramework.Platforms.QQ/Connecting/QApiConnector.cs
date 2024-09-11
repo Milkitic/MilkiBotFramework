@@ -24,8 +24,10 @@ public class QApiConnector : WebSocketClientConnector
     private string? _wsUrl;
     private TimeSpan _heartBeatInterval = Timeout.InfiniteTimeSpan;
     private int _lastSequence;
-    private CancellationTokenSource? _cts;
     private Guid _lastSessionId;
+
+    private CancellationTokenSource? _cts;
+
     private bool _isDropped;
 
     public QApiConnector(LightHttpClient httpClient, IContactsManager contactsManager, ILogger<QApiConnector> logger) : base(logger)
@@ -39,7 +41,7 @@ public class QApiConnector : WebSocketClientConnector
     public string Authorization => $"QQBot {_accessToken}";
     public int MessageSequence => _lastSequence;
 
-    private async Task QApiConnector_RawMessageReceived(string message)
+    private Task QApiConnector_RawMessageReceived(string message)
     {
         var jsonDocument = JsonDocument.Parse(message);
         var rootElement = jsonDocument.RootElement;
@@ -60,7 +62,7 @@ public class QApiConnector : WebSocketClientConnector
         {
             if (rootElement.GetProperty("d").TryGetProperty("session_id", out var sessionProp))
             {
-                _lastSessionId = Guid.Parse(sessionProp.GetString());
+                _lastSessionId = Guid.Parse(sessionProp.GetString()!);
             }
         }
 
@@ -68,9 +70,11 @@ public class QApiConnector : WebSocketClientConnector
         {
             _lastSequence = sProp.GetInt32();
         }
+
+        return Task.CompletedTask;
     }
 
-    public QConnection? Connection { get; set; }
+    public QConnection? Connection { get; internal set; }
 
     public string Host
     {
@@ -95,6 +99,11 @@ public class QApiConnector : WebSocketClientConnector
 
     protected override async ValueTask OnReconnectionHappened(ReconnectionInfo reconnectionInfo)
     {
+        if (DateTime.Now >= _tokenExpireTime)
+        {
+            await RequestAccessTokenAsync(Connection!);
+        }
+
         bool isResume;
         if (_isDropped && _lastSessionId != default)
         {
@@ -165,12 +174,14 @@ public class QApiConnector : WebSocketClientConnector
         var verify = JsonSerializer.Serialize(new
         {
             op = 2,
+            // ReSharper disable RedundantAnonymousTypePropertyName
             d = new
             {
                 token = Authorization,
                 intents = intents,
                 shard = new[] { 0, 1 },
             }
+            // ReSharper restore RedundantAnonymousTypePropertyName
         });
         using var filter = SendMessage(verify);
         _logger.LogDebug($"[QAPI] Verifying bot with {intents}");
@@ -324,36 +335,4 @@ public class QApiConnector : WebSocketClientConnector
     //{
     //    throw new NotImplementedException();
     //}
-}
-
-/// <summary>
-/// <seealso href="https://bot.q.qq.com/wiki/develop/api-v2/dev-prepare/interface-framework/event-emit.html#websocket-%E6%96%B9%E5%BC%8F"/>
-/// </summary>
-[Flags]
-public enum Intents
-{
-    Guilds = 1 << 0,
-    GuildMembers = 1 << 1,
-    GuildMessages = 1 << 9,
-    GuildMessageReactions = 1 << 10,
-    DirectMessage = 1 << 12,
-    GroupAndC2CEvent = 1 << 25,
-    Interaction = 1 << 26,
-    MessageAudit = 1 << 27,
-    ForumsEvent = 1 << 28,
-    AudioAction = 1 << 29,
-    PublicGuildMessages = 1 << 30,
-}
-
-internal enum OpCode
-{
-    Dispatch = 0,
-    Heartbeat = 1,
-    Identify = 2,
-    Resume = 6,
-    Reconnect = 7,
-    InvalidSession = 9,
-    Hello = 10,
-    HeartbeatACK = 11,
-    HTTPCallbackACK = 12
 }

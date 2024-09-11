@@ -148,7 +148,7 @@ public sealed class GoCqContactsManager : ContactsManagerBase
         return false;
     }
 
-    protected override void GetContactsCore(
+    protected override bool GetContactsCore(
         out Dictionary<string, ChannelInfo> channels,
         out Dictionary<string, ChannelInfo> subChannels,
         out Dictionary<string, PrivateInfo> privates)
@@ -191,5 +191,6 @@ public sealed class GoCqContactsManager : ContactsManagerBase
         }
 
         //todo: guild
+        return true;
     }
 }

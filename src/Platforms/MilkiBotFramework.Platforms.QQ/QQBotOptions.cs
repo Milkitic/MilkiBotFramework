@@ -2,6 +2,7 @@
 
 namespace MilkiBotFramework.Platforms.QQ;
 
+// ReSharper disable once InconsistentNaming
 public class QQBotOptions : BotOptions
 {
     [Description("QQ API设置")]

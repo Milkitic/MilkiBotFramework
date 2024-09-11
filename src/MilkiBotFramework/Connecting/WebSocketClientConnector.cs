@@ -72,30 +72,45 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
             MessageEncoding = Encoding,
             ReconnectTimeout = ReconnectTimeout
         };
-        Client.ReconnectionHappened.Subscribe(async info =>
+
+        Client.ReconnectionHappened.Subscribe(ReconnectionHappened);
+        Client.DisconnectionHappened.Subscribe(DisconnectionHappened);
+        Client.MessageReceived.Subscribe(MessageReceived);
+
+        try
         {
-            //if (info.Type == ReconnectionType.NoMessageReceived) return;
+            _logger.LogInformation($"Starting managed websocket connection to {TargetUri}...");
+            await Client.Start().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e.Message);
+        }
+
+        return;
+
+        async void ReconnectionHappened(ReconnectionInfo info)
+        {
             _isConnected = true;
             if (info.Type == ReconnectionType.Initial)
                 _logger.LogInformation("Connected to websocket server.");
-            else if (info.Type != ReconnectionType.NoMessageReceived && info.Type != ReconnectionType.Lost)
-                _logger.LogInformation("Reconnected to websocket server.");
+            else if (info.Type != ReconnectionType.NoMessageReceived && info.Type != ReconnectionType.Lost) _logger.LogInformation("Reconnected to websocket server.");
             if (info.Type != ReconnectionType.Lost)
             {
                 try
                 {
-                    ReconnectionHappened?.Invoke(info);
+                    this.ReconnectionHappened?.Invoke(info);
                     await OnReconnectionHappened(info);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Error occurs while calling {nameof(ReconnectionHappened)} callback.");
+                    _logger.LogError(ex, $"Error occurs while calling {nameof(this.ReconnectionHappened)} callback.");
                 }
             }
-        });
-        Client.DisconnectionHappened.Subscribe(async info =>
+        }
+
+        async void DisconnectionHappened(DisconnectionInfo info)
         {
-            //if (info.Type == DisconnectionType.NoMessageReceived) return;
             var action = _isConnected ? "Disconnected from" : "Cannot connect to";
             _isConnected = false;
             if (info.Exception != null)
@@ -104,26 +119,18 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
                 _logger.LogWarning($"{action} the websocket server: {info.Type}");
             try
             {
-                DisconnectionHappened?.Invoke(info);
+                this.DisconnectionHappened?.Invoke(info);
                 await OnDisconnectionHappened(info);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error occurs while calling {nameof(DisconnectionHappened)} callback.");
+                _logger.LogError(ex, $"Error occurs while calling {nameof(this.DisconnectionHappened)} callback.");
             }
-        });
-        // ReSharper disable once AsyncVoidLambda
-        Client.MessageReceived.Subscribe(async msg => await OnMessageReceived(msg));
-
-        try
-        {
-            _logger.LogInformation($"Starting managed websocket connection to {TargetUri}...");
-            await Client.Start().ConfigureAwait(false);
-            //_logger.LogInformation($"Connected to websocket server.");
         }
-        catch (Exception e)
+
+        async void MessageReceived(ResponseMessage msg)
         {
-            _logger.LogError(e.Message);
+            await OnMessageReceived(msg);
         }
     }
 

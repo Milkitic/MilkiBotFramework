@@ -133,10 +133,10 @@ public abstract class ContactsManagerBase : IContactsManager
 
     protected abstract bool GetContactsUpdateInfo(MessageContext messageContext, out ContactsUpdateInfo? updateInfo);
 
-    protected abstract void GetContactsCore(
-        out Dictionary<string, ChannelInfo> channels,
-        out Dictionary<string, ChannelInfo> subChannels,
-        out Dictionary<string, PrivateInfo> privates);
+    protected abstract bool GetContactsCore(
+        [NotNullWhen(true)] out Dictionary<string, ChannelInfo>? channels,
+        [NotNullWhen(true)] out Dictionary<string, ChannelInfo>? subChannels,
+        [NotNullWhen(true)] out Dictionary<string, PrivateInfo>? privates);
 
     private async Task OnEventReceived(DispatchMessageEvent e)
     {
@@ -346,10 +346,8 @@ public abstract class ContactsManagerBase : IContactsManager
 
     private void RefreshContacts(TaskContext context, CancellationToken token)
     {
-        GetContactsCore(out var channels,
-            // ReSharper disable once UnusedVariable
-            out var subChannels,
-            out var privates);
+        // ReSharper disable once UnusedVariable
+        if (!GetContactsCore(out var channels, out var subChannels, out var privates)) return;
 
         var list = RefreshChannels(channels, context.Logger);
         var list2 = RefreshPrivates(privates, context.Logger);

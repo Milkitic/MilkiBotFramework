@@ -11,15 +11,12 @@ namespace MilkiBotFramework.Platforms.QQ.ContactsManaging;
 
 public sealed class QContactsManager : ContactsManagerBase
 {
-    private readonly ILogger<QContactsManager> _logger;
-
     public QContactsManager(
         BotTaskScheduler botTaskScheduler,
         ILogger<QContactsManager> logger,
         EventBus eventBus)
         : base(botTaskScheduler, logger, eventBus)
     {
-        _logger = logger;
     }
 
     public void UpdateSelfInfo(SelfInfo selfInfo)
@@ -99,13 +96,14 @@ public sealed class QContactsManager : ContactsManagerBase
         return false;
     }
 
-    protected override void GetContactsCore(
-        out Dictionary<string, ChannelInfo> channels,
-        out Dictionary<string, ChannelInfo> subChannels,
-        out Dictionary<string, PrivateInfo> privates)
+    protected override bool GetContactsCore(
+        [NotNullWhen(true)] out Dictionary<string, ChannelInfo>? channels,
+        [NotNullWhen(true)] out Dictionary<string, ChannelInfo>? subChannels,
+        [NotNullWhen(true)] out Dictionary<string, PrivateInfo>? privates)
     {
-        channels = new Dictionary<string, ChannelInfo>();
-        subChannels = new Dictionary<string, ChannelInfo>();
-        privates = new Dictionary<string, PrivateInfo>();
+        channels = null;
+        subChannels = null;
+        privates = null;
+        return false;
     }
 }
