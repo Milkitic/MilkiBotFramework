@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="AvaApp.axaml.cs">
-      <DependentUpon>AvaApp.axaml</DependentUpon>
+    <Compile Update="DefaultApp.axaml.cs">
+      <DependentUpon>DefaultApp.axaml</DependentUpon>
     </Compile>
   </ItemGroup>
 

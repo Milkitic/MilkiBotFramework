@@ -26,7 +26,7 @@ internal static class UiThreadHelper
             _uiThread = new Thread(() =>
             {
                 var appBuilder = AppBuilder.Configure(() => AvaloniaOptions.GetApplicationFunc == null
-                        ? new AvaApp(WaitComplete)
+                        ? new DefaultApp(WaitComplete)
                         : AvaloniaOptions.GetApplicationFunc(WaitComplete))
                     .CustomConfigure()
                     .UseSkia() // enable Skia renderer
