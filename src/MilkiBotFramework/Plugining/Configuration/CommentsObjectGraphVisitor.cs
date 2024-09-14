@@ -11,13 +11,13 @@ public class CommentsObjectGraphVisitor : ChainedObjectGraphVisitor
     {
     }
 
-    public override bool EnterMapping(IPropertyDescriptor key, IObjectDescriptor value, IEmitter context)
+    public override bool EnterMapping(IPropertyDescriptor key, IObjectDescriptor value, IEmitter context, ObjectSerializer serializer)
     {
         if (value is CommentsObjectDescriptor { Comment: { } } commentsDescriptor)
         {
             context.Emit(new YamlDotNet.Core.Events.Comment(commentsDescriptor.Comment, false));
         }
 
-        return base.EnterMapping(key, value, context);
+        return base.EnterMapping(key, value, context, serializer);
     }
 }

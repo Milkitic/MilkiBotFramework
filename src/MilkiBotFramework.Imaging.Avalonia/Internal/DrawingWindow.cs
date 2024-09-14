@@ -6,15 +6,27 @@ using Avalonia.Media;
 
 namespace MilkiBotFramework.Imaging.Avalonia.Internal;
 
-internal class DrawableWindow : Window
+internal class DrawingWindow : Window
 {
+    public DrawingWindow()
+    {
+        SizeToContent = SizeToContent.WidthAndHeight;
+        //Width = 0;
+        //Height = 0;
+        //AllowsTransparency = true;
+        //WindowStyle = WindowStyle.None;
+        ShowInTaskbar = false;
+        ShowActivated = false;
+        //Opacity = 0;
+    }
+
     public bool IsShown { get; private set; }
 
     /// <summary>
     /// 窗体显示事件
     /// </summary>
     public static readonly RoutedEvent<RoutedEventArgs> ShownEvent =
-        RoutedEvent.Register<DrawableWindow, RoutedEventArgs>(
+        RoutedEvent.Register<DrawingWindow, RoutedEventArgs>(
             nameof(Shown), RoutingStrategies.Tunnel | RoutingStrategies.Bubble);
 
     /// <summary>

@@ -13,14 +13,14 @@ public class DateTimeOffsetConverter : IYamlTypeConverter
         return type == MemberInfo;
     }
 
-    public object ReadYaml(IParser parser, Type type)
+    public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
     {
         var s = parser.Consume<Scalar>();
         var str = s.Value;
         return DateTimeOffset.Parse(str);
     }
 
-    public void WriteYaml(IEmitter emitter, object? value, Type type)
+    public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
     {
         emitter.Emit(new Scalar(value?.ToString() ?? ""));
     }

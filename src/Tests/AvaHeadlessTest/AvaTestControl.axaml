@@ -1,0 +1,74 @@
+<avalonia:AvaRenderingControl
+  x:Class="AvaHeadlessTest.AvaTestControl"
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:avaHeadlessTest="clr-namespace:AvaHeadlessTest"
+  xmlns:avalonia="clr-namespace:MilkiBotFramework.Imaging.Avalonia;assembly=MilkiBotFramework.Imaging.Avalonia"
+  xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  x:DataType="avaHeadlessTest:AvaTestViewModel"
+  Background="#F4F4F4"
+  mc:Ignorable="d">
+  <Design.DataContext>
+    <avaHeadlessTest:AvaTestViewModel />
+  </Design.DataContext>
+  <!--  Welcome to Avalonia!  -->
+  <controls:NavigationView
+    x:Name="NavigationView"
+    Margin="5"
+    IsPaneOpen="True"
+    OpenPaneLength="200"
+    PaneDisplayMode="Left"
+    PaneTitle="Title">
+    <controls:NavigationView.MenuItems>
+      <MenuItem Header="MainPage" />
+    </controls:NavigationView.MenuItems>
+    <controls:NavigationView.PaneHeader>
+      <TextBlock Text="Header" />
+    </controls:NavigationView.PaneHeader>
+    <controls:NavigationView.PaneFooter>
+      <TextBlock Text="Footer" />
+    </controls:NavigationView.PaneFooter>
+
+    <TabControl>
+      <TabItem Header="MainPage">
+        <StackPanel>
+          <controls:InfoBar
+            Margin="0,0,0,10"
+            IsOpen="True"
+            Message="This is UI Component Test" />
+          <controls:InfoBadge
+            Margin="0,0,0,10"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Value="99" />
+          <controls:NumberBox Margin="0,0,0,10" Value="114514" />
+          <TextBox Margin="0,0,0,10" Text="{Binding Text}" />
+          <Button
+            x:Name="Button" Classes="red"
+            Margin="0,0,0,10"
+            Content="WinUI Button" >
+            <Button.Styles>
+              <Style Selector="Button.red">
+                <Setter Property="Background" Value="Red"/>
+                <Style.Animations>
+                  <Animation Duration="0:0:1" IterationCount="1000">
+                    <KeyFrame Cue="0%">
+                      <Setter Property="Opacity" Value="0.0"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                      <Setter Property="Opacity" Value="1.0"/>
+                    </KeyFrame>
+                  </Animation>
+                </Style.Animations>
+              </Style>
+            </Button.Styles>
+          </Button>
+          <controls:FAColorPicker x:Name="ColorPicker" />
+        </StackPanel>
+      </TabItem>
+    </TabControl>
+
+  </controls:NavigationView>
+</avalonia:AvaRenderingControl>
