@@ -15,7 +15,11 @@ public static class BotBuilderExtensions
         where TBot : Bot where TBuilder : BotBuilderBase<TBot, TBuilder>
     {
         builder
-            .ConfigureServices(k => { k.AddScoped(typeof(QMessageContext)); })
+            .ConfigureServices(k =>
+            {
+                k.AddScoped(typeof(QMessageContext));
+                k.AddSingleton<MinIOController>();
+            })
             .UseCommandLineAnalyzer<CommandLineAnalyzer>(new DefaultParameterConverter())
             .UseContactsManager<QContactsManager>()
             .UseDispatcher<QDispatcher>()
