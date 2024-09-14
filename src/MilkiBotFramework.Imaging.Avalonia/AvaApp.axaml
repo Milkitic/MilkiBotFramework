@@ -6,6 +6,6 @@
   <Application.RequestedThemeVariant>Light</Application.RequestedThemeVariant>
 
   <Application.Styles>
-    <FluentTheme />
+    <SimpleTheme />
   </Application.Styles>
 </Application>
