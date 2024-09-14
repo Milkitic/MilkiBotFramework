@@ -111,7 +111,10 @@ public class QApi : IMessageApi
                 {
                     content = "test",
                     msg_type = 7,
-                    media = kvp.Value,
+                    media = new
+                    {
+                        file_info = kvp.Value
+                    },
                     msg_id = messageId,
                     msg_seq = _qApiConnector.MessageSequence + Random.Shared.Next(0, 1000),
                     event_id = "GROUP_MSG_RECEIVE"
