@@ -1,8 +1,10 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.QQ.Messaging;
+using MilkiBotFramework.Platforms.QQ.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Platforms.QQ.Connecting;
 
@@ -36,29 +38,49 @@ public class QApi : IMessageApi
 
     public async Task<string> SendChannelMessageAsync(string channelId, string message, IRichMessage? richMessage, MessageContext messageContext, string? subChannelId)
     {
+        var (imageMessages, otherMessages) = await RefactorMessages(richMessage);
+        var broadcast = richMessage is RichMessage { FirstIsReply: false };
         var messageId = messageContext.MessageId;
-        //var userId = messageContext.MessageUserIdentity!.UserId;
-
         var host = _qApiConnector.Host;
-        Dictionary<MemoryImage, string?> memoryImages;
-        bool callTextReq;
-        if (richMessage is RichMessage rm)
+        var messageUrl = $"https://{host}/v2/groups/{channelId}/messages";
+
+        if (imageMessages.Count <= 0 && otherMessages != null)
         {
-            var left = rm.ToHashSet();
-            memoryImages = rm.OfType<MemoryImage>().ToDictionary(k => k, k => default(string));
-            left.ExceptWith(memoryImages.Keys);
-            callTextReq = left.Count == 0 || left.Count == 1 && left.First() is At;
-            richMessage = new RichMessage(left);
-        }
-        else
-        {
-            callTextReq = true;
-            memoryImages = new Dictionary<MemoryImage, string?>();
+            object messageRequest = broadcast
+                ? new
+                {
+                    content = otherMessages,
+                    msg_type = 0,
+                }
+                : new
+                {
+                    content = otherMessages,
+                    msg_type = 0,
+                    msg_id = messageId,
+                    msg_seq = _qApiConnector.MessageSequence + Random.Shared.Next(0, 1000),
+                    event_id = "GROUP_MSG_RECEIVE"
+                };
+            var result = await _lightHttpClient.HttpPost<object>(messageUrl, messageRequest, new Dictionary<string, string>
+            {
+                { "Authorization", _qApiConnector.Authorization }
+            });
+            var str = result.ToString();
+            return str ?? "";
         }
 
-        foreach (var memoryImage in memoryImages.Keys)
+        var sb = new StringBuilder();
+        for (var i = 0; i < imageMessages.Count; i++)
         {
-            var imageUrl = await _minIoController.UploadImage(memoryImage.ImageSource);
+            var imageMessage = imageMessages[i];
+            var content = i == imageMessages.Count - 1 ? otherMessages : null;
+            var imageUrl = imageMessage switch
+            {
+                MemoryImage memoryImage => await _minIoController.UploadImage(memoryImage.ImageSource),
+                LinkImage linkImage => linkImage.Uri,
+                FileImage fileImage => await _minIoController.UploadImage(fileImage.Path),
+                _ => throw new ArgumentOutOfRangeException(nameof(imageMessage), imageMessage.GetType(), null)
+            };
+
             object uploadRequest = new
             {
                 file_type = 1,
@@ -72,65 +94,119 @@ public class QApi : IMessageApi
                 { "Authorization", _qApiConnector.Authorization }
             });
 
-            var str = uploadResult.ToString();
-            //var fileInfo = ((JsonElement)uploadResult).GetProperty("file_info").GetString();
+            sb.AppendLine(uploadResult.ToString());
             var fileInfo = ((JsonElement)uploadResult).GetProperty("file_info").GetString();
-            memoryImages[memoryImage] = fileInfo;
-        }
 
-        var reply = richMessage is RichMessage { FirstIsReply: true };
-        var sendUrl = $"https://{host}/v2/groups/{channelId}/messages";
-        if (callTextReq)
-        {
-            object request = reply
+            object sendImgRequest = broadcast
                 ? new
                 {
-                    content = message,
-                    msg_type = 0,
-                    msg_id = messageId,
-                    msg_seq = _qApiConnector.MessageSequence + Random.Shared.Next(0, 1000),
-                    event_id = "GROUP_MSG_RECEIVE"
-                }
-                : new
-                {
-                    content = message,
-                    msg_type = 0,
-                };
-            var result = await _lightHttpClient.HttpPost<object>(sendUrl, request, new Dictionary<string, string>
-            {
-                { "Authorization", _qApiConnector.Authorization }
-            });
-            var str = result.ToString();
-
-        }
-
-        foreach (var kvp in memoryImages)
-        {
-            object sendImgRequest = reply
-                ? new
-                {
-                    content = "test",
+                    content = content,
                     msg_type = 7,
                     media = new
                     {
-                        file_info = kvp.Value
+                        file_info = fileInfo
+                    },
+                }
+                : new
+                {
+                    content = content,
+                    msg_type = 7,
+                    media = new
+                    {
+                        file_info = fileInfo
                     },
                     msg_id = messageId,
                     msg_seq = _qApiConnector.MessageSequence + Random.Shared.Next(0, 1000),
                     event_id = "GROUP_MSG_RECEIVE"
-                }
-                : new
-                {
-                    content = "test",
-                    msg_type = 7,
-                    media = kvp.Value,
                 };
-            var sendImgResult = await _lightHttpClient.HttpPost<object>(sendUrl, sendImgRequest, new Dictionary<string, string>
+            var sendImgResult = await _lightHttpClient.HttpPost<object>(messageUrl, sendImgRequest, new Dictionary<string, string>
             {
                 { "Authorization", _qApiConnector.Authorization }
             });
+
+            sb.AppendLine(sendImgResult.ToString());
         }
 
-        return  "";
+        return sb.ToString();
+    }
+
+    private static async Task<(List<IRichMessage>, string?)> RefactorMessages(IRichMessage? richMessage)
+    {
+        if (richMessage is null or At) return ([], null);
+        if (richMessage is not RichMessage rm) return ([], await richMessage.EncodeAsync());
+
+        Func<IRichMessage, int, KeyValuePair<IRichMessage, int>> selector = static (k, i) =>
+            new KeyValuePair<IRichMessage, int>(k, i);
+
+        var messages = rm.FirstIsReply
+            ? rm.Select(selector).Skip(1)
+            : rm.Select(selector);
+
+        var imageMessages = new List<IRichMessage>();
+        var allMessages = new Dictionary<IRichMessage, int>();
+        int imageIndex = 1;
+        int i = 0;
+        foreach (var (message, index) in messages)
+        {
+            if (message is MemoryImage or FileImage or LinkImage)
+            {
+                imageMessages.Add(message);
+                allMessages.Add(new ImagePlaceholder(imageIndex++), i);
+            }
+            else
+            {
+                allMessages.Add(message, i);
+            }
+
+            i++;
+        }
+
+        var hasImages = imageMessages.Count > 0;
+        if (!hasImages) return (imageMessages, await richMessage.EncodeAsync());
+
+        var allPlaceholder = allMessages.All(k => k.Key is ImagePlaceholder);
+        if (allPlaceholder) return (imageMessages, null);
+
+        var hasInsertText = GetHasInsertedText(allMessages);
+
+        if (hasInsertText) return (imageMessages, await new RichMessage(allMessages.Keys).EncodeAsync());
+        var finalText = IsRegularMessage(allMessages.Keys.First())
+            ? await new RichMessage(allMessages.Keys.First(), new Text("(见上图)")).EncodeAsync()
+            : await new RichMessage(new Text("(见上图)"), allMessages.Keys.Last()).EncodeAsync();
+
+        return (imageMessages, finalText);
+    }
+
+    private static bool GetHasInsertedText(Dictionary<IRichMessage, int> allMessages)
+    {
+        if (allMessages.Count == 0) return false;
+        if (IsRegularMessage(allMessages.First().Key))
+        {
+            return HasInsertedText(allMessages);
+        }
+
+        var reverse = allMessages.Reverse().ToArray();
+        if (IsRegularMessage(reverse.First().Key))
+        {
+            return HasInsertedText(reverse);
+        }
+
+        return true;
+    }
+
+    private static bool HasInsertedText(IReadOnlyCollection<KeyValuePair<IRichMessage, int>> enumerable)
+    {
+        var firstImageMessage = enumerable
+            .Skip(1)
+            .First(k => k.Key is ImagePlaceholder);
+
+        return enumerable
+            .Skip(firstImageMessage.Value + 1)
+            .Any(k => k.Value > firstImageMessage.Value && IsRegularMessage(k.Key));
+    }
+
+    private static bool IsRegularMessage(IRichMessage message)
+    {
+        return message is not ImagePlaceholder;
     }
 }
