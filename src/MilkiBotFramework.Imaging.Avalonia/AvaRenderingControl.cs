@@ -53,6 +53,15 @@ public abstract class AvaRenderingControl : UserControl
         set => SetValue(SourceBitmapProperty, value);
     }
 
+    public static readonly StyledProperty<string?> LocaleProperty =
+        AvaloniaProperty.Register<AvaRenderingControl, string?>(nameof(Locale), "zh-CN");
+
+    public string? Locale
+    {
+        get => GetValue(LocaleProperty);
+        set => SetValue(LocaleProperty, value);
+    }
+
     private readonly TaskCompletionSource _tcs;
     private readonly Image? _sourceImage;
     private readonly Timer _timer;
@@ -66,13 +75,13 @@ public abstract class AvaRenderingControl : UserControl
             await FinishRender();
             _timer?.Dispose();
         }, null, TimeSpan.FromSeconds(10), Timeout.InfiniteTimeSpan);
-
+        
+        Loaded += AvaRenderingControl_Loaded;
         RenderFinished += (_, _) =>
         {
-            _tcs.SetResult();
+            _tcs.TrySetResult();
             return Task.CompletedTask;
         };
-        
         // SubpixelAntialias needs opaque background, and only on windows
         // https://github.com/AvaloniaUI/Avalonia/issues/2464
         RenderOptions.SetTextRenderingMode(this, TextRenderingMode.Antialias);
@@ -126,6 +135,15 @@ public abstract class AvaRenderingControl : UserControl
         yield break;
     }
 
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.Property == LocaleProperty)
+        {
+            Resources["DefaultFonts"] = LocalFontManager.Instance.GetFontFamily(e.NewValue as string);
+        }
+    }
+
     protected internal virtual Visual GetDrawingVisual(out Size size)
     {
         size = new Size(Bounds.Width, Bounds.Height);
@@ -137,6 +155,11 @@ public abstract class AvaRenderingControl : UserControl
         await _timer.DisposeAsync();
         if (RenderFinished != null)
             await RenderFinished.Invoke(this, EventArgs.Empty);
+    }
+
+    private void AvaRenderingControl_Loaded(object? sender, global::Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Resources["DefaultFonts"] = LocalFontManager.Instance.GetFontFamily(Locale as string);
     }
 
     private double GetScaling()
