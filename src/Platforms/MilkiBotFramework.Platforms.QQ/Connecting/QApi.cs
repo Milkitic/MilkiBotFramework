@@ -162,7 +162,7 @@ public class QApi : IMessageApi
         }
 
         var hasImages = imageMessages.Count > 0;
-        if (!hasImages) return (imageMessages, await richMessage.EncodeAsync());
+        if (!hasImages) return (imageMessages, await new RichMessage(allMessages.Keys).EncodeAsync());
 
         var allPlaceholder = allMessages.All(k => k.Key is ImagePlaceholder);
         if (allPlaceholder) return (imageMessages, null);
