@@ -68,7 +68,7 @@ public class LocalFontManager
         //    AppendFontFamiliesNew(keyValuePair, sb);
         //}
 
-        var fonts = sb.ToString(0, sb.Length - 1);
+        var fonts = sb.Length == 0 ? "default" : sb.ToString(0, sb.Length - 1);
         var fontFamily = new FontFamily(fonts);
         return fontFamily;
     }
