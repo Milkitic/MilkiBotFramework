@@ -53,24 +53,42 @@ public class LocalFontManager
         var sb = new StringBuilder();
         if (sort.TryGetValue(DefaultLocale, out var baseLocale))
         {
-            AppendFontFamilies(baseLocale, sb);
+            AppendFontFamiliesNew(baseLocale, sb);
             sort.Remove(DefaultLocale);
         }
 
         if (sort.TryGetValue(locale, out var mainLocale))
         {
-            AppendFontFamilies(mainLocale, sb);
+            AppendFontFamiliesNew(mainLocale, sb);
             sort.Remove(locale);
         }
 
-        foreach (var keyValuePair in sort.Values)
-        {
-            AppendFontFamilies(keyValuePair, sb);
-        }
+        //foreach (var keyValuePair in sort.Values)
+        //{
+        //    AppendFontFamiliesNew(keyValuePair, sb);
+        //}
 
         var fonts = sb.ToString(0, sb.Length - 1);
         var fontFamily = new FontFamily(fonts);
         return fontFamily;
+    }
+
+    private void AppendFontFamiliesNew(Dictionary<string, string> baseLocale, StringBuilder sb)
+    {
+        var dirDict = baseLocale.Select(k =>
+        {
+            var uri = new Uri(k.Key);
+            var subDir = Path.GetDirectoryName(uri.AbsolutePath)?.Replace(Path.DirectorySeparatorChar, '/');
+            return new KeyValuePair<string, string>($"{uri.Scheme}://{uri.Authority}{subDir}", k.Value);
+        }).Distinct();
+
+        foreach (var kvp in dirDict)
+        {
+            sb.Append(kvp.Key);
+            sb.Append('#');
+            sb.Append(kvp.Value);
+            sb.Append(',');
+        }
     }
 
     private static void AppendFontFamilies(Dictionary<string, string> dict, StringBuilder sb)

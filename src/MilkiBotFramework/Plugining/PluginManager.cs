@@ -32,6 +32,7 @@ public partial class PluginManager
     public PluginManager(IMessageApi messageApi,
         IRichMessageConverter richMessageConverter,
         ILogger<PluginManager> logger,
+        ILogger<CommandInjector> logger2,
         ICommandLineAnalyzer commandLineAnalyzer,
         IServiceProvider serviceProvider,
         IServiceCollection serviceCollection,
@@ -45,8 +46,7 @@ public partial class PluginManager
         _richMessageConverter = richMessageConverter;
         _logger = logger;
         _commandLineAnalyzer = commandLineAnalyzer;
-        _commandInjector = new CommandInjector(commandLineAnalyzer,
-            (ILogger<CommandInjector>)serviceProvider.GetService(typeof(Logger<CommandInjector>))!);
+        _commandInjector = new CommandInjector(commandLineAnalyzer, logger2);
         _eventBus = eventBus;
         _eventBus.Subscribe<DispatchMessageEvent>(OnEventReceived);
     }
