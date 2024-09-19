@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using MilkiBotFramework.Imaging.Avalonia.Internal;
@@ -157,9 +158,9 @@ public abstract class AvaRenderingControl : UserControl
             await RenderFinished.Invoke(this, EventArgs.Empty);
     }
 
-    private void AvaRenderingControl_Loaded(object? sender, global::Avalonia.Interactivity.RoutedEventArgs e)
+    private void AvaRenderingControl_Loaded(object? sender, RoutedEventArgs e)
     {
-        Resources["DefaultFonts"] = LocalFontManager.Instance.GetFontFamily(Locale as string);
+        Resources["DefaultFonts"] = LocalFontManager.Instance.GetFontFamily(Locale);
     }
 
     private double GetScaling()

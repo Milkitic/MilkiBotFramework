@@ -29,7 +29,7 @@ public class WpfDrawingProcessor<TViewModel, TProcessControl> : IDrawingProcesso
         _enableWindowRendering = enableWindowRendering;
     }
 
-    public async Task<Image> ProcessAsync(TViewModel viewModel, Image? sourceImage = null)
+    public async Task<Image> ProcessAsync(TViewModel viewModel, string locale = "en-US", Image? sourceImage = null)
     {
         await UiThreadHelper.EnsureUiThreadAsync();
         MemoryStream? retStream = null;
@@ -76,7 +76,7 @@ public class WpfDrawingProcessor<TViewModel, TProcessControl> : IDrawingProcesso
         }
     }
 
-    public async Task<Image> ProcessGifAsync(TViewModel viewModel, TimeSpan interval, Image? sourceImage = null,
+    public async Task<Image> ProcessGifAsync(TViewModel viewModel, TimeSpan interval, string locale = "en-US", Image? sourceImage = null,
         bool repeat = true)
     {
         await UiThreadHelper.EnsureUiThreadAsync();

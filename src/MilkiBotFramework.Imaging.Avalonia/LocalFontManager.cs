@@ -38,6 +38,7 @@ public class LocalFontManager
                 dictionary = new Dictionary<string, string>();
                 _localeTypefaces.Add(locale, dictionary);
             }
+
             using var stream = AssetLoader.Open(uri);
             using var typeface = SKTypeface.FromStream(stream);
             dictionary.Add(uri.ToString(), typeface.FamilyName);
@@ -91,16 +92,16 @@ public class LocalFontManager
         }
     }
 
-    private static void AppendFontFamilies(Dictionary<string, string> dict, StringBuilder sb)
-    {
-        foreach (var kvp in dict)
-        {
-            var dir = new Uri(kvp.Key);
+    //private static void AppendFontFamilies(Dictionary<string, string> dict, StringBuilder sb)
+    //{
+    //    foreach (var kvp in dict)
+    //    {
+    //        var dir = new Uri(kvp.Key);
 
-            sb.Append(dir.Scheme + "://" + dir.Authority + Path.GetDirectoryName(dir.AbsolutePath));
-            sb.Append('#');
-            sb.Append(kvp.Value);
-            sb.Append(',');
-        }
-    }
+    //        sb.Append(dir.Scheme + "://" + dir.Authority + Path.GetDirectoryName(dir.AbsolutePath));
+    //        sb.Append('#');
+    //        sb.Append(kvp.Value);
+    //        sb.Append(',');
+    //    }
+    //}
 }

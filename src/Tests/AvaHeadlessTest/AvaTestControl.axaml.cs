@@ -1,9 +1,4 @@
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Headless;
-using Avalonia.Input;
 using Avalonia.Threading;
-using FluentAvalonia.UI.Media;
 using MilkiBotFramework.Data;
 using MilkiBotFramework.Imaging.Avalonia;
 

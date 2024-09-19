@@ -9,5 +9,6 @@ public class QQBotOptions : BotOptions
     public QConnection Connection { get; set; } = new();
 
     [Description("MinIO 设置")]
+    // ReSharper disable once InconsistentNaming
     public MinIOOptions MinIOOptions { get; set; } = new();
 }

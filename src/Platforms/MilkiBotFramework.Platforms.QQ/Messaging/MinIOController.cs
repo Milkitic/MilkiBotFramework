@@ -7,6 +7,7 @@ using SixLabors.ImageSharp.Formats.Png;
 
 namespace MilkiBotFramework.Platforms.QQ.Messaging;
 
+// ReSharper disable once InconsistentNaming
 public class MinIOController
 {
     private static readonly PngEncoder ImageEncoder = new PngEncoder();

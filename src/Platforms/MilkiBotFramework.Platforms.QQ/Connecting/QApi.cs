@@ -100,6 +100,7 @@ public class QApi : IMessageApi
             object sendImgRequest = broadcast
                 ? new
                 {
+                    // ReSharper disable once RedundantAnonymousTypePropertyName
                     content = content,
                     msg_type = 7,
                     media = new
@@ -109,6 +110,7 @@ public class QApi : IMessageApi
                 }
                 : new
                 {
+                    // ReSharper disable once RedundantAnonymousTypePropertyName
                     content = content,
                     msg_type = 7,
                     media = new
@@ -146,7 +148,7 @@ public class QApi : IMessageApi
         var allMessages = new Dictionary<IRichMessage, int>();
         int imageIndex = 1;
         int i = 0;
-        foreach (var (message, index) in messages)
+        foreach (var (message, _) in messages)
         {
             if (message is MemoryImage or FileImage or LinkImage)
             {
