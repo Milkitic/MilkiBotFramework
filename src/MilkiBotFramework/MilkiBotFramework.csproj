@@ -17,7 +17,7 @@
     <!-- ReSharper disable once VulnerablePackage -->
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.5" />
     <PackageReference Include="Websocket.Client" Version="5.1.2" />
-    <PackageReference Include="YamlDotNet" Version="16.1.0" />
+    <PackageReference Include="YamlDotNet" Version="16.1.2" />
   </ItemGroup>
 
   <ItemGroup>
