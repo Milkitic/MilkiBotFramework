@@ -372,7 +372,9 @@ public partial class PluginManager
 
         var metadata = new PluginMetadata(Guid.Parse(guid), name, description, authors, scope);
 
-        var pluginHome = Path.Combine(_botOptions.PluginHomeDir, $"{metadata.Guid:B}");
+        var pluginHome = _botOptions.PluginDataUseGuid
+            ? Path.Combine(_botOptions.PluginDataDir, $"{metadata.Guid:B}")
+            : Path.Combine(_botOptions.PluginDataDir, $"{type.Name}");
         if (!Directory.Exists(pluginHome))
             Directory.CreateDirectory(pluginHome);
 

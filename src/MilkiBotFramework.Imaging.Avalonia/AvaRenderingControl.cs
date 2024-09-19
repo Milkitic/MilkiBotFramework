@@ -141,7 +141,8 @@ public abstract class AvaRenderingControl : UserControl
         base.OnPropertyChanged(e);
         if (e.Property == LocaleProperty)
         {
-            Resources["DefaultFonts"] = LocalFontManager.Instance.GetFontFamily(e.NewValue as string);
+            var fontFamily = LocalFontManager.Instance.GetFontFamily(e.NewValue as string);
+            Resources["DefaultFonts"] = fontFamily;
         }
     }
 
@@ -160,7 +161,8 @@ public abstract class AvaRenderingControl : UserControl
 
     private void AvaRenderingControl_Loaded(object? sender, RoutedEventArgs e)
     {
-        Resources["DefaultFonts"] = LocalFontManager.Instance.GetFontFamily(Locale);
+        var fontFamily = LocalFontManager.Instance.GetFontFamily(Locale);
+        Resources["DefaultFonts"] = fontFamily;
     }
 
     private double GetScaling()

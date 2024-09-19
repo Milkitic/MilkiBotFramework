@@ -32,7 +32,10 @@ public class BotOptions : ConfigurationBase
     public string PluginBaseDir { get; set; } = "./plugins";
 
     [Description("插件资源目录")]
-    public string PluginHomeDir { get; set; } = "./homes";
+    public string PluginDataDir { get; set; } = "./data";
+    
+    [Description("插件资源目录是否使用Guid")]
+    public bool PluginDataUseGuid { get; set; }
 
     [Description("插件数据库目录")]
     public string PluginDatabaseDir { get; set; } = "./databases";
