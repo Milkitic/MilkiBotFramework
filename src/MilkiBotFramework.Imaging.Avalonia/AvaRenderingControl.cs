@@ -75,7 +75,7 @@ public abstract class AvaRenderingControl : UserControl
             await FinishRender();
             _timer?.Dispose();
         }, null, TimeSpan.FromSeconds(10), Timeout.InfiniteTimeSpan);
-        
+
         Loaded += AvaRenderingControl_Loaded;
         RenderFinished += (_, _) =>
         {
