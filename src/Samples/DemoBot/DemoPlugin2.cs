@@ -2,9 +2,7 @@
 #pragma warning disable CS1998
 #nullable disable
 
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Attributes;
 using MilkiBotFramework.Plugining.Configuration;
@@ -12,7 +10,7 @@ using MilkiBotFramework.Plugining.Configuration;
 namespace DemoBot;
 
 [PluginIdentifier("487ade0a-3afb-4451-8543-78e63bd2c668")]
-public class DemoPlugin2 : BasicPlugin<GoCqMessageContext>
+public class DemoPlugin2 : BasicPlugin
 {
     private readonly ILogger<DemoPlugin2> _logger;
 

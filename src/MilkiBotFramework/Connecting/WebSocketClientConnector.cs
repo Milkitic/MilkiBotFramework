@@ -9,12 +9,14 @@ namespace MilkiBotFramework.Connecting;
 
 public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposable, IAsyncDisposable
 {
+    public event Action<ReconnectionInfo>? ReconnectionHappened;
+    public event Action<DisconnectionInfo>? DisconnectionHappened;
     public event Func<string, Task>? RawMessageReceived;
 
-    private readonly ILogger _logger;
+    protected WebsocketClient? Client;
+    private readonly ILogger<WebSocketClientConnector> _logger;
 
     private readonly AsyncLock _asyncLock = new();
-    private WebsocketClient? _client;
     private bool _isConnected;
     private readonly WebSocketMessageSessionManager _sessionManager;
 
@@ -24,10 +26,13 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
         _sessionManager = new WebSocketMessageSessionManager(logger,
             () => MessageTimeout, message =>
             {
-                _client?.Send(message);
+                Client?.Send(message);
                 return Task.CompletedTask;
             },
-            RawMessageReceived,
+            async message =>
+            {
+                if (RawMessageReceived != null) await RawMessageReceived.Invoke(message);
+            },
             TryGetStateByMessage
         );
     }
@@ -35,7 +40,11 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
     public ConnectionType ConnectionType { get; set; }
     public string? TargetUri { get; set; }
     public string? BindingPath { get; set; }
-    public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(5);
+    public TimeSpan ErrorReconnectTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
+    //public TimeSpan ReconnectTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
+    public TimeSpan ReconnectTimeout { get; set; } = TimeSpan.FromMinutes(1);
 
     /// <summary>
     /// 消息超时时间。
@@ -45,11 +54,11 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
 
     public Encoding? Encoding { get; set; } = Encoding.UTF8;
 
-    public async Task ConnectAsync()
+    public virtual async Task ConnectAsync()
     {
         using (await _asyncLock.LockAsync().ConfigureAwait(false))
         {
-            if (_client is { IsStarted: true })
+            if (Client is { IsStarted: true })
                 return;
         }
 
@@ -57,20 +66,50 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
 
         if (TargetUri == null) throw new ArgumentNullException(nameof(TargetUri));
 
-        _client = new WebsocketClient(new Uri(TargetUri))
+        Client = new WebsocketClient(new Uri(TargetUri))
         {
-            ErrorReconnectTimeout = ConnectionTimeout,
+            ErrorReconnectTimeout = ErrorReconnectTimeout,
             MessageEncoding = Encoding,
+            ReconnectTimeout = ReconnectTimeout
         };
-        _client.ReconnectionHappened.Subscribe(info =>
+
+        Client.ReconnectionHappened.Subscribe(ReconnectionHappened);
+        Client.DisconnectionHappened.Subscribe(DisconnectionHappened);
+        Client.MessageReceived.Subscribe(MessageReceived);
+
+        try
+        {
+            _logger.LogInformation($"Starting managed websocket connection to {TargetUri}...");
+            await Client.Start().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e.Message);
+        }
+
+        return;
+
+        async void ReconnectionHappened(ReconnectionInfo info)
         {
             _isConnected = true;
             if (info.Type == ReconnectionType.Initial)
                 _logger.LogInformation("Connected to websocket server.");
-            else
-                _logger.LogInformation("Reconnected to websocket server.");
-        });
-        _client.DisconnectionHappened.Subscribe(info =>
+            else if (info.Type != ReconnectionType.NoMessageReceived && info.Type != ReconnectionType.Lost) _logger.LogInformation("Reconnected to websocket server.");
+            if (info.Type != ReconnectionType.Lost)
+            {
+                try
+                {
+                    this.ReconnectionHappened?.Invoke(info);
+                    await OnReconnectionHappened(info);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error occurs while calling {nameof(this.ReconnectionHappened)} callback.");
+                }
+            }
+        }
+
+        async void DisconnectionHappened(DisconnectionInfo info)
         {
             var action = _isConnected ? "Disconnected from" : "Cannot connect to";
             _isConnected = false;
@@ -78,43 +117,70 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
                 _logger.LogWarning($"{action} the websocket server: {info.Exception.Message}");
             else
                 _logger.LogWarning($"{action} the websocket server: {info.Type}");
-        });
-        // ReSharper disable once AsyncVoidLambda
-        _client.MessageReceived.Subscribe(async msg => await OnMessageReceived(msg));
-
-        try
-        {
-            _logger.LogInformation($"Starting managed websocket connection to {TargetUri}...");
-            await _client.Start().ConfigureAwait(false);
-            //_logger.LogInformation($"Connected to websocket server.");
+            try
+            {
+                this.DisconnectionHappened?.Invoke(info);
+                await OnDisconnectionHappened(info);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error occurs while calling {nameof(this.DisconnectionHappened)} callback.");
+            }
         }
-        catch (Exception e)
+
+        async void MessageReceived(ResponseMessage msg)
         {
-            _logger.LogError(e.Message);
+            await OnMessageReceived(msg);
         }
     }
 
-    public async Task DisconnectAsync()
+    public virtual async Task DisconnectAsync()
     {
         using (await _asyncLock.LockAsync().ConfigureAwait(false))
         {
-            if (_client is not { IsStarted: true })
+            if (Client is not { IsStarted: true })
                 return;
 
-            if (_client != null)
+            if (Client != null)
             {
-                await _client.StopOrFail(WebSocketCloseStatus.Empty, null!).ConfigureAwait(false);
-                _client.Dispose();
-                _client = null;
+                await Client.StopOrFail(WebSocketCloseStatus.Empty, null!).ConfigureAwait(false);
+                Client.Dispose();
+                Client = null;
             }
         }
     }
 
+    protected virtual ValueTask OnReconnectionHappened(ReconnectionInfo reconnectionInfo)
+    {
+        return ValueTask.CompletedTask;
+    }
+
+    protected virtual ValueTask OnDisconnectionHappened(DisconnectionInfo disconnectionInfo)
+    {
+        return ValueTask.CompletedTask;
+    }
+
+
+    public WebSocketMessageFilter SendMessage(string message)
+    {
+        if (Client == null)
+        {
+            throw new ArgumentNullException(nameof(Client),
+                "WebsocketClient is not ready. Try to connect before sending message.");
+        }
+
+        var filter = new WebSocketMessageFilter(_logger, this);
+        Client?.Send(message);
+        return filter;
+    }
+
     public Task<string> SendMessageAsync(string message, string state)
     {
-        if (_client == null)
-            throw new ArgumentNullException(nameof(_client),
+        if (Client == null)
+        {
+            throw new ArgumentNullException(nameof(Client),
                 "WebsocketClient is not ready. Try to connect before sending message.");
+        }
 
         return _sessionManager.SendMessageAsync(message, state);
     }

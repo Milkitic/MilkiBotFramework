@@ -48,7 +48,7 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
         _enableWindowRendering = enableWindowRendering;
     }
 
-    public async Task<Image> ProcessAsync(object viewModel, Image? sourceImage = null)
+    public async Task<Image> ProcessAsync(object viewModel, string locale = "en-US", Image? sourceImage = null)
     {
         await UiThreadHelper.EnsureUiThreadAsync();
         MemoryStream? retStream = null;
@@ -56,7 +56,7 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
         var tcsOuter = new TaskCompletionSource(cts);
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
-            var subProcessor = CreateControlInstance(sourceImage, viewModel);
+            var subProcessor = CreateControlInstance(sourceImage, viewModel, locale);
             if (double.IsNaN(subProcessor.Width) || double.IsNaN(subProcessor.Height) || _enableWindowRendering)
             {
                 var window = new DrawingWindow { Content = new DpiDecorator { Child = subProcessor } };
@@ -117,7 +117,7 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
         }
     }
 
-    public async Task<Image> ProcessGifAsync(object viewModel, TimeSpan interval, Image? sourceImage = null, bool repeat = true)
+    public async Task<Image> ProcessGifAsync(object viewModel, TimeSpan interval, string locale = "en-US", Image? sourceImage = null, bool repeat = true)
     {
         await UiThreadHelper.EnsureUiThreadAsync();
         var retStreams = new List<MemoryStream>();
@@ -127,7 +127,7 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
         var tcsOuter = new TaskCompletionSource(cts);
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
-            var subProcessor = CreateControlInstance(sourceImage, viewModel);
+            var subProcessor = CreateControlInstance(sourceImage, viewModel, locale);
             if (!_enableWindowRendering)
             {
                 // Not supported
@@ -191,7 +191,7 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
         }
     }
 
-    private AvaRenderingControl CreateControlInstance(Image? sourceImage, object model)
+    private AvaRenderingControl CreateControlInstance(Image? sourceImage, object model, string locale)
     {
         if (_templateControlCreation != null) return _templateControlCreation(model, sourceImage);
 
@@ -199,9 +199,11 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
         var avaDrawingControl = (AvaRenderingControl)Activator.CreateInstance(type)!;
         var propImg = type.GetProperty(nameof(AvaRenderingControl.SourceImage));
         var propCtx = type.GetProperty(nameof(AvaRenderingControl.DataContext));
+        var propLocale = type.GetProperty(nameof(AvaRenderingControl.Locale));
 
         propImg?.SetValue(avaDrawingControl, sourceImage);
         propCtx?.SetValue(avaDrawingControl, model);
+        propLocale?.SetValue(avaDrawingControl, locale);
 
         return avaDrawingControl;
     }

@@ -63,10 +63,10 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         return (TBuilder)this;
     }
 
-    public TBuilder UseConnector<T>(Action<IConnectorConfigurable>? configureConnector = null) where T : IConnector
+    public TBuilder UseConnector<T>(Action<T>? configureConnector = null) where T : IConnector
     {
         _connectorType = typeof(T);
-        _configureConnector = configureConnector;
+        _configureConnector = configurable => configureConnector?.Invoke((T)configurable);
         return (TBuilder)this;
     }
 

@@ -9,16 +9,16 @@ using Avalonia.Threading;
 namespace MilkiBotFramework.Imaging.Avalonia;
 
 // ReSharper disable once PartialTypeWithSinglePart
-public partial class AvaApp : Application
+public partial class DefaultApp : Application
 {
     private readonly TaskCompletionSource _setupFinished;
 
-    public AvaApp()
+    public DefaultApp()
     {
         _setupFinished = new TaskCompletionSource();
     }
 
-    public AvaApp(TaskCompletionSource setupFinished)
+    public DefaultApp(TaskCompletionSource setupFinished)
     {
         _setupFinished = setupFinished;
     }

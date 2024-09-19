@@ -27,9 +27,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework.Imaging.W
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework.Imaging.Avalonia", "MilkiBotFramework.Imaging.Avalonia\MilkiBotFramework.Imaging.Avalonia.csproj", "{E9A89D05-C006-4403-8E3F-E3695AB49EED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaHeadlessTest", "Tests\AvaHeadlessTest\AvaHeadlessTest.csproj", "{332404CB-044D-44FA-A1DB-F786DA574BEC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AvaHeadlessTest", "Tests\AvaHeadlessTest\AvaHeadlessTest.csproj", "{332404CB-044D-44FA-A1DB-F786DA574BEC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Platforms", "Platforms", "{BCF7067F-759B-4EED-96C8-014AF9E7DAC6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework.Platforms.QQ", "Platforms\MilkiBotFramework.Platforms.QQ\MilkiBotFramework.Platforms.QQ.csproj", "{4E16093A-2AD0-401F-95DA-98534179E21F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinioTest", "Tests\MinioTest\MinioTest.csproj", "{24E556DA-AF45-4BB2-ADF9-E1034D4198E2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -77,6 +81,14 @@ Global
 		{332404CB-044D-44FA-A1DB-F786DA574BEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{332404CB-044D-44FA-A1DB-F786DA574BEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{332404CB-044D-44FA-A1DB-F786DA574BEC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E16093A-2AD0-401F-95DA-98534179E21F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E16093A-2AD0-401F-95DA-98534179E21F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E16093A-2AD0-401F-95DA-98534179E21F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E16093A-2AD0-401F-95DA-98534179E21F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24E556DA-AF45-4BB2-ADF9-E1034D4198E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24E556DA-AF45-4BB2-ADF9-E1034D4198E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24E556DA-AF45-4BB2-ADF9-E1034D4198E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24E556DA-AF45-4BB2-ADF9-E1034D4198E2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -88,6 +100,8 @@ Global
 		{ED346BCE-EEC7-4A86-A923-9473A782F48A} = {94A508B0-181B-4A87-886A-1311F050BCCA}
 		{66C06747-A27B-4AF2-822A-0DD41537BB5B} = {A130D3F4-6E65-4F6C-A0EE-2412DA1D2C7E}
 		{332404CB-044D-44FA-A1DB-F786DA574BEC} = {94A508B0-181B-4A87-886A-1311F050BCCA}
+		{4E16093A-2AD0-401F-95DA-98534179E21F} = {BCF7067F-759B-4EED-96C8-014AF9E7DAC6}
+		{24E556DA-AF45-4BB2-ADF9-E1034D4198E2} = {94A508B0-181B-4A87-886A-1311F050BCCA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EF1E1C70-5C03-4DF5-9DBD-7F7DCF2418E4}

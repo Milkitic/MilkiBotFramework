@@ -48,6 +48,7 @@ public class WebSocketMessageSessionManager
             }
         });
         var sessionObj = new WebSocketMessageSession(tcs);
+
         _sessions.TryAdd(state, sessionObj);
         await _sendAction(message);
         try
