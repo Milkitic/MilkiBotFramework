@@ -40,8 +40,26 @@ public class LocalFontManager
             }
 
             using var stream = AssetLoader.Open(uri);
-            using var typeface = SKTypeface.FromStream(stream);
-            dictionary.Add(uri.ToString(), typeface.FamilyName);
+            if (Path.GetFileName(uri.LocalPath) == ".font")
+            {
+                using var sr = new StreamReader(stream);
+                while (sr.ReadLine() is { } line)
+                {
+                    using var typeface = SKTypeface.FromFamilyName(line);
+                    if (typeface != null)
+                    {
+                        dictionary[$"sys://{typeface.FamilyName}"] = typeface.FamilyName;
+                    }
+                }
+            }
+            else
+            {
+                using var typeface = SKTypeface.FromStream(stream);
+                if (typeface != null)
+                {
+                    dictionary.Add(uri.ToString(), typeface.FamilyName);
+                }
+            }
         }
     }
 
@@ -78,15 +96,24 @@ public class LocalFontManager
     {
         var dirDict = baseLocale.Select(k =>
         {
+            if (k.Key.StartsWith("sys://"))
+            {
+                return new KeyValuePair<string?, string>(null, k.Value);
+            }
+
             var uri = new Uri(k.Key);
             var subDir = Path.GetDirectoryName(uri.AbsolutePath)?.Replace(Path.DirectorySeparatorChar, '/');
-            return new KeyValuePair<string, string>($"{uri.Scheme}://{uri.Authority}{subDir}", k.Value);
+            return new KeyValuePair<string?, string>($"{uri.Scheme}://{uri.Authority}{subDir}", k.Value);
         }).Distinct();
 
         foreach (var kvp in dirDict)
         {
-            sb.Append(kvp.Key);
-            sb.Append('#');
+            if (kvp.Key != null)
+            {
+                sb.Append(kvp.Key);
+                sb.Append('#');
+            }
+
             sb.Append(kvp.Value);
             sb.Append(',');
         }
