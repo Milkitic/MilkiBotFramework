@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
@@ -369,12 +370,21 @@ public abstract class ContactsManagerBase : IContactsManager
         var removes = oldPrivates.Except(exists);
 
         var list = new List<ContactsUpdateSingleEvent>();
-
+        
+        var sb = new StringBuilder();
         foreach (var add in adds)
         {
-            PrivateMapping.TryAdd(add, privates[add]);
-            logger.LogInformation("Added private: " + add);
-            list.Add(new ContactsUpdateSingleEvent { PrivateInfo = privates[add], UpdateRole = ContactsUpdateRole.Private, UpdateType = ContactsUpdateType.Added });
+            var privateInfo = privates[add];
+            PrivateMapping.TryAdd(add, privateInfo);
+            sb.Append($"\"{privateInfo.Nickname} ({privateInfo.UserId})\", ");
+            //logger.LogInformation("Added private: " + add);
+            list.Add(new ContactsUpdateSingleEvent { PrivateInfo = privateInfo, UpdateRole = ContactsUpdateRole.Private, UpdateType = ContactsUpdateType.Added });
+        }
+
+        if (sb.Length > 0)
+        {
+            sb.Remove(sb.Length - 2, 2);
+            logger.LogInformation($"Add private: [{sb}]");
         }
 
         foreach (var remove in removes)
@@ -419,11 +429,20 @@ public abstract class ContactsManagerBase : IContactsManager
 
         var list = new List<ContactsUpdateSingleEvent>();
 
+        var sb = new StringBuilder();
         foreach (var add in adds)
         {
-            ChannelMapping.TryAdd(add, channels[add]);
-            logger.LogInformation("Add channel and members: " + add);
-            list.Add(new ContactsUpdateSingleEvent { ChannelInfo = channels[add], UpdateRole = ContactsUpdateRole.Channel, UpdateType = ContactsUpdateType.Added });
+            var channelInfo = channels[add];
+            ChannelMapping.TryAdd(add, channelInfo);
+            sb.Append($"\"{channelInfo.Name} ({channelInfo.ChannelId})\", ");
+            //logger.LogInformation("Add channel and members: " + add);
+            list.Add(new ContactsUpdateSingleEvent { ChannelInfo = channelInfo, UpdateRole = ContactsUpdateRole.Channel, UpdateType = ContactsUpdateType.Added });
+        }
+
+        if (sb.Length > 0)
+        {
+            sb.Remove(sb.Length - 2, 2);
+            logger.LogInformation($"Add channel and members: [{sb}]");
         }
 
         foreach (var remove in removes)
