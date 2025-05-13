@@ -147,4 +147,4 @@
 
 
 ## 📄 许可证 (License)
-本项目采用 [AGPL-3.0 License](https://opensource.org/license/gpl-3-0) 开源。
+本项目采用 [GPL-3.0 License](https://opensource.org/license/gpl-3-0) 开源。
