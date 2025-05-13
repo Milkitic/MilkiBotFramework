@@ -2,7 +2,7 @@
 
 [![NuGet Version](https://img.shields.io/nuget/v/MilkiBotFramework.svg?style=flat-square)](https://www.nuget.org/packages/MilkiBotFramework/)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/Milkitic/MilkiBotFramework/pr-build-check.yml?branch=main&style=flat-square)](https://github.com/Milkitic/MilkiBotFramework/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![License: GPLv3](https://img.shields.io/badge/License-GPLv3-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 基于 .NET 8 的高性能机器人框架，内置 OneBot、官方机器人接口实现。
 
@@ -21,7 +21,7 @@
 *   **🛠️ 统一管理：** 框架层面提供数据库 (EF Core, Migration目前仅支持ExecutingAssembly)、资源及配置的统一管理。
 *   **💬 强大命令系统：** 自动解析用户输入，智能映射到插件方法的参数。
 *   **🔧 高度可扩展：** 支持插件间与框架功能的依赖注入；核心中间件可继承修改，满足定制需求。
-*   **🎨 内置图形绘制：** 集成基于 XAML 的 UI 框架级图形绘制功能，简化图片生成，无需原始绘图操作。
+*   **🎨 内置图形绘制：** 集成基于 XAML 的 UI 框架级无头图形绘制功能，保持高效开发的同时，高效渲染并生成图片 **（无需原始绘图操作、无需Chromium）**。
 *   **🌐 Web API集成：** 插件支持单点 ASP.NET Core Web API，可在插件中创建 Controller 并注入框架模块。
 *   **🔔 完善的内部事件：** 关键模型支持属性更新通知，便于开发 GUI 插件或进行精细化控制。
 
