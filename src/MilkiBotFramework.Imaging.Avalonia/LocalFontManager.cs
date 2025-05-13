@@ -104,7 +104,7 @@ public class LocalFontManager
             var uri = new Uri(k.Key);
             var subDir = Path.GetDirectoryName(uri.AbsolutePath)?.Replace(Path.DirectorySeparatorChar, '/');
             return new KeyValuePair<string?, string>($"{uri.Scheme}://{uri.Authority}{subDir}", k.Value);
-        }).Distinct();
+        }).DistinctBy(k => HashCode.Combine(k.Key, k.Value));
 
         foreach (var kvp in dirDict)
         {

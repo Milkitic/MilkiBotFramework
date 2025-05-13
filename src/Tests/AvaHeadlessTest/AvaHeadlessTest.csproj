@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentAvaloniaUI" Version="2.1.0" />
+    <PackageReference Include="FluentAvaloniaUI" Version="2.3.0" />
   </ItemGroup>
 
   <ItemGroup>
