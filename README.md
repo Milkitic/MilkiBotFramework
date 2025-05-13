@@ -1,5 +1,7 @@
 # MilkiBotFramework
-简称Milki。易于使用与快速开发，基于.net 6的高性能机器人框架（内置OneBot实现）
+易于使用与快速开发，基于.net 8的高性能机器人框架（内置OneBot实现）
+
+更多wiki请前往：https://deepwiki.com/Milkitic/MilkiBotFramework
 
 本项目源自旧项目 https://github.com/Milkitic/daylily/tree/archived/v2 的彻底改造。
 
