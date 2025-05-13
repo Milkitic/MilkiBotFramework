@@ -2,7 +2,7 @@
 
 [![NuGet Version](https://img.shields.io/nuget/v/MilkiBotFramework.svg?style=flat-square)](https://www.nuget.org/packages/MilkiBotFramework/)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/Milkitic/MilkiBotFramework/pr-build-check.yml?branch=main&style=flat-square)](https://github.com/Milkitic/MilkiBotFramework/actions)
-[![License: GPLv3](https://img.shields.io/badge/License-GPLv3-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![License: GPLv3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](https://opensource.org/license/gpl-3-0)
 
 基于 .NET 8 的高性能机器人框架，内置 OneBot、官方机器人接口实现。
 
