@@ -63,7 +63,24 @@ public class QDispatcher : DispatcherBase<QMessageContext>
                     return true;
                 }
             }
+            else if (tProp.GetString() == "C2C_MESSAGE_CREATE")
+            {
+                if (rootElement.TryGetProperty("d", out var dProp))
+                {
+                    var messageId = dProp.GetProperty("id").GetString()!;
+                    var userId = dProp.GetProperty("author").GetProperty("user_openid").GetString()!;
+                    var content = dProp.GetProperty("content").GetString()!.Trim();
+                    var timestamp = DateTimeOffset.Parse(dProp.GetProperty("timestamp").GetString()!);
 
+                    messageIdentity = new MessageIdentity(userId, MessageType.Private);
+
+                    messageContext.RawMessage = content;
+                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageIdentity, userId);
+                    messageContext.ReceivedTime = timestamp;
+                    messageContext.MessageId = messageId;
+                    return true;
+                }
+            }
             //throw new NotImplementedException();
         }
 
