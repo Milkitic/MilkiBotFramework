@@ -115,7 +115,12 @@ public class MinIOController
             .WithStreamData(ms)
             .WithObjectSize(ms.Length)
             .WithContentType(contentType);
-        await _minio.PutObjectAsync(putObjectArgs).ConfigureAwait(false);
+        var response = await _minio.PutObjectAsync(putObjectArgs).ConfigureAwait(false);
+        if ((int)response.ResponseStatusCode >= 400)
+        {
+            throw new Exception(response.ResponseStatusCode.ToString());
+        }
+
         _logger.LogDebug($"Successfully uploaded {objectName} to {bucketName}");
 
         var reqParams = new Dictionary<string, string>(StringComparer.Ordinal)
