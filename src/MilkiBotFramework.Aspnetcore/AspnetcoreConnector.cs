@@ -41,7 +41,7 @@ public class AspnetcoreConnector : IConnector
     public TimeSpan MessageTimeout { get; set; } = TimeSpan.FromSeconds(30);
     public Encoding? Encoding { get; set; }
 
-    public async Task ConnectAsync()
+    public virtual async Task ConnectAsync()
     {
         if (ConnectionType == ConnectionType.WebSocket && WebSocketConnector != null)
         {
@@ -55,7 +55,7 @@ public class AspnetcoreConnector : IConnector
         await _webApplication.StartAsync();
     }
 
-    public async Task DisconnectAsync()
+    public virtual async Task DisconnectAsync()
     {
         if (_webSocket != null)
         {
@@ -75,6 +75,11 @@ public class AspnetcoreConnector : IConnector
         if (WebSocketConnector != null)
             return await WebSocketConnector.SendMessageAsync(message, state);
         throw new NotSupportedException();
+    }
+
+    protected async Task InvokeRawMessageAsync(string arg)
+    {
+        if (RawMessageReceived != null) await RawMessageReceived.Invoke(arg);
     }
 
     internal async Task OnWebSocketOpen(WebSocket webSocket)

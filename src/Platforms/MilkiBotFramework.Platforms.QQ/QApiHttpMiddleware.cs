@@ -1,9 +1,8 @@
 ﻿using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Hosting;
+using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Platforms.QQ.Connecting;
-using MilkiBotFramework.Plugining.Configuration;
 using NSec.Cryptography;
 
 namespace MilkiBotFramework.Platforms.QQ;
@@ -11,11 +10,13 @@ namespace MilkiBotFramework.Platforms.QQ;
 public class QApiHttpMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly QApiConnector _qApiConnector;
     private readonly QConnection _connection;
 
-    public QApiHttpMiddleware(RequestDelegate next, BotOptions botOptions)
+    public QApiHttpMiddleware(RequestDelegate next, BotOptions botOptions, IConnector connector)
     {
         _next = next;
+        _qApiConnector = (QApiConnector)connector;
         _connection = ((QQBotOptions)botOptions).Connection;
     }
 
@@ -23,20 +24,31 @@ public class QApiHttpMiddleware
     {
         if (context.Request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase))
         {
-            // 启用缓冲以允许多次读取请求体
-            context.Request.EnableBuffering();
-
             using var reader = new StreamReader(context.Request.Body, Encoding.UTF8, true, 1024, true);
             var bodyStr = await reader.ReadToEndAsync();
             var json = JsonNode.Parse(bodyStr);
+            if (json == null)
+            {
+                await _next(context);
+                return;
+            }
 
-            var plainToken = json?["d"]?["plain_token"]?.GetValue<string>() ?? bodyStr;
-            var eventTimespan = json?["d"]?["event_ts"]?.GetValue<string>();
-            // 重置流位置以供后续中间件使用
-            context.Request.Body.Position = 0;
+            var dObject = json["d"];
+            if (dObject == null)
+            {
+                await _next(context);
+                return;
+            }
+
+            var op = (OpCode?)json["op"]?.GetValue<int>();
+            if (op == null)
+            {
+                await _next(context);
+                return;
+            }
 
             var xSignature = context.Request.Headers["X-Signature-Ed25519"].FirstOrDefault();
-            var xTimestamp = eventTimespan ?? context.Request.Headers["X-Signature-Timestamp"].FirstOrDefault();
+            var xTimestamp = context.Request.Headers["X-Signature-Timestamp"].FirstOrDefault();
 
             // 验证签名
             if (!VerifySignature(xSignature, xTimestamp, bodyStr))
@@ -45,18 +57,24 @@ public class QApiHttpMiddleware
                 await context.Response.WriteAsync("Unauthorized: Invalid signature");
                 return;
             }
-            else
+
+
+            if (op == OpCode.Validate)
             {
+                var plainToken = dObject["plain_token"]?.GetValue<string>() ?? bodyStr;
+                var eventTimespan = dObject["event_ts"]?.GetValue<string>();
                 // 生成签名
                 var generatedSignature = GenerateSignature(eventTimespan, plainToken);
-                
+
                 await context.Response.WriteAsJsonAsync(new
                 {
                     plain_token = plainToken,
                     signature = generatedSignature
                 });
-                return;
             }
+
+            await _qApiConnector.HandleEventAsync(op.Value, json);
+            return;
         }
 
         await _next(context);
@@ -126,12 +144,12 @@ public class QApiHttpMiddleware
     {
         var seed = botSecret;
         const int Ed25519SeedSize = 32;
-        
+
         while (seed.Length < Ed25519SeedSize)
         {
-            seed += seed; 
+            seed += seed;
         }
-        
+
         var seedString = seed.Substring(0, Ed25519SeedSize);
         byte[] seedBytes = Encoding.UTF8.GetBytes(seedString);
 
@@ -145,7 +163,7 @@ public class QApiHttpMiddleware
 
         while (seed.Length < Ed25519SeedSize)
         {
-            seed += seed; 
+            seed += seed;
         }
 
         var seedBytes = Encoding.UTF8.GetBytes(seed[..32]);

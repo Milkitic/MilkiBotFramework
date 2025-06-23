@@ -1,7 +1,7 @@
 ﻿namespace MilkiBotFramework.Platforms.QQ.Connecting;
 
 // ReSharper disable InconsistentNaming
-internal enum OpCode
+public enum OpCode
 {
     Dispatch = 0,
     Heartbeat = 1,
