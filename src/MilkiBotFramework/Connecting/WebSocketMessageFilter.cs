@@ -12,7 +12,7 @@ public class WebSocketMessageFilter : IDisposable
     private readonly CancellationTokenSource _cancellationTokenSource;
     private readonly ConcurrentQueue<string> _queue = new();
     private readonly AsyncLock _asyncLock = new();
-    private readonly AutoResetEvent _autoResetEvent = new(false);
+    //private readonly AutoResetEvent _autoResetEvent = new(false);
 
     private bool _isDisposed;
     private bool _disconnected;
@@ -47,7 +47,8 @@ public class WebSocketMessageFilter : IDisposable
         {
             while (!_cancellationTokenSource.IsCancellationRequested)
             {
-                await _autoResetEvent.WaitOneAsync(_cancellationTokenSource.Token);
+                //await _autoResetEvent.WaitOneAsync(_cancellationTokenSource.Token);
+                await Task.Delay(1);
                 while (_queue.TryDequeue(out var message))
                 {
                     var asyncWsMessage = new WebSocketAsyncMessage(message);
@@ -71,7 +72,7 @@ public class WebSocketMessageFilter : IDisposable
     private void EnqueueMessage(string message)
     {
         _queue.Enqueue(message);
-        _autoResetEvent.Set();
+        //_autoResetEvent.Set();
     }
 
     private Task WebSocketClientConnector_RawMessageReceived(string message)

@@ -33,7 +33,7 @@ public class HttpMiddleware
                 // context.Request.EnableBuffering(); // context using several time the stream in ASP.Net Core
                 using var reader = new StreamReader(context.Request.Body, Encoding.UTF8, true, 1024, true);
                 var bodyStr = await reader.ReadToEndAsync();
-                //_logger.LogDebug("!!!POST STR: " + bodyStr);
+                _logger.LogDebug("!!!POST STR: " + bodyStr);
                 try
                 {
                     await _dispatcher.InvokeRawMessageReceived(bodyStr);

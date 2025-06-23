@@ -28,7 +28,10 @@ public static class BotBuilderExtensions
             .UseRichMessageConverter<QMessageConverter>();
 
         connection ??= ((QQBotOptions)builder.GetOptionInstance()).Connection;
-        builder.UseConnector<QApiConnector>(k => k.Connection = connection);
+        builder.UseConnector<QApiConnector>(k =>
+        {
+            k.Connection = connection;
+        });
 
         return (TBuilder)builder;
     }

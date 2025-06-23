@@ -10,7 +10,6 @@ namespace MilkiBotFramework.Aspnetcore
     {
         public static readonly string[] DefaultUris = { "http://0.0.0.0:5000", "https://0.0.0.0:5001" };
 
-        private WebApplication? _app;
         private readonly WebApplicationBuilder _builder;
 
         public AspnetcoreBotBuilder(params string[] bindUrls)
@@ -33,6 +32,7 @@ namespace MilkiBotFramework.Aspnetcore
             _builder.Logging.ClearProviders();
         }
 
+        public WebApplication WebApp { get; private set; } = null!;
         public string[] BindUrls { get; private set; }
 
         public AspnetcoreBotBuilder UseUrl(params string[] bindUrls)
@@ -43,34 +43,57 @@ namespace MilkiBotFramework.Aspnetcore
 
         protected override void ConfigServices(IServiceCollection serviceCollection)
         {
+            ConfigureBuilder(_builder);
+            base.ConfigServices(serviceCollection);
+        }
+
+        protected virtual void ConfigureBuilder(WebApplicationBuilder builder)
+        {
             _builder.WebHost.UseUrls(BindUrls);
-            _builder.Services.AddControllers()
-                 //.AddApplicationPart(Assembly.GetExecutingAssembly()) // 如果用此方法请注意对应的插件程序集将无法Unload，需重启生效
-                 //.AddControllersAsServices()
-                 ;
+            var mvcBuilder = _builder.Services.AddControllers()
+                //.AddApplicationPart(Assembly.GetExecutingAssembly()) // 如果用此方法请注意对应的插件程序集将无法Unload，需重启生效
+                //.AddControllersAsServices()
+                ;
+            ConfigureMvc(mvcBuilder);
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             _builder.Services.AddEndpointsApiExplorer();
             //_builder.Services.AddSwaggerGen();
-            base.ConfigServices(serviceCollection);
+        }
+
+        protected virtual void ConfigureMvc(IMvcBuilder mvcBuilder)
+        {
+
         }
 
         protected override IServiceProvider BuildCore(IServiceCollection services)
         {
-            services.AddSingleton(typeof(WebApplication), _ => _app!);
-            _app = _builder.Build();
-            return _app.Services;
+            services.AddSingleton(typeof(WebApplication), _ => WebApp!);
+            WebApp = _builder.Build();
+            return WebApp.Services;
         }
 
         protected override void ConfigureApp(IServiceProvider serviceProvider)
         {
             base.ConfigureApp(serviceProvider);
 
-            if (_app == null) return;
+            if (WebApp == null) return;
             //if (_app.Environment.IsDevelopment())
             //{
             //    _app.UseSwagger();
             //    _app.UseSwaggerUI();
             //}
+
+            ConfigureMiddleware(serviceProvider);
+
+            //_app.UseHttpsRedirection();
+            WebApp.UseAuthorization();
+
+            WebApp.MapControllers();
+        }
+
+        protected virtual void ConfigureMiddleware(IServiceProvider serviceProvider)
+        {
+            if (WebApp == null) return;
 
             var connector = serviceProvider.GetService<IConnector>()!;
             if (connector.ConnectionType == ConnectionType.ReverseWebSocket)
@@ -79,18 +102,13 @@ namespace MilkiBotFramework.Aspnetcore
                 {
                     KeepAliveInterval = TimeSpan.FromSeconds(2)
                 };
-                _app.UseWebSockets(webSocketOptions);
-                _app.UseMiddleware<ReverseWebSocketMiddleware>();
+                WebApp.UseWebSockets(webSocketOptions);
+                WebApp.UseMiddleware<ReverseWebSocketMiddleware>();
             }
             else if (connector.ConnectionType == ConnectionType.Http)
             {
-                _app.UseMiddleware<HttpMiddleware>();
+                WebApp.UseMiddleware<HttpMiddleware>();
             }
-
-            _app.UseHttpsRedirection();
-            _app.UseAuthorization();
-
-            _app.MapControllers();
         }
 
         protected override IServiceCollection GetServiceCollection()

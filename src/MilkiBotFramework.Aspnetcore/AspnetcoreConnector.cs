@@ -36,7 +36,7 @@ public class AspnetcoreConnector : IConnector
 
     public ConnectionType ConnectionType { get; set; }
     public string? TargetUri { get; set; }
-    public string? BindingPath { get; set; }
+    public virtual string? BindingPath { get; set; }
     public TimeSpan ErrorReconnectTimeout { get; set; } = TimeSpan.FromSeconds(30);
     public TimeSpan MessageTimeout { get; set; } = TimeSpan.FromSeconds(30);
     public Encoding? Encoding { get; set; }
