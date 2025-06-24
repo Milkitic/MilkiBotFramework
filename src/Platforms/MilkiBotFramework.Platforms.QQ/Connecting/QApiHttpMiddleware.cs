@@ -1,21 +1,24 @@
 ﻿using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.Platforms.QQ.Connecting;
 using NSec.Cryptography;
 
-namespace MilkiBotFramework.Platforms.QQ;
+namespace MilkiBotFramework.Platforms.QQ.Connecting;
 
 public class QApiHttpMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ILogger<QApiHttpMiddleware> _logger;
     private readonly QApiConnector _qApiConnector;
     private readonly QConnection _connection;
 
-    public QApiHttpMiddleware(RequestDelegate next, BotOptions botOptions, IConnector connector)
+    public QApiHttpMiddleware(RequestDelegate next, BotOptions botOptions,
+        IConnector connector, ILogger<QApiHttpMiddleware> logger)
     {
         _next = next;
+        _logger = logger;
         _qApiConnector = (QApiConnector)connector;
         _connection = ((QQBotOptions)botOptions).Connection;
     }
@@ -53,11 +56,11 @@ public class QApiHttpMiddleware
             // 验证签名
             if (!VerifySignature(xSignature, xTimestamp, bodyStr))
             {
+                _logger.LogWarning("Unauthorized: Invalid signature");
                 context.Response.StatusCode = 401;
                 await context.Response.WriteAsync("Unauthorized: Invalid signature");
                 return;
             }
-
 
             if (op == OpCode.Validate)
             {
