@@ -9,10 +9,18 @@ public class ConfigurationBase
     public virtual Encoding Encoding { get; } = Encoding.UTF8;
 
     [YamlIgnore]
-    internal Func<Task>? SaveAction;
+    internal Func<Task>? AsyncSaveAction;
+
+    [YamlIgnore]
+    internal Action? SaveAction;
 
     public async Task SaveAsync()
     {
-        if (SaveAction != null) await SaveAction();
+        if (AsyncSaveAction != null) await AsyncSaveAction();
+    }
+
+    public void Save()
+    {
+        SaveAction?.Invoke();
     }
 }

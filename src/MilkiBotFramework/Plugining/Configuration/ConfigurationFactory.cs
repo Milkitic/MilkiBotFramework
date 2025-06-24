@@ -30,10 +30,14 @@ namespace MilkiBotFramework.Plugining.Configuration
             converter ??= new YamlConverter();
             var success = TryLoadConfigFromFile<T>(path, converter, _logger, out var config, out var ex);
             if (!success) throw ex!;
-            config!.SaveAction = () =>
+            config!.AsyncSaveAction = () =>
             {
                 SaveConfig(config, path, converter);
                 return Task.CompletedTask;
+            };
+            config!.SaveAction = () =>
+            {
+                SaveConfig(config, path, converter);
             };
             _cachedDict.Add(t, config);
             return config;
