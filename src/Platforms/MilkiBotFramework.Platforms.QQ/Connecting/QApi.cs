@@ -58,7 +58,7 @@ public class QApi : IMessageApi
                 };
             var result = await _lightHttpClient.HttpPost<object>(messageUrl, messageRequest, new Dictionary<string, string>
             {
-                { "Authorization", _qApiConnector.Authorization }
+                { "Authorization", await _qApiConnector.GetAuthorizationAsync() }
             });
             var str = result.ToString();
             return str ?? "";
@@ -87,7 +87,7 @@ public class QApi : IMessageApi
             var uploadUrl = $"https://{host}/v2/users/{userId}/files";
             var uploadResult = await _lightHttpClient.HttpPost<object>(uploadUrl, uploadRequest, new Dictionary<string, string>
             {
-                { "Authorization", _qApiConnector.Authorization }
+                { "Authorization",await  _qApiConnector.GetAuthorizationAsync() }
             });
 
             sb.AppendLine(uploadResult.ToString());
@@ -119,7 +119,7 @@ public class QApi : IMessageApi
                 };
             var sendImgResult = await _lightHttpClient.HttpPost<object>(messageUrl, sendImgRequest, new Dictionary<string, string>
             {
-                { "Authorization", _qApiConnector.Authorization }
+                { "Authorization", await _qApiConnector.GetAuthorizationAsync() }
             });
 
             sb.AppendLine(sendImgResult.ToString());
@@ -154,7 +154,7 @@ public class QApi : IMessageApi
                 };
             var result = await _lightHttpClient.HttpPost<object>(messageUrl, messageRequest, new Dictionary<string, string>
             {
-                { "Authorization", _qApiConnector.Authorization }
+                { "Authorization", await _qApiConnector.GetAuthorizationAsync() }
             });
             var str = result.ToString();
             return str ?? "";
@@ -183,7 +183,7 @@ public class QApi : IMessageApi
             var uploadUrl = $"https://{host}/v2/groups/{channelId}/files";
             var uploadResult = await _lightHttpClient.HttpPost<object>(uploadUrl, uploadRequest, new Dictionary<string, string>
             {
-                { "Authorization", _qApiConnector.Authorization }
+                { "Authorization", await _qApiConnector.GetAuthorizationAsync() }
             });
 
             sb.AppendLine(uploadResult.ToString());
@@ -215,7 +215,7 @@ public class QApi : IMessageApi
                 };
             var sendImgResult = await _lightHttpClient.HttpPost<object>(messageUrl, sendImgRequest, new Dictionary<string, string>
             {
-                { "Authorization", _qApiConnector.Authorization }
+                { "Authorization", await _qApiConnector.GetAuthorizationAsync() }
             });
 
             sb.AppendLine(sendImgResult.ToString());

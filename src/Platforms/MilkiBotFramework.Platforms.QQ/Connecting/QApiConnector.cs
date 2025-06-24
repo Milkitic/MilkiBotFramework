@@ -45,7 +45,6 @@ public class QApiConnector : AspnetcoreConnector
         }
     }
 
-    public string Authorization => $"QQBot {_accessToken}";
     public int MessageSequence => _lastSequence;
 
     public override async Task ConnectAsync()
@@ -64,6 +63,17 @@ public class QApiConnector : AspnetcoreConnector
             _logger.LogDebug(jsonString);
             await InvokeRawMessageAsync(jsonString);
         }
+    }
+
+    public async ValueTask<string> GetAuthorizationAsync()
+    {
+        if (DateTime.Now >= _tokenExpireTime.AddSeconds(-60))
+        {
+            _logger.LogInformation("Token expired, refreshing..");
+            await RequestAccessTokenAsync(Connection);
+        }
+
+        return $"QQBot {_accessToken}";
     }
 
     private async Task RequestAccessTokenAsync(QConnection connection)
