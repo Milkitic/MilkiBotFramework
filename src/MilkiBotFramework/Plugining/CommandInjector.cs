@@ -363,7 +363,7 @@ public class CommandInjector
             {
                 throw new BindingException(
                     "The specified option needs a higher authority to change the default value. Current: " + messageContext.Authority +
-                    "; Desired: " + commandInfo.Authority,
+                    "; Desired: " + paramDef.Authority,
                     new BindingSource(commandInfo, paramDef), BindingFailureType.AuthenticationFailed);
             }
         }
