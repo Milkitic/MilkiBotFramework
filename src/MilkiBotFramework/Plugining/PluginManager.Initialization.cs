@@ -247,8 +247,12 @@ public partial class PluginManager
             }
         }
 
-        var allTypes = _serviceCollection
-            .Where(o => o.Lifetime == ServiceLifetime.Singleton);
+        var allTypes = _serviceCollection;
+        //    .Where(o => o.Lifetime == ServiceLifetime.Singleton);
+        //var allTrTypes = _serviceCollection
+        //    .Where(o => o.Lifetime == ServiceLifetime.Transient);
+        //var allScopedTypes = _serviceCollection
+        //    .Where(o => o.Lifetime == ServiceLifetime.Scoped);
         foreach (var serviceDescriptor in allTypes)
         {
             var ns = serviceDescriptor.ServiceType.Namespace!;
@@ -260,11 +264,24 @@ public partial class PluginManager
                     continue;
                 if (fullName.Contains("IConfiguration`1"))
                     continue;
-                var instance = _serviceProvider.GetService(serviceDescriptor.ImplementationType);
-                if (instance == null)
-                    loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ImplementationType, _ => null!);
-                else
-                    loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ImplementationType, instance);
+                if (serviceDescriptor.Lifetime == ServiceLifetime.Singleton)
+                {
+                    var instance = _serviceProvider.GetService(serviceDescriptor.ImplementationType);
+                    if (instance == null)
+                        loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ImplementationType, _ => null!);
+                    else
+                        loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ImplementationType, instance);
+                }
+                else if (serviceDescriptor.Lifetime == ServiceLifetime.Scoped)
+                {
+                    if (ns.StartsWith("Microsoft.AspNetCore")) continue;
+                    loaderContext.ServiceCollection.AddScoped(serviceDescriptor.ImplementationType);
+                }
+                else if (serviceDescriptor.Lifetime == ServiceLifetime.Transient)
+                {
+                    if (ns.StartsWith("Microsoft.AspNetCore")) continue;
+                    loaderContext.ServiceCollection.AddTransient(serviceDescriptor.ImplementationType);
+                }
             }
             else
             {
@@ -273,11 +290,26 @@ public partial class PluginManager
                     continue;
                 if (fullName.Contains("IConfiguration`1"))
                     continue;
-                var instance = _serviceProvider.GetService(serviceDescriptor.ServiceType);
-                if (instance == null)
-                    loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ServiceType, _ => null!);
-                else
-                    loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ServiceType, instance);
+                if (serviceDescriptor.Lifetime == ServiceLifetime.Singleton)
+                {
+                    var instance = _serviceProvider.GetService(serviceDescriptor.ServiceType);
+                    if (instance == null)
+                        loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ServiceType, _ => null!);
+                    else
+                        loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ServiceType, instance);
+                }
+                else if (serviceDescriptor.Lifetime == ServiceLifetime.Scoped)
+                {
+                    if (ns.StartsWith("Microsoft.AspNetCore")) continue;
+                    if (serviceDescriptor.ImplementationType == null) continue;
+                    loaderContext.ServiceCollection.AddScoped(serviceDescriptor.ServiceType, serviceDescriptor.ImplementationType);
+                }
+                else if (serviceDescriptor.Lifetime == ServiceLifetime.Transient)
+                {
+                    if (ns.StartsWith("Microsoft.AspNetCore")) continue;
+                    if (serviceDescriptor.ImplementationType == null) continue;
+                    loaderContext.ServiceCollection.AddTransient(serviceDescriptor.ServiceType, serviceDescriptor.ImplementationType);
+                }
             }
         }
 
