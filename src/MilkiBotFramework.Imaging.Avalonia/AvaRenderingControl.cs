@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -8,12 +9,13 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using MilkiBotFramework.Imaging.Avalonia.Internal;
 using Image = SixLabors.ImageSharp.Image;
 
 namespace MilkiBotFramework.Imaging.Avalonia;
 
-public abstract class AvaRenderingControl<TViewModel> : AvaRenderingControl
+public abstract class AvaRenderingControl<TViewModel> : AvaRenderingControl where TViewModel : class
 {
     public static readonly StyledProperty<TViewModel?> ViewModelProperty =
         AvaloniaProperty.Register<AvaRenderingControl, TViewModel?>(nameof(ViewModel));
@@ -37,7 +39,13 @@ public abstract class AvaRenderingControl<TViewModel> : AvaRenderingControl
             {
                 ViewModel = default;
             }
+
+            OnViewModelChanged(e.OldValue as TViewModel, e.NewValue as TViewModel);
         }
+    }
+
+    protected virtual void OnViewModelChanged(TViewModel? oldValue, TViewModel? newValue)
+    {
     }
 }
 
@@ -101,32 +109,27 @@ public abstract class AvaRenderingControl : UserControl
 
     public Task DrawingTask => _tcs.Task;
 
-    public virtual Task<MemoryStream> ProcessOnceAsync()
+    public virtual Task<RenderResult> ProcessOnceAsync()
     {
         var scaling = GetScaling();
         var visual = GetDrawingVisual(out var size);
 
-        if (scaling == 0)
-            throw new Exception("The DPI cannot be zero.");
-        if (double.IsNaN(scaling))
-            throw new Exception("The DPI cannot be NaN.");
-        if (size.Width == 0 || size.Height == 0)
-            throw new Exception("The size cannot be zero.");
-        if (double.IsNaN(size.Width) || double.IsNaN(size.Height))
-            throw new Exception("The size cannot be NaN.");
+        ValidateParameters(scaling, size);
 
-        var pixelSize = new PixelSize((int)(size.Width * scaling), (int)(size.Height * scaling));
-        var dpi = new Vector(96 * scaling, 96 * scaling);
+        // 计算渲染参数
+        var (pixelSize, dpi) = CalculateRenderParameters(scaling, size);
 
-        var stream = new MemoryStream();
-        using (var renderBitmap = new RenderTargetBitmap(pixelSize, dpi))
-        {
-            renderBitmap.Render(visual);
-            renderBitmap.Save(stream);
-        }
+        // 执行渲染
+        using var renderBitmap = RenderVisual(visual, pixelSize, dpi);
 
-        stream.Position = 0;
-        return Task.FromResult(stream);
+        // 获取像素数据
+        var buffer = GetPixelBuffer(renderBitmap, out var length);
+
+        return Task.FromResult(new RenderResult(
+            buffer,
+            length,
+            pixelSize,
+            renderBitmap.Format ?? throw new InvalidOperationException("Invalid pixel format")));
     }
 
 #pragma warning disable CS1998
@@ -178,5 +181,65 @@ public abstract class AvaRenderingControl : UserControl
         }
 
         return 1;
+    }
+
+    private static void ValidateParameters(double scaling, Size size)
+    {
+        if (scaling is <= 0 or double.NaN)
+        {
+            throw new ArgumentOutOfRangeException(nameof(scaling),
+                $"Invalid scaling value: {scaling}. Must be positive number.");
+        }
+
+        if (size.Width <= 0 || size.Height <= 0 || double.IsNaN(size.Width) || double.IsNaN(size.Height))
+        {
+            throw new ArgumentException(
+                $"Invalid size: {size.Width}x{size.Height}. Must be positive values.");
+        }
+    }
+
+    private static (PixelSize pixelSize, Vector dpi) CalculateRenderParameters(double scaling, Size size)
+    {
+        var width = (int)Math.Round(size.Width * scaling);
+        var height = (int)Math.Round(size.Height * scaling);
+
+        return (new PixelSize(width, height), new Vector(96 * scaling, 96 * scaling));
+    }
+
+    private static RenderTargetBitmap RenderVisual(Visual visual, PixelSize pixelSize, Vector dpi)
+    {
+        var renderBitmap = new RenderTargetBitmap(pixelSize, dpi);
+        renderBitmap.Render(visual);
+        return renderBitmap;
+    }
+
+    private static byte[] GetPixelBuffer(RenderTargetBitmap bitmap, out int length)
+    {
+        var format = bitmap.Format ?? PixelFormats.Bgra8888;
+        int bytesPerPixel = (format.BitsPerPixel + 7) / 8; // 处理非8整除的情况
+        int stride = bitmap.PixelSize.Width * bytesPerPixel;
+        length = stride * bitmap.PixelSize.Height;
+
+        var buffer = ArrayPool<byte>.Shared.Rent(length);
+        try
+        {
+            CopyPixelsUnsafe(bitmap, buffer, bytesPerPixel);
+        }
+        catch
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+            throw;
+        }
+
+        return buffer;
+    }
+
+    private static unsafe void CopyPixelsUnsafe(RenderTargetBitmap bitmap, byte[] buffer, int bytesPerPixel)
+    {
+        fixed (byte* ptr = buffer)
+        {
+            var sourceRect = new PixelRect(0, 0, bitmap.PixelSize.Width, bitmap.PixelSize.Height);
+            bitmap.CopyPixels(sourceRect, (IntPtr)ptr, buffer.Length, bitmap.PixelSize.Width * bytesPerPixel);
+        }
     }
 }
