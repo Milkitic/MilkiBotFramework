@@ -19,35 +19,23 @@ using Size = Avalonia.Size;
 
 namespace MilkiBotFramework.Imaging.Avalonia;
 
-public class AvaRenderingProcessor<TViewModel, TProcessControl> : AvaRenderingProcessor<TProcessControl>
-    where TViewModel : class
-    where TProcessControl : AvaRenderingControl
-{
-    public AvaRenderingProcessor(RenderingMode renderingMode = RenderingMode.InMemory) : base(renderingMode)
-    {
-    }
-
-    public AvaRenderingProcessor(Func<TViewModel, Image?, AvaRenderingControl> templateControlCreation,
-        RenderingMode renderingMode = RenderingMode.InMemory)
-        : base((obj, img) => templateControlCreation((TViewModel)obj, img),
-            renderingMode)
-    {
-    }
-}
-
 public enum RenderingMode
 {
     InMemory, InMemoryWithWindow, Headless,
 }
 
-public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
+public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor
     where TProcessControl : AvaRenderingControl
 {
     private readonly RenderingMode _renderingMode;
     private readonly Type? _type;
     private readonly Func<object, Image?, AvaRenderingControl>? _templateControlCreation;
 
-    public AvaRenderingProcessor(RenderingMode renderingMode = RenderingMode.InMemory)
+    public AvaRenderingProcessor() : this(RenderingMode.InMemory)
+    {
+    }
+
+    public AvaRenderingProcessor(RenderingMode renderingMode)
     {
         _type = typeof(TProcessControl);
         _renderingMode = renderingMode;
@@ -77,7 +65,7 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
                     {
                         LayoutTransform: ScaleTransform scaleTransform,
                         Child: { } child
-                    })
+                    } && !double.IsNaN(child.Width) && !double.IsNaN(child.Height))
                 {
                     child.Measure(new Size());
                     child.Arrange(new Rect(0, 0, 0, 0));
@@ -111,6 +99,7 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
                     }
                     else
                     {
+                        Console.WriteLine("Warn: Window.CaptureRenderedFrame() failed.");
                         renderResult = await subProcessor.ProcessOnceAsync(); // fallback
                     }
                 }

@@ -1,6 +1,9 @@
 ﻿using SixLabors.ImageSharp;
 
 namespace MilkiBotFramework.Imaging;
+public interface IDrawingProcessor : IDrawingProcessor<object>
+{
+}
 
 public interface IDrawingProcessor<in TViewModel> where TViewModel : class
 {
