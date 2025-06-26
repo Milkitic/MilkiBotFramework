@@ -139,6 +139,13 @@ public abstract class AvaRenderingControl : UserControl
         yield break;
     }
 
+    public async Task FinishRender()
+    {
+        await _timer.DisposeAsync();
+        if (RenderFinished != null)
+            await RenderFinished.Invoke(this, EventArgs.Empty);
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
@@ -153,13 +160,6 @@ public abstract class AvaRenderingControl : UserControl
     {
         size = new Size(Bounds.Width, Bounds.Height);
         return this;
-    }
-
-    protected async Task FinishRender()
-    {
-        await _timer.DisposeAsync();
-        if (RenderFinished != null)
-            await RenderFinished.Invoke(this, EventArgs.Empty);
     }
 
     private void AvaRenderingControl_Loaded(object? sender, RoutedEventArgs e)

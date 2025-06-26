@@ -1,14 +1,20 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using MilkiBotFramework.Imaging.Avalonia.Internal;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.PixelFormats;
+using Image = SixLabors.ImageSharp.Image;
 using Size = Avalonia.Size;
 
 namespace MilkiBotFramework.Imaging.Avalonia;
@@ -17,103 +23,149 @@ public class AvaRenderingProcessor<TViewModel, TProcessControl> : AvaRenderingPr
     where TViewModel : class
     where TProcessControl : AvaRenderingControl
 {
-    public AvaRenderingProcessor(bool enableWindowRendering = false) : base(enableWindowRendering)
+    public AvaRenderingProcessor(RenderingMode renderingMode = RenderingMode.InMemory) : base(renderingMode)
     {
     }
 
     public AvaRenderingProcessor(Func<TViewModel, Image?, AvaRenderingControl> templateControlCreation,
-        bool enableWindowRendering = false) : base((obj, img) => templateControlCreation((TViewModel)obj, img),
-        enableWindowRendering)
+        RenderingMode renderingMode = RenderingMode.InMemory)
+        : base((obj, img) => templateControlCreation((TViewModel)obj, img),
+            renderingMode)
     {
     }
+}
+
+public enum RenderingMode
+{
+    InMemory, InMemoryWithWindow, Headless,
 }
 
 public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
     where TProcessControl : AvaRenderingControl
 {
-    private readonly bool _enableWindowRendering;
+    private readonly RenderingMode _renderingMode;
     private readonly Type? _type;
     private readonly Func<object, Image?, AvaRenderingControl>? _templateControlCreation;
 
-    public AvaRenderingProcessor(bool enableWindowRendering = false)
+    public AvaRenderingProcessor(RenderingMode renderingMode = RenderingMode.InMemory)
     {
         _type = typeof(TProcessControl);
-        _enableWindowRendering = enableWindowRendering;
+        _renderingMode = renderingMode;
     }
 
     public AvaRenderingProcessor(Func<object, Image?, AvaRenderingControl> templateControlCreation,
-        bool enableWindowRendering = false)
+        RenderingMode renderingMode = RenderingMode.InMemory)
     {
         _templateControlCreation = templateControlCreation;
-        _enableWindowRendering = enableWindowRendering;
+        _renderingMode = renderingMode;
     }
 
     public async Task<Image> ProcessAsync(object viewModel, string locale = "en-US", Image? sourceImage = null)
     {
         await UiThreadHelper.EnsureUiThreadAsync();
-        MemoryStream? retStream = null;
+        RenderResult? renderResult = default;
+
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var tcsOuter = new TaskCompletionSource(cts);
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             var subProcessor = CreateControlInstance(sourceImage, viewModel, locale);
-            if (double.IsNaN(subProcessor.Width) || double.IsNaN(subProcessor.Height) || _enableWindowRendering)
+            if (double.IsNaN(subProcessor.Width) || double.IsNaN(subProcessor.Height) || _renderingMode != RenderingMode.InMemory)
             {
                 var window = new DrawingWindow { Content = new DpiDecorator { Child = subProcessor } };
+                if (subProcessor.Content is LayoutTransformControl
+                    {
+                        LayoutTransform: ScaleTransform scaleTransform,
+                        Child: { } child
+                    })
+                {
+                    child.Measure(new Size());
+                    child.Arrange(new Rect(0, 0, 0, 0));
+                    var bounds = child.Bounds;
+                    window.SizeToContent = SizeToContent.Manual;
+                    window.Width = bounds.Width * scaleTransform.ScaleX;
+                    window.Height = bounds.Height * scaleTransform.ScaleY;
+                }
+
                 window.Show();
                 await subProcessor.DrawingTask;
                 await window.WaitForShown();
-                retStream = await subProcessor.ProcessOnceAsync();
 
-                //var renderBitmap = window.CaptureRenderedFrame();
-                //if (renderBitmap != null)
-                //{
-                //    try
-                //    {
-                //        retStream = new MemoryStream();
-                //        renderBitmap.Save(retStream);
-                //        retStream.Position = 0;
-                //    }
-                //    finally
-                //    {
-                //        renderBitmap.Dispose();
-                //    }
-                //}
-                //else
-                //{
-                //    retStream = await subProcessor.ProcessOnceAsync();
-                //}
+                if (_renderingMode != RenderingMode.Headless)
+                {
+                    renderResult = await subProcessor.ProcessOnceAsync();
+                }
+                else
+                {
+                    var renderBitmap = window.CaptureRenderedFrame();
+                    if (renderBitmap != null)
+                    {
+                        var pixelSize = renderBitmap.PixelSize;
+                        var pixelFormat = renderBitmap.Format!.Value;
+                        var bpp = pixelFormat.BitsPerPixel / 8;
+                        var length = pixelSize.Width * pixelSize.Height * bpp;
+
+                        var rentByte = ArrayPool<byte>.Shared.Rent(length);
+                        GetRawBytes(rentByte, renderBitmap, bpp);
+                        renderResult = new RenderResult(rentByte, length, pixelSize, pixelFormat);
+                    }
+                    else
+                    {
+                        renderResult = await subProcessor.ProcessOnceAsync(); // fallback
+                    }
+                }
+
 
                 window.Close();
             }
             else
             {
-                _ = new DrawingWindow { Content = new DpiDecorator { Child = subProcessor } };
+                var window = new DrawingWindow { Content = new DpiDecorator { Child = subProcessor } };
 
                 var size = new Size(subProcessor.Width, subProcessor.Height);
                 subProcessor.Measure(size);
                 subProcessor.Arrange(new Rect(size));
                 subProcessor.UpdateLayout();
+                await Task.Delay(1);
+                await subProcessor.FinishRender();
                 await subProcessor.DrawingTask;
-                retStream = await subProcessor.ProcessOnceAsync();
+                renderResult = await subProcessor.ProcessOnceAsync();
+                window.Content = null;
             }
 
             tcsOuter.SetResult();
         });
 
         await tcsOuter.Task;
-        if (retStream == null)
+        if (renderResult == null)
         {
             throw new ArgumentException("The DrawingProcessControl returns empty results.");
         }
 
         try
         {
-            return await PngDecoder.Instance.DecodeAsync(new PngDecoderOptions(), retStream);
+            var result = renderResult.Value;
+            if (result.PixelFormat == PixelFormat.Bgra8888)
+            {
+                return Image.LoadPixelData<Bgra32>(
+                    result.Buffer.AsSpan(0, result.Length),
+                    result.PixelSize.Width,
+                    result.PixelSize.Height);
+            }
+
+            if (result.PixelFormat == PixelFormat.Rgba8888)
+            {
+                return Image.LoadPixelData<Rgba32>(
+                    result.Buffer.AsSpan(0, result.Length),
+                    result.PixelSize.Width,
+                    result.PixelSize.Height);
+            }
+
+            else throw new NotSupportedException($"Unsupported pixel format: {result.PixelFormat}");
         }
         finally
         {
-            await retStream.DisposeAsync();
+            renderResult?.Dispose();
         }
     }
 
@@ -128,7 +180,7 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             var subProcessor = CreateControlInstance(sourceImage, viewModel, locale);
-            if (!_enableWindowRendering)
+            if (_renderingMode == RenderingMode.InMemory)
             {
                 // Not supported
             }
@@ -206,5 +258,14 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor<object>
         propLocale?.SetValue(avaDrawingControl, locale);
 
         return avaDrawingControl;
+    }
+
+    private static unsafe void GetRawBytes(byte[] buffer, Bitmap bitmap, int bpp)
+    {
+        fixed (byte* pointer = buffer)
+        {
+            var sourceRect = new PixelRect(0, 0, bitmap.PixelSize.Width, bitmap.PixelSize.Height);
+            bitmap.CopyPixels(sourceRect, (IntPtr)pointer, buffer.Length, bitmap.PixelSize.Width * bpp);
+        }
     }
 }
