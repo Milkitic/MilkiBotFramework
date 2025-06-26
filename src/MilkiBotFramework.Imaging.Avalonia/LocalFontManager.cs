@@ -24,7 +24,6 @@ public class LocalFontManager
 
     public void InitializeTypefaceMapping()
     {
-        //var path = "avares://KanonBot/Assets/Fonts/";
         var path = ResourceBaseUri;
         var rootUri = new Uri(path);
         var uris = AssetLoader.GetAssets(rootUri, null);
