@@ -47,7 +47,6 @@ public sealed class QContactsManager : ContactsManagerBase
         var baseResult = await base.TryGetOrAddMemberInfo(channelId, userId, subChannelId);
         if (baseResult.IsSuccess) return baseResult;
 
-
         var success = ChannelMapping.TryGetValue(channelId, out var channelInfo);
         if (!success)
         {
@@ -96,5 +95,9 @@ public sealed class QContactsManager : ContactsManagerBase
         subChannels = null;
         privates = null;
         return false;
+    }
+
+    protected override void InitializeTasksCore()
+    {
     }
 }

@@ -46,10 +46,7 @@ public abstract class ContactsManagerBase : IContactsManager
     {
         if (_initialized) return;
         _initialized = true;
-        _botTaskScheduler.AddTask("RefreshContactsTask", builder => builder
-            .ByInterval(TimeSpan.FromMinutes(5))
-            .AtStartup()
-            .Do(RefreshContacts));
+        InitializeTasksCore();
     }
 
     public virtual Task<SelfInfoResult> TryGetOrUpdateSelfInfo()
@@ -138,6 +135,14 @@ public abstract class ContactsManagerBase : IContactsManager
         [NotNullWhen(true)] out Dictionary<string, ChannelInfo>? channels,
         [NotNullWhen(true)] out Dictionary<string, ChannelInfo>? subChannels,
         [NotNullWhen(true)] out Dictionary<string, PrivateInfo>? privates);
+
+    protected virtual void InitializeTasksCore()
+    {
+        _botTaskScheduler.AddTask("RefreshContactsTask", builder => builder
+            .ByInterval(TimeSpan.FromMinutes(5))
+            .AtStartup()
+            .Do(RefreshContacts));
+    }
 
     private async Task OnEventReceived(DispatchMessageEvent e)
     {
@@ -370,7 +375,7 @@ public abstract class ContactsManagerBase : IContactsManager
         var removes = oldPrivates.Except(exists);
 
         var list = new List<ContactsUpdateSingleEvent>();
-        
+
         var sb = new StringBuilder();
         foreach (var add in adds)
         {
