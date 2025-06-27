@@ -37,10 +37,7 @@ public sealed class QContactsManager : ContactsManagerBase
         var baseResult = await base.TryGetOrAddChannelInfo(channelId, subChannelId);
         if (baseResult.IsSuccess) return baseResult;
 
-        var channelInfo = new ChannelInfo(channelId)
-        {
-            Name = channelId
-        };
+        var channelInfo = new ChannelInfo(channelId);
         ChannelMapping.AddOrUpdate(channelInfo.ChannelId, channelInfo, (_, _) => channelInfo);
         return new ChannelInfoResult { IsSuccess = true, ChannelInfo = channelInfo };
     }
@@ -61,8 +58,6 @@ public sealed class QContactsManager : ContactsManagerBase
 
         var memberInfo = new MemberInfo(channelId, userId, subChannelId)
         {
-            Nickname = userId,
-            Card = userId,
             MemberRole = MemberRole.Member
         };
 
@@ -80,11 +75,7 @@ public sealed class QContactsManager : ContactsManagerBase
         var baseResult = await base.TryGetOrAddPrivateInfo(userId);
         if (baseResult.IsSuccess) return baseResult;
 
-        var privateInfo = new PrivateInfo(userId)
-        {
-            Nickname = userId,
-            Remark = userId
-        };
+        var privateInfo = new PrivateInfo(userId);
         PrivateMapping.AddOrUpdate(privateInfo.UserId, privateInfo, (_, _) => privateInfo);
         return new PrivateInfoResult { IsSuccess = true, PrivateInfo = privateInfo };
     }

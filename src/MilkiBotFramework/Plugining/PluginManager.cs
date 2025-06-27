@@ -111,6 +111,12 @@ public partial class PluginManager
 
                 if (response.Message == null) return;
                 await AutoReply(messageContext, response);
+
+                foreach (var serviceExecutionInfo in serviceExecutionInfos)
+                {
+                    var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
+                    await servicePlugin.AfterSend(pluginInfo, response); // Todo: Check which BeforeSend has been inherited in initialization.
+                }
             }
             finally
             {
@@ -301,6 +307,12 @@ public partial class PluginManager
 
                 if (response.Message == null) return;
                 await AutoReply(messageContext, response);
+
+                foreach (var serviceExecutionInfo in serviceExecutionInfos)
+                {
+                    var servicePlugin = (ServicePlugin)serviceExecutionInfo.PluginInstance;
+                    await servicePlugin.AfterSend(pluginInfo, response); // Todo: Check which BeforeSend has been inherited in initialization.
+                }
             }
             finally
             {
