@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
-using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
@@ -61,19 +60,19 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor
             if (double.IsNaN(subProcessor.Width) || double.IsNaN(subProcessor.Height) || _renderingMode != RenderingMode.InMemory)
             {
                 var window = new DrawingWindow { Content = new DpiDecorator { Child = subProcessor } };
-                if (subProcessor.Content is LayoutTransformControl
-                    {
-                        LayoutTransform: ScaleTransform scaleTransform,
-                        Child: { } child
-                    } && !double.IsNaN(child.Width) && !double.IsNaN(child.Height))
-                {
-                    child.Measure(new Size());
-                    child.Arrange(new Rect(0, 0, 0, 0));
-                    var bounds = child.Bounds;
-                    window.SizeToContent = SizeToContent.Manual;
-                    window.Width = bounds.Width * scaleTransform.ScaleX;
-                    window.Height = bounds.Height * scaleTransform.ScaleY;
-                }
+                //if (subProcessor.Content is LayoutTransformControl
+                //    {
+                //        LayoutTransform: ScaleTransform scaleTransform,
+                //        Child: { } child
+                //    } && !double.IsNaN(child.Width) && !double.IsNaN(child.Height))
+                //{
+                //    child.Measure(new Size());
+                //    child.Arrange(new Rect(0, 0, 0, 0));
+                //    var bounds = child.Bounds;
+                //    window.SizeToContent = SizeToContent.Manual;
+                //    window.Width = bounds.Width * scaleTransform.ScaleX;
+                //    window.Height = bounds.Height * scaleTransform.ScaleY;
+                //}
 
                 window.Show();
                 await subProcessor.DrawingTask;
@@ -85,6 +84,15 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor
                 }
                 else
                 {
+                    var PART_Content = subProcessor.Find<Control>("PART_Content");
+                    if (PART_Content is not null)
+                    {
+                        window.SizeToContent = SizeToContent.Manual;
+                        window.Width = PART_Content.Bounds.Width;
+                        window.Height = PART_Content.Bounds.Height;
+                        await Task.Delay(100);
+                    }
+
                     var renderBitmap = window.CaptureRenderedFrame();
                     if (renderBitmap != null)
                     {
