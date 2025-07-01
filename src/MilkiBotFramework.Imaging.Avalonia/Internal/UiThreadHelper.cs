@@ -8,7 +8,7 @@ using MilkiBotFramework.Utils;
 
 namespace MilkiBotFramework.Imaging.Avalonia.Internal;
 
-internal static class UiThreadHelper
+public static class UiThreadHelper
 {
     private static Thread? _uiThread;
     private static readonly AsyncLock AsyncLock = new();
