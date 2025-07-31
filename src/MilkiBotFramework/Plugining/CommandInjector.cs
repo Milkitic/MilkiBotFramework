@@ -70,6 +70,7 @@ public class CommandInjector
         }
 
         var options = commandLineResult.Options
+            .DistinctBy(k => k.Key.ToString())
             .ToDictionary(k => k.Key.ToString(), k => k.Value);
 
         bool modelBind = false;
@@ -262,7 +263,7 @@ public class CommandInjector
         {
             if (attr is OptionAttribute option)
             {
-                parameterInfo.Abbr = option.Abbreviate;
+                parameterInfo.Abbr = option.Abbreviate == '\0' ? null : option.Abbreviate;
                 parameterInfo.DefaultValue = option.DefaultValue;
                 parameterInfo.Name = option.Name;
                 parameterInfo.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
@@ -344,7 +345,22 @@ public class CommandInjector
         CommandParameterInfo paramDef)
     {
         object? optionValue;
-        if (options.TryGetValue(paramDef.Name!, out var value))
+        bool found = false;
+
+        if (options.TryGetValue(paramDef.Name!, out var value)) // 首先尝试通过完整名称查找
+        {
+            found = true;
+        }
+        else if (paramDef.Abbr.HasValue) // 如果没找到且有简写字符，尝试通过简写字符查找
+        {
+            var abbrString = paramDef.Abbr.Value.ToString();
+            if (options.TryGetValue(abbrString, out value))
+            {
+                found = true;
+            }
+        }
+
+        if (found)
         {
             try
             {

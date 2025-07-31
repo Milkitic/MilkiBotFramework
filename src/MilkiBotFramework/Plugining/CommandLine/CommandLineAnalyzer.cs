@@ -129,13 +129,17 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
                 if (currentOption != null) // Previous is a switch
                     options.Add(currentOption.Value, null);
 
-                // 解析选项名称（支持 --option 和 -o 格式）
-                var optionName = ParseOptionName(currentWord);
-
-                if (isEnd)
-                    options.Add(optionName, null);
-                else
-                    currentOption = optionName;
+                // 解析选项名称（支持 --option、-o 和 -abc 格式）
+                var parsedOptions = ParseOptionName(currentWord);
+                
+                // 处理解析出的选项
+                foreach (var optionName in parsedOptions)
+                {
+                    if (isEnd || parsedOptions.Count > 1) // 如果是结尾或者是组合选项，直接添加为开关选项
+                        options.Add(optionName, null);
+                    else
+                        currentOption = optionName; // 单个选项可能有值
+                }
             }
             else if (!containsOptionFlag && command == null)
             {
@@ -160,22 +164,40 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
     }
 
     /// <summary>
-    /// 解析选项名称，支持双横杠（--option）和单横杠（-o）格式
+    /// 解析选项名称，支持双横杠（--option）、单横杠单字符（-o）和单横杠多字符组合（-abc）格式
     /// </summary>
     /// <param name="optionWord">包含选项标识的完整单词</param>
-    /// <returns>解析后的选项名称</returns>
-    protected virtual ReadOnlyMemory<char> ParseOptionName(ReadOnlyMemory<char> optionWord)
+    /// <returns>解析后的选项名称列表</returns>
+    protected virtual List<ReadOnlyMemory<char>> ParseOptionName(ReadOnlyMemory<char> optionWord)
     {
+        var result = new List<ReadOnlyMemory<char>>();
+        
         if (optionWord.Length > 2 && optionWord.Span[1] == '-')
         {
             // 双横杠选项 --option (完整名称)
-            return optionWord[2..];
+            result.Add(optionWord[2..]);
+        }
+        else if (optionWord.Length == 2)
+        {
+            // 单横杠单字符选项 -o (简写形式)
+            result.Add(optionWord[1..]);
+        }
+        else if (optionWord.Length > 2)
+        {
+            // 单横杠多字符选项 -abc (组合简写形式，每个字符都是一个独立的bool选项)
+            var chars = optionWord[1..];
+            for (int i = 0; i < chars.Length; i++)
+            {
+                result.Add(chars.Slice(i, 1));
+            }
         }
         else
         {
-            // 单横杠选项 -o (简写形式，预留给未来扩展)
-            return optionWord[1..];
+            // 单横杠选项 - (无效格式)
+            result.Add(optionWord[1..]);
         }
+        
+        return result;
     }
 
     protected virtual char GetCommandFlag()

@@ -8,6 +8,6 @@ public sealed class OptionAttribute : ParameterAttribute
         Name = name;
     }
 
-    public char? Abbreviate { get; set; }
+    public char Abbreviate { get; set; } = '\0';
     public string Name { get; set; }
 }

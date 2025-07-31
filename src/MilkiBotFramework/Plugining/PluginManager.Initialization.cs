@@ -494,7 +494,7 @@ public partial class PluginManager
         {
             if (attr is OptionAttribute option)
             {
-                parameterInfo.Abbr = option.Abbreviate;
+                parameterInfo.Abbr = option.Abbreviate == '\0' ? null : option.Abbreviate;
                 parameterInfo.DefaultValue = parameter.DefaultValue == DBNull.Value
                     ? option.DefaultValue
                     : parameter.DefaultValue;
