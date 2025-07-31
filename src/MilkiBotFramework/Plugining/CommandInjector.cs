@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Messaging;

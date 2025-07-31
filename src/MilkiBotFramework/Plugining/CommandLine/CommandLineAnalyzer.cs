@@ -129,16 +129,19 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
                 if (currentOption != null) // Previous is a switch
                     options.Add(currentOption.Value, null);
 
+                // 解析选项名称（支持 --option 和 -o 格式）
+                var optionName = ParseOptionName(currentWord);
+
                 if (isEnd)
-                    options.Add(currentWord[1..], null);
+                    options.Add(optionName, null);
                 else
-                    currentOption = currentWord[1..];
+                    currentOption = optionName;
             }
             else if (!containsOptionFlag && command == null)
             {
-                if (currentWord.Span.SequenceEqual("root"))
+                if (currentWord.Span is "root")
                     authority = CommandLineAuthority.Root;
-                else if (currentWord.Span.SequenceEqual("sudo"))
+                else if (currentWord.Span is "sudo")
                     authority = CommandLineAuthority.Admin;
                 else
                     command = currentWord;
@@ -153,6 +156,25 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
                 arguments.Add(currentWord);
                 simpleArgStart ??= index;
             }
+        }
+    }
+
+    /// <summary>
+    /// 解析选项名称，支持双横杠（--option）和单横杠（-o）格式
+    /// </summary>
+    /// <param name="optionWord">包含选项标识的完整单词</param>
+    /// <returns>解析后的选项名称</returns>
+    protected virtual ReadOnlyMemory<char> ParseOptionName(ReadOnlyMemory<char> optionWord)
+    {
+        if (optionWord.Length > 2 && optionWord.Span[1] == '-')
+        {
+            // 双横杠选项 --option (完整名称)
+            return optionWord[2..];
+        }
+        else
+        {
+            // 单横杠选项 -o (简写形式，预留给未来扩展)
+            return optionWord[1..];
         }
     }
 
