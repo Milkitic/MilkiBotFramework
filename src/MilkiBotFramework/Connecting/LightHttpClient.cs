@@ -267,7 +267,8 @@ public class LightHttpClient
                     catch (Exception e)
                     {
                         if (string.IsNullOrWhiteSpace(error)) throw;
-                        throw new Exception($"HTTP {(int)response.StatusCode} {response.StatusCode}: {error}", e);
+                        throw new AggregateException($"HTTP {(int)response.StatusCode} {response.StatusCode}",
+                            e, new HttpRequestException(error));
                     }
                 }
 

@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using System.Text.Json;
-using System.Threading.Channels;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
@@ -56,10 +55,12 @@ public class QApi : IMessageApi
                     msg_seq = _qApiConnector.MessageSequence + Random.Shared.Next(0, 1000),
                     event_id = "GROUP_MSG_RECEIVE"
                 };
-            var result = await _lightHttpClient.HttpPost<object>(messageUrl, messageRequest, new Dictionary<string, string>
-            {
-                { "Authorization", await _qApiConnector.GetAuthorizationAsync() }
-            });
+            var result = await _lightHttpClient.HttpPost<object>(messageUrl, messageRequest,
+                new Dictionary<string, string>
+                {
+                    { "Authorization", await _qApiConnector.GetAuthorizationAsync() }
+                });
+
             var str = result.ToString();
             return str ?? "";
         }
