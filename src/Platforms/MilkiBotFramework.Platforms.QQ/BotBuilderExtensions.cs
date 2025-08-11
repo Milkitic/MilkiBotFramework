@@ -3,6 +3,7 @@ using MilkiBotFramework.Platforms.QQ.Connecting;
 using MilkiBotFramework.Platforms.QQ.ContactsManaging;
 using MilkiBotFramework.Platforms.QQ.Dispatching;
 using MilkiBotFramework.Platforms.QQ.Messaging;
+using MilkiBotFramework.Platforms.QQ.ObjectStore;
 using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Plugining.Loading;
 
@@ -18,7 +19,6 @@ public static class BotBuilderExtensions
             .ConfigureServices(k =>
             {
                 k.AddScoped(typeof(QMessageContext));
-                k.AddSingleton<MinIOController>();
             })
             .UseCommandLineAnalyzer<CommandLineAnalyzer>(new DefaultParameterConverter())
             .UseContactsManager<QContactsManager>()
@@ -32,6 +32,21 @@ public static class BotBuilderExtensions
         {
             k.Connection = connection;
         });
+
+        var ossOptions = ((QQBotOptions)builder.GetOptionInstance()).OssOptions;
+
+        builder
+            .ConfigureServices(k =>
+            {
+                if (ossOptions.OssType == OssType.MinIO)
+                {
+                    k.AddSingleton<IObjectStorageProvider, MinIOProvider>();
+                }
+                else if (ossOptions.OssType == OssType.Qiniu)
+                {
+                    k.AddSingleton<IObjectStorageProvider, QiniuProvider>();
+                }
+            });
 
         return (TBuilder)builder;
     }

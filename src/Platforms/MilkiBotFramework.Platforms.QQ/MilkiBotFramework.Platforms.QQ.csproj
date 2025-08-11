@@ -15,6 +15,7 @@
     <PackageReference Include="Avalonia" Version="11.3.2" />
     <PackageReference Include="Minio" Version="6.0.5" />
     <PackageReference Include="NSec.Cryptography" Version="25.4.0" />
+    <PackageReference Include="Qiniu" Version="8.7.0" />
   </ItemGroup>
 
 </Project>

@@ -3,21 +3,21 @@ using System.Text.Json;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
-using MilkiBotFramework.Platforms.QQ.Messaging;
 using MilkiBotFramework.Platforms.QQ.Messaging.RichMessages;
+using MilkiBotFramework.Platforms.QQ.ObjectStore;
 
 namespace MilkiBotFramework.Platforms.QQ.Connecting;
 
 public class QApi : IMessageApi
 {
     private readonly LightHttpClient _lightHttpClient;
-    private readonly MinIOController _minIoController;
+    private readonly IObjectStorageProvider _objectStorageProvider;
     private readonly QApiConnector _qApiConnector;
 
-    public QApi(LightHttpClient lightHttpClient, MinIOController minIoController, IConnector connector)
+    public QApi(LightHttpClient lightHttpClient, IObjectStorageProvider objectStorageProvider, IConnector connector)
     {
         _lightHttpClient = lightHttpClient;
-        _minIoController = minIoController;
+        _objectStorageProvider = objectStorageProvider;
         if (connector is QApiConnector qApiConnector)
         {
             Connector = connector;
@@ -72,9 +72,9 @@ public class QApi : IMessageApi
             var content = i == imageMessages.Count - 1 ? otherMessages : null;
             var imageUrl = imageMessage switch
             {
-                MemoryImage memoryImage => await _minIoController.UploadImage(memoryImage.ImageSource),
+                MemoryImage memoryImage => await _objectStorageProvider.UploadImage(memoryImage.ImageSource),
                 LinkImage linkImage => linkImage.Uri,
-                FileImage fileImage => await _minIoController.UploadImage(fileImage.Path),
+                FileImage fileImage => await _objectStorageProvider.UploadImage(fileImage.Path),
                 _ => throw new ArgumentOutOfRangeException(nameof(imageMessage), imageMessage.GetType(), null)
             };
 
@@ -168,9 +168,9 @@ public class QApi : IMessageApi
             var content = i == imageMessages.Count - 1 ? otherMessages : null;
             var imageUrl = imageMessage switch
             {
-                MemoryImage memoryImage => await _minIoController.UploadImage(memoryImage.ImageSource),
+                MemoryImage memoryImage => await _objectStorageProvider.UploadImage(memoryImage.ImageSource),
                 LinkImage linkImage => linkImage.Uri,
-                FileImage fileImage => await _minIoController.UploadImage(fileImage.Path),
+                FileImage fileImage => await _objectStorageProvider.UploadImage(fileImage.Path),
                 _ => throw new ArgumentOutOfRangeException(nameof(imageMessage), imageMessage.GetType(), null)
             };
 
