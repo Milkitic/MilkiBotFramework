@@ -1,5 +1,6 @@
 ﻿namespace MilkiBotFramework.Platforms.QQ;
 
+[Obsolete("已无作用，仅作为配置保留，请使用OssOptions")]
 // ReSharper disable once InconsistentNaming
 public class MinIOOptions
 {

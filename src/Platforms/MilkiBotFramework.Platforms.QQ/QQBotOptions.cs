@@ -11,4 +11,8 @@ public class QQBotOptions : BotOptions
     [Description("MinIO 设置")]
     // ReSharper disable once InconsistentNaming
     public MinIOOptions MinIOOptions { get; set; } = new();
+
+    [Description("OSS 设置")]
+    // ReSharper disable once InconsistentNaming
+    public OssOptions OssOptions { get; set; } = new();
 }

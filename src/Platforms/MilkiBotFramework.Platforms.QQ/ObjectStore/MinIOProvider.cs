@@ -5,26 +5,26 @@ using Minio.DataModel.Args;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 
-namespace MilkiBotFramework.Platforms.QQ.Messaging;
+namespace MilkiBotFramework.Platforms.QQ.ObjectStore;
 
 // ReSharper disable once InconsistentNaming
-public class MinIOController
+public class MinIOProvider : IObjectStorageProvider
 {
     private static readonly PngEncoder ImageEncoder = new PngEncoder();
 
-    private readonly ILogger<MinIOController> _logger;
-    private readonly MinIOOptions _options;
+    private readonly ILogger<MinIOProvider> _logger;
+    private readonly OssOptions _options;
     private readonly IMinioClient _minio;
 
-    public MinIOController(ILogger<MinIOController> logger, BotOptions botOptions)
+    public MinIOProvider(ILogger<MinIOProvider> logger, BotOptions botOptions)
     {
         _logger = logger;
-        _options = ((QQBotOptions)botOptions).MinIOOptions;
+        _options = ((QQBotOptions)botOptions).OssOptions;
         var minioClient = new MinioClient()
-            .WithEndpoint(_options.Endpoint)
+            .WithEndpoint(_options.CustomEndpoint)
             .WithCredentials(_options.AccessKey, _options.SecretKey);
 
-        if (_options.UseSSL)
+        if (_options.CustomUseSSL)
         {
             minioClient = minioClient.WithSSL();
         }
