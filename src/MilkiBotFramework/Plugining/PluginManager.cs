@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System.Collections;
+using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
@@ -253,8 +254,14 @@ public partial class PluginManager
                         if (handled) break;
                     }
 
-                    _logger.LogError(ex, "Error Occurs while executing plugin: " + pluginInfo.Metadata.Name +
-                                         ". User input: " + message);
+                    using var scope = _logger.BeginScope("pluginInfo.Metadata.Name");
+                    _logger.LogError(ex, "Error Occurs while executing plugin: {MetadataName}. User input: {Message}",
+                        pluginInfo.Metadata.Name, message);
+                    foreach (DictionaryEntry dictionaryEntry in ex.Data)
+                    {
+                        _logger.LogError("Exception Data [{DictionaryEntryKey}]: {DictionaryEntryValue}",
+                            dictionaryEntry.Key, dictionaryEntry.Value);
+                    }
                 }
             }
 
