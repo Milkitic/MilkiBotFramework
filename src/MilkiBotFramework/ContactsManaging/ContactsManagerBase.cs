@@ -367,60 +367,55 @@ public abstract class ContactsManagerBase : IContactsManager
 
     private List<ContactsUpdateSingleEvent> RefreshPrivates(Dictionary<string, PrivateInfo> privates, ILogger logger)
     {
-        var newPrivates = privates.Keys.ToHashSet();
-        var oldPrivates = PrivateMapping.Keys.ToHashSet();
+        GetCollections(privates, PrivateMapping.Keys,
+            out var toAdd, out var toUpdate, out var toRemove);
 
-        var adds = newPrivates.Where(k => !oldPrivates.Contains(k));
-        var exists = newPrivates.Where(k => oldPrivates.Contains(k)).ToArray();
-        var removes = oldPrivates.Except(exists);
+        // 处理添加的联系人
+        var addedPrivates = toAdd
+            .Select(userId => privates[userId])
+            .Where(privateInfo => PrivateMapping.TryAdd(privateInfo.UserId, privateInfo))
+            .ToList();
 
-        var list = new List<ContactsUpdateSingleEvent>();
+        var events = new List<ContactsUpdateSingleEvent>(addedPrivates.Count);
+        events.AddRange(addedPrivates.Select(ContactsUpdateSingleEvent.Add));
 
-        var sb = new StringBuilder();
-        foreach (var add in adds)
+        if (addedPrivates.Count > 0)
         {
-            var privateInfo = privates[add];
-            PrivateMapping.TryAdd(add, privateInfo);
-            sb.Append($"\"{privateInfo.Nickname} ({privateInfo.UserId})\", ");
-            //logger.LogInformation("Added private: " + add);
-            list.Add(new ContactsUpdateSingleEvent { PrivateInfo = privateInfo, UpdateRole = ContactsUpdateRole.Private, UpdateType = ContactsUpdateType.Added });
+            var logMessage = string.Join(", ", addedPrivates.Select(p => $"\"{p.Nickname} ({p.UserId})\""));
+            logger.LogInformation($"Add private: [{logMessage}]");
         }
 
-        if (sb.Length > 0)
+        // 处理删除的联系人
+        foreach (var userId in toRemove)
         {
-            sb.Remove(sb.Length - 2, 2);
-            logger.LogInformation($"Add private: [{sb}]");
+            if (!PrivateMapping.TryRemove(userId, out var privateInfo)) continue;
+            logger.LogInformation("Removed private: " + userId);
+            events.Add(ContactsUpdateSingleEvent.Remove(privateInfo));
         }
 
-        foreach (var remove in removes)
+        // 处理更新的联系人
+        foreach (var userId in toUpdate)
         {
-            PrivateMapping.TryRemove(remove, out var removed);
-            logger.LogInformation("Removed private: " + remove);
-            list.Add(new ContactsUpdateSingleEvent { PrivateInfo = removed, UpdateRole = ContactsUpdateRole.Private, UpdateType = ContactsUpdateType.Removed });
-        }
-
-        foreach (var exist in exists)
-        {
-            var oldInfo = PrivateMapping[exist];
-            var newInfo = privates[exist];
+            var oldInfo = PrivateMapping[userId];
+            var newInfo = privates[userId];
             if (oldInfo.Nickname != newInfo.Nickname)
             {
-                logger.LogInformation($"Changed private {exist} nickname from: " + oldInfo.Nickname + " to " +
+                logger.LogInformation($"Changed private {userId} nickname from: " + oldInfo.Nickname + " to " +
                                       newInfo.Nickname);
                 oldInfo.Nickname = newInfo.Nickname;
-                list.Add(new ContactsUpdateSingleEvent { ChangedPath = "Nickname", PrivateInfo = oldInfo, UpdateRole = ContactsUpdateRole.Private, UpdateType = ContactsUpdateType.Changed });
+                events.Add(ContactsUpdateSingleEvent.Update(oldInfo, nameof(newInfo.Nickname)));
             }
 
             if (oldInfo.Remark != newInfo.Remark)
             {
-                logger.LogInformation($"Changed private {exist} remark from: " + oldInfo.Remark + " to " +
+                logger.LogInformation($"Changed private {userId} remark from: " + oldInfo.Remark + " to " +
                                       newInfo.Remark);
                 oldInfo.Remark = newInfo.Remark;
-                list.Add(new ContactsUpdateSingleEvent { ChangedPath = "Remark", PrivateInfo = oldInfo, UpdateRole = ContactsUpdateRole.Private, UpdateType = ContactsUpdateType.Changed });
+                events.Add(ContactsUpdateSingleEvent.Update(oldInfo, nameof(newInfo.Remark)));
             }
         }
 
-        return list;
+        return events;
     }
 
     private List<ContactsUpdateSingleEvent> RefreshChannels(Dictionary<string, ChannelInfo> channels, ILogger logger)
@@ -534,5 +529,29 @@ public abstract class ContactsManagerBase : IContactsManager
         }
 
         return list;
+    }
+
+    private static void GetCollections(Dictionary<string, PrivateInfo> privates, ICollection<string> oldPrivates,
+        out List<string> toAdd, out List<string> toUpdate, out List<string> toRemove)
+    {
+        var oldPrivateKeys = oldPrivates.ToHashSet();
+
+        toAdd = new List<string>();
+        toUpdate = new List<string>();
+
+        // 单次遍历确定添加和更新的项目
+        foreach (var key in privates.Keys)
+        {
+            if (oldPrivateKeys.Contains(key))
+            {
+                toUpdate.Add(key);
+            }
+            else
+            {
+                toAdd.Add(key);
+            }
+        }
+
+        toRemove = oldPrivateKeys.Except(privates.Keys).ToList();
     }
 }

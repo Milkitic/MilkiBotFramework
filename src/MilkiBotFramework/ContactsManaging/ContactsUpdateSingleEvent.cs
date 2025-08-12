@@ -16,6 +16,37 @@ public sealed class ContactsUpdateSingleEvent
     public ContactsUpdateRole UpdateRole { get; init; }
     public ContactsUpdateType UpdateType { get; init; }
 
+    public static ContactsUpdateSingleEvent Add(PrivateInfo privateInfo)
+    {
+        return new ContactsUpdateSingleEvent
+        {
+            PrivateInfo = privateInfo,
+            UpdateRole = ContactsUpdateRole.Private,
+            UpdateType = ContactsUpdateType.Added
+        };
+    }
+
+    public static ContactsUpdateSingleEvent Remove(PrivateInfo privateInfo)
+    {
+        return new ContactsUpdateSingleEvent
+        {
+            PrivateInfo = privateInfo,
+            UpdateRole = ContactsUpdateRole.Private,
+            UpdateType = ContactsUpdateType.Removed
+        };
+    }
+
+    public static ContactsUpdateSingleEvent Update(PrivateInfo privateInfo, string? changedPath)
+    {
+        return new ContactsUpdateSingleEvent
+        {
+            ChangedPath = changedPath,
+            PrivateInfo = privateInfo,
+            UpdateRole = ContactsUpdateRole.Private,
+            UpdateType = ContactsUpdateType.Changed
+        };
+    }
+
     private string DebuggerDisplay
     {
         get
