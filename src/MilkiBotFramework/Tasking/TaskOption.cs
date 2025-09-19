@@ -30,7 +30,10 @@
         /// </summary>
         public TaskExecutionHandler? Handler { get; set; }
 
+        public TaskExecutionAsyncHandler? AsyncHandler { get; set; }
+
         public bool UseLogging { get; set; } = true;
+
         public TimeSpan StartupTriggerDelay { get; set; }
     }
 }

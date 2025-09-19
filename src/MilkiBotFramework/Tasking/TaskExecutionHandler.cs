@@ -7,4 +7,5 @@
     /// <param name="token">传入的<see cref="CancellationToken"/>。
     /// 用于外部调用<see cref="CancellationTokenSource"/>.Cancel()时，取消内部任务</param>
     public delegate void TaskExecutionHandler(TaskContext context, CancellationToken token);
+    public delegate Task TaskExecutionAsyncHandler(TaskContext context, CancellationToken token);
 }

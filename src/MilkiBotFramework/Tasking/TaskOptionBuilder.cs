@@ -150,5 +150,16 @@
             Option.Handler = handler;
             return this;
         }
+
+        /// <summary>
+        /// 执行操作
+        /// </summary>
+        /// <param name="handler">执行操作回调</param>
+        /// <returns></returns>
+        public TaskOptionBuilder DoAsync(TaskExecutionAsyncHandler handler)
+        {
+            Option.AsyncHandler = handler;
+            return this;
+        }
     }
 }

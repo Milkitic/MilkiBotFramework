@@ -96,16 +96,17 @@ namespace MilkiBotFramework.Tasking
                     logger.LogDebug("Next time for task {0}: {1}", taskOption.Name, nextTime);
                 if (!await SleepAsync(nextTime - now, cts).ConfigureAwait(false)) break;
 
-                Task.Run(() => Execute(trigger, nextTime), cts.Token);
+                Task.Run(async () => await Execute(trigger, nextTime), cts.Token);
             }
 
-            void Execute(Trigger? t, DateTime triggerTime)
+            async Task Execute(Trigger? t, DateTime triggerTime)
             {
                 try
                 {
                     if (taskOption.UseLogging)
                         logger.LogDebug("Executing task {0} at {1}", taskOption.Name, triggerTime);
-                    taskOption.Handler?.Invoke(new TaskContext
+
+                    var taskContext = new TaskContext
                     {
                         TaskId = taskOption.Id,
                         TaskName = taskOption.Name,
@@ -116,7 +117,15 @@ namespace MilkiBotFramework.Tasking
                         Triggers = new ReadOnlyCollection<Trigger>(taskOption.Triggers),
                         LastTriggerTimes = taskOption.Triggers.Select(k => k.GetLastExecutionTime(triggerTime)).ToArray(),
                         NextTriggerTimes = taskOption.Triggers.Select(k => k.GetNextExecutionTime(triggerTime)).ToArray()
-                    }, cts.Token);
+                    };
+                    if (taskOption.AsyncHandler != null)
+                    {
+                        await taskOption.AsyncHandler.Invoke(taskContext, cts.Token);
+                    }
+                    else
+                    {
+                        taskOption.Handler?.Invoke(taskContext, cts.Token);
+                    }
                 }
                 catch (Exception e)
                 {
