@@ -41,18 +41,18 @@ public class AspnetcoreConnector : IConnector
     public TimeSpan MessageTimeout { get; set; } = TimeSpan.FromSeconds(30);
     public Encoding? Encoding { get; set; }
 
-    public virtual async Task ConnectAsync()
+    public virtual async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (ConnectionType == ConnectionType.WebSocket && WebSocketConnector != null)
         {
-            ConnectInnerWsClient();
+            await ConnectInnerWsClient();
         }
         else if (ConnectionType == ConnectionType.ReverseWebSocket)
         {
             ConnectReverseWs();
         }
 
-        await _webApplication.StartAsync();
+        await _webApplication.StartAsync(cancellationToken);
     }
 
     public virtual async Task DisconnectAsync()
@@ -200,7 +200,7 @@ public class AspnetcoreConnector : IConnector
             CancellationToken.None);
     }
 
-    private void ConnectInnerWsClient()
+    private async Task ConnectInnerWsClient()
     {
         WebSocketConnector!.RawMessageReceived += (s) =>
         {
@@ -210,7 +210,8 @@ public class AspnetcoreConnector : IConnector
 
         try
         {
-            WebSocketConnector.ConnectAsync().Wait(3000);
+            using var cts = new CancellationTokenSource(3000);
+            await WebSocketConnector.ConnectAsync(cts.Token);
         }
         catch (Exception ex)
         {

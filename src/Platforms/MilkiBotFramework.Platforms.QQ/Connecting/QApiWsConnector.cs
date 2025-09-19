@@ -86,7 +86,7 @@ public class QApiWsConnector : WebSocketClientConnector
         }
     }
 
-    public override async Task ConnectAsync()
+    public override async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
         await RequestAccessTokenAsync(Connection);
@@ -95,7 +95,7 @@ public class QApiWsConnector : WebSocketClientConnector
         TargetUri = _wsUrl;
 
         //var s = JsonSerializer.Deserialize<resp_getAppAccessToken>(response);
-        await base.ConnectAsync();
+        await base.ConnectAsync(cancellationToken);
     }
 
     protected override async ValueTask OnReconnectionHappened(ReconnectionInfo reconnectionInfo)

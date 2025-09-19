@@ -47,11 +47,11 @@ public class QApiConnector : AspnetcoreConnector
 
     public int MessageSequence => _lastSequence;
 
-    public override async Task ConnectAsync()
+    public override async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
         await RequestAccessTokenAsync(Connection);
-        await base.ConnectAsync();
+        await base.ConnectAsync(cancellationToken);
     }
 
     public async Task HandleEventAsync(OpCode opCode, JsonNode json)

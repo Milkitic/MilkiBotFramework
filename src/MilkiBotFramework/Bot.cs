@@ -69,7 +69,7 @@ public class Bot
             _exitCode = 0;
             try
             {
-                Connector.ConnectAsync().Wait(3000);
+                Connector.ConnectAsync(CancellationToken.None).Wait(3000);
             }
             catch (Exception ex)
             {
@@ -103,7 +103,8 @@ public class Bot
             _exitCode = 0;
             try
             {
-                Connector.ConnectAsync().Wait(3000);
+                using var cts = new CancellationTokenSource(3000);
+                await Connector.ConnectAsync(cts.Token);
             }
             catch (Exception ex)
             {

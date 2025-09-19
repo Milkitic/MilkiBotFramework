@@ -43,7 +43,7 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
 
     public Encoding? Encoding { get; set; }
 
-    public Task ConnectAsync()
+    public Task ConnectAsync(CancellationToken cancellationToken)
     {
         _server = new WebSocketServer(BindingPath);
         FleckLog.Level = Fleck.LogLevel.Error;

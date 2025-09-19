@@ -54,9 +54,9 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
 
     public Encoding? Encoding { get; set; } = Encoding.UTF8;
 
-    public virtual async Task ConnectAsync()
+    public virtual async Task ConnectAsync(CancellationToken cancellationToken)
     {
-        using (await _asyncLock.LockAsync().ConfigureAwait(false))
+        using (await _asyncLock.LockAsync(cancellationToken).ConfigureAwait(false))
         {
             if (Client is { IsStarted: true })
                 return;

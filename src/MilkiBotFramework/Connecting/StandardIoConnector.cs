@@ -24,7 +24,7 @@ namespace MilkiBotFramework.Connecting
         public TimeSpan MessageTimeout { get; set; }
         public Encoding? Encoding { get; set; }
 
-        public Task ConnectAsync()
+        public Task ConnectAsync(CancellationToken cancellationToken)
         {
             _enable = true;
             return Task.CompletedTask;
