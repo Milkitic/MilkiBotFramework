@@ -31,5 +31,6 @@
         public TaskExecutionHandler? Handler { get; set; }
 
         public bool UseLogging { get; set; } = true;
+        public TimeSpan StartupTriggerDelay { get; set; }
     }
 }

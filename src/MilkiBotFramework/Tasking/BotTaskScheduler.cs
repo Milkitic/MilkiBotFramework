@@ -41,7 +41,7 @@ namespace MilkiBotFramework.Tasking
             }
 
             var taskInstance = new TaskInstance(option);
-            taskInstance.Task = Task.Run(() => TaskLoop(taskInstance));
+            taskInstance.Task = Task.Run(async () => await TaskLoop(taskInstance).ConfigureAwait(false));
             _tasks.Add(option.Id, taskInstance);
         }
 
@@ -54,21 +54,30 @@ namespace MilkiBotFramework.Tasking
             foreach (var (id, taskInstance) in _tasks.ToList())
             {
                 taskInstance.CancellationTokenSource.Cancel();
-                await taskInstance.Task;
+                await taskInstance.Task.ConfigureAwait(false);
                 taskInstance.Task.Dispose();
                 taskInstance.CancellationTokenSource.Dispose();
                 _tasks.Remove(id);
             }
         }
 
-        private void TaskLoop(TaskInstance taskInstance)
+        private async Task TaskLoop(TaskInstance taskInstance)
         {
             // loop implementation
             var taskOption = taskInstance.Option;
             var loggerFactory = _serviceProvider.GetService<ILoggerFactory>();
             var logger = loggerFactory!.CreateLogger("BotTaskScheduler." + taskOption.Name);
             var cts = taskInstance.CancellationTokenSource;
-            if (taskOption.TriggerOnStartup) Execute(null, DateTime.Now);
+            if (taskOption.TriggerOnStartup)
+            {
+                if (taskOption.StartupTriggerDelay != TimeSpan.Zero)
+                {
+                    await Task.Delay(taskOption.StartupTriggerDelay, cts.Token);
+                }
+
+                Execute(null, DateTime.Now);
+            }
+
             while (!cts.IsCancellationRequested)
             {
                 var now = DateTime.Now;
@@ -85,7 +94,7 @@ namespace MilkiBotFramework.Tasking
 
                 if (taskOption.UseLogging)
                     logger.LogDebug("Next time for task {0}: {1}", taskOption.Name, nextTime);
-                if (!Sleep(nextTime - now, cts)) break;
+                if (!await SleepAsync(nextTime - now, cts).ConfigureAwait(false)) break;
 
                 Task.Run(() => Execute(trigger, nextTime), cts.Token);
             }
@@ -116,14 +125,14 @@ namespace MilkiBotFramework.Tasking
             }
         }
 
-        private static bool Sleep(TimeSpan timeSpan, CancellationTokenSource cts)
+        private static async Task<bool> SleepAsync(TimeSpan timeSpan, CancellationTokenSource cts)
         {
             try
             {
                 if (timeSpan <= TimeSpan.Zero)
                     return !cts.IsCancellationRequested;
 
-                Task.Delay(timeSpan, cts.Token).Wait();
+                await Task.Delay(timeSpan, cts.Token).ConfigureAwait(false);
                 return true;
             }
             catch
@@ -134,7 +143,7 @@ namespace MilkiBotFramework.Tasking
 
         public async ValueTask DisposeAsync()
         {
-            await CancelAllAsync();
+            await CancelAllAsync().ConfigureAwait(false);
         }
     }
 }

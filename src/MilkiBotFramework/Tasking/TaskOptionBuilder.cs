@@ -127,9 +127,10 @@
         /// 在初始化时执行任务
         /// </summary>
         /// <returns></returns>
-        public TaskOptionBuilder AtStartup()
+        public TaskOptionBuilder AtStartup(TimeSpan startupDelay = default)
         {
             Option.TriggerOnStartup = true;
+            Option.StartupTriggerDelay = startupDelay;
             return this;
         }
 
