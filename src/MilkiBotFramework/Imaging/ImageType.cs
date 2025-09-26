@@ -8,4 +8,5 @@ public enum ImageType
     Gif,
     Png,
     //Pdf
+    Webp
 }

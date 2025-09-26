@@ -86,7 +86,7 @@ public class MinIOProvider : IObjectStorageProvider
         return presignedUrl;
     }
 
-    public async Task<string> UploadImage(Image image)
+    public async Task<string> UploadImage(Image image, ImageEncodingOptions encodingOptions)
     {
         var bucketName = _options.BucketName;
         var objectName = $"{Path.GetRandomFileName()}.png";

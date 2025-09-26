@@ -3,13 +3,68 @@ using MilkiBotFramework.Imaging;
 using Qiniu.Storage;
 using Qiniu.Util;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Bmp;
+using SixLabors.ImageSharp.Formats.Gif;
+using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing.Processors.Quantization;
 
 namespace MilkiBotFramework.Platforms.QQ.ObjectStore;
 
 public class QiniuProvider : IObjectStorageProvider
 {
-    private static readonly PngEncoder ImageEncoder = new PngEncoder();
+    private static readonly Dictionary<ImageType, string> ImageTypeToExtension = new()
+    {
+        { ImageType.Unknown, ".bin" },
+        { ImageType.Jpeg, ".jpg" },
+        { ImageType.Bmp, ".bmp" },
+        { ImageType.Gif, ".gif" },
+        { ImageType.Png, ".png" },
+        { ImageType.Webp, ".webp" }
+    };
+
+    private static readonly Dictionary<ImageType, string> ImageTypeToMimeType = new()
+    {
+        { ImageType.Unknown, "application/octet-stream" },
+        { ImageType.Jpeg, "image/jpg" },
+        { ImageType.Bmp, "image/bmp" },
+        { ImageType.Gif, "image/gif" },
+        { ImageType.Png, "image/png" },
+        { ImageType.Webp, "image/webp" }
+    };
+
+    private static readonly Dictionary<ImageType, Func<ImageEncodingOptions, ImageEncoder>> ImageTypeToImageEncoder =
+        new()
+        {
+            { ImageType.Unknown, _ => new BmpEncoder() },
+            { ImageType.Bmp, _ => new BmpEncoder() },
+            { ImageType.Gif, _ => new GifEncoder() },
+            {
+                ImageType.Jpeg, options => new JpegEncoder
+                {
+                    Quality = options.LossyQuality
+                }
+            },
+            {
+                ImageType.Png, options => new PngEncoder
+                {
+                    CompressionLevel = (PngCompressionLevel)(options.LossyQuality / 10),
+                    ColorType = options.PreferPalette ? PngColorType.Palette : PngColorType.RgbWithAlpha,
+                    Quantizer = options.PreferPalette ? new WuQuantizer() : null,
+                }
+            },
+            {
+                ImageType.Webp, options => new WebpEncoder
+                {
+                    FileFormat = options.PreferLossless ? WebpFileFormatType.Lossless : WebpFileFormatType.Lossy,
+                    NearLossless = !options.PreferLossless,
+                    Quality = options.PreferLossless ? 100 : options.LossyQuality,
+                    TransparentColorMode = WebpTransparentColorMode.Preserve
+                }
+            }
+        };
 
     private readonly ILogger<QiniuProvider> _logger;
     private readonly QQBotOptions _botOptions;
@@ -31,35 +86,30 @@ public class QiniuProvider : IObjectStorageProvider
         var imageType = ImageHelper.GetKnownImageType(data);
         using var memoryStream = new MemoryStream(data);
 
-        return await UploadImage(objectName, imageType, memoryStream);
+        var contentType = ImageTypeToMimeType[imageType];
+        return await UploadImage(objectName, contentType, memoryStream);
     }
 
-    public async Task<string> UploadImage(Image image)
+    public async Task<string> UploadImage(Image image, ImageEncodingOptions encodingOptions)
     {
+        var imageType = encodingOptions.ImageType;
         using var memoryStream = new MemoryStream();
-        await image.SaveAsync(memoryStream, ImageEncoder);
+        var imageEncoder = ImageTypeToImageEncoder[imageType](encodingOptions);
+        await image.SaveAsync(memoryStream, imageEncoder);
         memoryStream.Position = 0;
 
-        var objectName = $"{Path.GetRandomFileName()}.png";
-        return await UploadImage(objectName, ImageType.Png, memoryStream);
+        var objectName = $"{Path.GetRandomFileName()}{ImageTypeToExtension[imageType]}";
+        var contentType = ImageTypeToMimeType[imageType];
+        return await UploadImage(objectName, contentType, memoryStream);
     }
 
-    private async Task<string> UploadImage(string objectName, ImageType imageType, MemoryStream memoryStream)
+    private async Task<string> UploadImage(string objectName, string contentType, MemoryStream memoryStream)
     {
         var folder = _botOptions.Connection.IsDevelopment ? "development" : "production";
         objectName = $"{folder}/{objectName}"; // Add folder prefix to the object name
 
         // https://developer.qiniu.com/kodo/1237/csharp#server-upload
         var bucketName = _options.BucketName;
-        var contentType = imageType switch
-        {
-            ImageType.Unknown => "application/octet-stream",
-            ImageType.Jpeg => "image/jpg",
-            ImageType.Bmp => "image/bmp",
-            ImageType.Gif => "image/gif",
-            ImageType.Png => "image/png",
-            _ => throw new ArgumentOutOfRangeException()
-        };
 
         // 设置上传策略
         var putPolicy = new PutPolicy

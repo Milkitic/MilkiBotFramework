@@ -72,7 +72,7 @@ public class QApi : IMessageApi
             var content = i == imageMessages.Count - 1 ? otherMessages : null;
             var imageUrl = imageMessage switch
             {
-                MemoryImage memoryImage => await _objectStorageProvider.UploadImage(memoryImage.ImageSource),
+                MemoryImage memoryImage => await _objectStorageProvider.UploadImage(memoryImage.ImageSource, memoryImage.ImageEncodingOptions),
                 LinkImage linkImage => linkImage.Uri,
                 FileImage fileImage => await _objectStorageProvider.UploadImage(fileImage.Path),
                 _ => throw new ArgumentOutOfRangeException(nameof(imageMessage), imageMessage.GetType(), null)
@@ -168,7 +168,7 @@ public class QApi : IMessageApi
             var content = i == imageMessages.Count - 1 ? otherMessages : null;
             var imageUrl = imageMessage switch
             {
-                MemoryImage memoryImage => await _objectStorageProvider.UploadImage(memoryImage.ImageSource),
+                MemoryImage memoryImage => await _objectStorageProvider.UploadImage(memoryImage.ImageSource, memoryImage.ImageEncodingOptions),
                 LinkImage linkImage => linkImage.Uri,
                 FileImage fileImage => await _objectStorageProvider.UploadImage(fileImage.Path),
                 _ => throw new ArgumentOutOfRangeException(nameof(imageMessage), imageMessage.GetType(), null)
