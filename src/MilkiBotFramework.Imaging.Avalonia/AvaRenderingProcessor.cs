@@ -60,6 +60,10 @@ public class AvaRenderingProcessor<TProcessControl> : IDrawingProcessor
             if (double.IsNaN(subProcessor.Width) || double.IsNaN(subProcessor.Height) || _renderingMode != RenderingMode.InMemory)
             {
                 var window = new DrawingWindow { Content = new DpiDecorator { Child = subProcessor } };
+
+                if (!double.IsNaN(subProcessor.Width)) window.Width = subProcessor.Width;
+                if (!double.IsNaN(subProcessor.Height)) window.Height = subProcessor.Height;
+
                 //if (subProcessor.Content is LayoutTransformControl
                 //    {
                 //        LayoutTransform: ScaleTransform scaleTransform,
