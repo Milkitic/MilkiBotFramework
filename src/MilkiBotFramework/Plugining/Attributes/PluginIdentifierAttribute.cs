@@ -20,4 +20,6 @@ public sealed class PluginIdentifierAttribute : Attribute
     public int Index { get; init; }
 
     public bool AllowDisable { get; init; } = true;
+
+    public Type? ServiceType { get; set; }
 }

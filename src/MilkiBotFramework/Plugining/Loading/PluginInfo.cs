@@ -11,7 +11,8 @@ public sealed class PluginInfo
         ReadOnlyDictionary<string, CommandInfo> commands,
         int index,
         string pluginHome,
-        bool allowDisable)
+        bool allowDisable,
+        Type? serviceType)
     {
         Metadata = metadata;
         Type = type;
@@ -21,6 +22,7 @@ public sealed class PluginInfo
         Index = index;
         PluginHome = pluginHome;
         AllowDisable = allowDisable;
+        ServiceType = serviceType;
         if (baseType == StaticTypes.BasicPlugin || baseType == StaticTypes.BasicPlugin_)
             PluginType = PluginType.Basic;
         else if (baseType == StaticTypes.ServicePlugin)
@@ -39,5 +41,6 @@ public sealed class PluginInfo
     public int Index { get; }
     public string PluginHome { get; }
     public bool AllowDisable { get; }
+    public Type? ServiceType { get; }
     public PluginType PluginType { get; }
 }

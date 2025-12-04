@@ -157,20 +157,46 @@ public partial class PluginManager
                         typeName = type.Name;
                         pluginInfo = GetPluginInfo(type, baseType, defaultAuthor);
                         var metadata = pluginInfo.Metadata;
-
-                        switch (pluginInfo.Lifetime)
+                        var serviceType = pluginInfo.ServiceType;
+                        if (serviceType == null)
                         {
-                            case PluginLifetime.Singleton:
-                                loaderContext.ServiceCollection.AddSingleton(type);
-                                break;
-                            case PluginLifetime.Scoped:
-                                loaderContext.ServiceCollection.AddScoped(type);
-                                break;
-                            case PluginLifetime.Transient:
-                                loaderContext.ServiceCollection.AddTransient(type);
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
+                            switch (pluginInfo.Lifetime)
+                            {
+                                case PluginLifetime.Singleton:
+                                    loaderContext.ServiceCollection.AddSingleton(type);
+                                    break;
+                                case PluginLifetime.Scoped:
+                                    loaderContext.ServiceCollection.AddScoped(type);
+                                    break;
+                                case PluginLifetime.Transient:
+                                    loaderContext.ServiceCollection.AddTransient(type);
+                                    break;
+                                default:
+                                    throw new ArgumentOutOfRangeException();
+                            }
+                        }
+                        else
+                        {
+                            if (!serviceType.IsAssignableFrom(type))
+                            {
+                                throw new Exception(
+                                    $"The plugin type {type.FullName} does not implement the declaration type {serviceType.FullName}.");
+                            }
+
+                            switch (pluginInfo.Lifetime)
+                            {
+                                case PluginLifetime.Singleton:
+                                    loaderContext.ServiceCollection.AddSingleton(serviceType, type);
+                                    break;
+                                case PluginLifetime.Scoped:
+                                    loaderContext.ServiceCollection.AddScoped(serviceType, type);
+                                    break;
+                                case PluginLifetime.Transient:
+                                    loaderContext.ServiceCollection.AddTransient(serviceType, type);
+                                    break;
+                                default:
+                                    throw new ArgumentOutOfRangeException();
+                            }
                         }
 
                         _logger.LogInformation($"Add plugin \"{metadata.Name}\"" +
@@ -398,6 +424,7 @@ public partial class PluginManager
         var index = identifierAttribute.Index;
         var name = ReplaceVariable(identifierAttribute.Name) ?? type.Name;
         var allowDisable = identifierAttribute.AllowDisable;
+        var serviceType = identifierAttribute.ServiceType;
         var description = ReplaceVariable(type.GetCustomAttribute<DescriptionAttribute>()?.Description);
         var scope = identifierAttribute.Scope ?? type.Assembly.GetName().Name ?? "DynamicScope";
         var authors = identifierAttribute.Authors ?? defaultAuthor ?? "anonym";
@@ -414,11 +441,12 @@ public partial class PluginManager
         var commands = new Dictionary<string, CommandInfo>();
         foreach (var methodInfo in type.GetMethods())
         {
-            if (methodSets.Contains(methodInfo.Name))
+            if (!methodSets.Add(methodInfo.Name))
+            {
                 throw new ArgumentException(
                     "Duplicate method name with CommandHandler definition is not supported.", methodInfo.Name);
+            }
 
-            methodSets.Add(methodInfo.Name);
             var commandHandlerAttribute = methodInfo.GetCustomAttribute<CommandHandlerAttribute>();
             if (commandHandlerAttribute == null) continue;
 
@@ -477,7 +505,7 @@ public partial class PluginManager
         }
 
         return new PluginInfo(metadata, type, baseType, lifetime, new ReadOnlyDictionary<string, CommandInfo>(commands),
-            index, pluginHome, allowDisable);
+            index, pluginHome, allowDisable, serviceType);
     }
 
     private CommandParameterInfo GetParameterInfo(object[] attrs, Type targetType,
