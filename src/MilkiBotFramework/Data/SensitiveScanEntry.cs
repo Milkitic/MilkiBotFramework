@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace MilkiBotFramework.Data;
 
 [Index(nameof(Source), IsUnique = true)]
-public class SensitiveScanEntry
+public record SensitiveScanEntry
 {
     [Key]
     public int Id { get; set; }
