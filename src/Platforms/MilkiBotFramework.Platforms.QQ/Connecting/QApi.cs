@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Messaging;
@@ -30,6 +30,11 @@ public class QApi : IMessageApi
     }
 
     public IConnector Connector { get; }
+
+    public bool Supports(MessageContext messageContext)
+    {
+        return messageContext is QMessageContext;
+    }
 
     public async Task<string> SendPrivateMessageAsync(string userId, string message, IRichMessage? richMessage, MessageContext messageContext)
     {

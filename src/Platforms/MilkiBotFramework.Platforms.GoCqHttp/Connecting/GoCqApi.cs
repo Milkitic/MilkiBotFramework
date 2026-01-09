@@ -1,4 +1,4 @@
-﻿using MilkiBotFramework.Connecting;
+using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel;
@@ -25,6 +25,11 @@ public class GoCqApi : IMessageApi
     }
 
     public IConnector Connector { get; }
+
+    public bool Supports(MessageContext messageContext)
+    {
+        return messageContext is GoCqMessageContext;
+    }
 
     private static class Actions
     {

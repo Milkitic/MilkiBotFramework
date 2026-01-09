@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
@@ -38,7 +38,17 @@ namespace MilkiBotFramework.Platforms.GoCqHttp.Dispatching
             var rawJson = messageContext.RawTextMessage;
             strIdentity = null;
 
-            var jDoc = JsonDocument.Parse(rawJson);
+            JsonDocument jDoc;
+            try
+            {
+                jDoc = JsonDocument.Parse(rawJson);
+            }
+            catch (JsonException)
+            {
+                messageIdentity = null;
+                return false;
+            }
+
             var hasProperty = jDoc.RootElement.TryGetProperty("post_type", out var postTypeElement);
             if (!hasProperty)
             {

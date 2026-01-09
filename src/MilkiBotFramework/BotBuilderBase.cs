@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
@@ -19,11 +19,17 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     private BotOptions? _botOptions;
     private Action<ILoggingBuilder>? _configureLogger;
-    private Action<IConnectorConfigurable>? _configureConnector;
-    private Type? _connectorType;
-    private Type? _dispatcherType;
-    private Type? _messageApiType;
-    private Type? _contactsManagerType;
+    
+    // Connectors
+    private readonly List<Type> _connectorTypes = new();
+    private readonly List<Action<IConnectorConfigurable>> _connectorConfigurators = new();
+
+    // Message APIs
+    private readonly List<Type> _messageApiTypes = new();
+    
+    private readonly List<Type> _dispatcherTypes = new();
+    private readonly List<Type> _contactsManagerTypes = new();
+
     private Type? _commandAnalyzerType;
     private IParameterConverter? _defaultConverter;
     private Type? _richMessageConverterType;
@@ -65,8 +71,18 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     public TBuilder UseConnector<T>(Action<T>? configureConnector = null) where T : IConnector
     {
-        _connectorType = typeof(T);
-        _configureConnector = configurable => configureConnector?.Invoke((T)configurable);
+        if (!_connectorTypes.Contains(typeof(T)))
+        {
+            _connectorTypes.Add(typeof(T));
+        }
+        
+        _connectorConfigurators.Add(configurable => 
+        {
+            if (configurable is T t)
+            {
+                configureConnector?.Invoke(t);
+            }
+        });
         return (TBuilder)this;
     }
 
@@ -81,7 +97,10 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     public TBuilder UseContactsManager<T>() where T : IContactsManager
     {
-        _contactsManagerType = typeof(T);
+        if (!_contactsManagerTypes.Contains(typeof(T)))
+        {
+            _contactsManagerTypes.Add(typeof(T));
+        }
         return (TBuilder)this;
     }
 
@@ -100,13 +119,19 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     public TBuilder UseDispatcher<T>() where T : IDispatcher
     {
-        _dispatcherType = typeof(T);
+        if (!_dispatcherTypes.Contains(typeof(T)))
+        {
+            _dispatcherTypes.Add(typeof(T));
+        }
         return (TBuilder)this;
     }
 
     public TBuilder UseMessageApi<T>() where T : IMessageApi
     {
-        _messageApiType = typeof(T);
+        if (!_messageApiTypes.Contains(typeof(T)))
+        {
+            _messageApiTypes.Add(typeof(T));
+        }
         return (TBuilder)this;
     }
 
@@ -149,7 +174,31 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
         // Connector
         var connector = (IConnector)serviceProvider.GetService(typeof(IConnector))!;
-        _configureConnector?.Invoke(connector);
+        
+        // 如果是聚合连接器，我们需要对子连接器应用配置
+        // 但是这里 connector 实例已经创建好了
+        // 我们需要一种方法来配置它们。
+        // 如果我们遍历所有注册的 IConnector？
+        // 如果注册为 AddSingleton<IConnector, DiscordConnector>，GetServices<IConnector> 会返回所有。
+        // 如果我们用了聚合器，聚合器也是 IConnector。
+        
+        var connectors = serviceProvider.GetServices<IConnector>();
+        foreach (var c in connectors)
+        {
+            // 对每个 connector 应用所有匹配的配置器
+            foreach (var configurator in _connectorConfigurators)
+            {
+                if (c is IConnectorConfigurable configurable)
+                {
+                    configurator(configurable);
+                }
+            }
+        }
+        
+        // 特别处理：如果 connector 是聚合器，它可能没有暴露子连接器供我们遍历
+        // 但是我们在 ConfigServices 中是把具体连接器也注册进去了的。
+        // 所以 GetServices<IConnector> 应该能拿到具体的连接器。
+        // 除非我们把具体连接器注册为具体类型而不是 IConnector。
     }
 
     protected virtual void ConfigServices(IServiceCollection serviceCollection)
@@ -167,26 +216,100 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
                 _commandAnalyzerType ?? typeof(CommandLineAnalyzer))
             .AddSingleton(typeof(IRichMessageConverter),
                 _richMessageConverterType ?? typeof(DefaultRichMessageConverter))
-            .AddSingleton(typeof(IDispatcher),
-                _dispatcherType ?? throw new ArgumentNullException(nameof(IDispatcher),
-                    "The IDispatcher implementation is not specified."))
-            .AddSingleton(typeof(IContactsManager),
-                _contactsManagerType ?? throw new ArgumentNullException(nameof(IContactsManager),
-                    "The IContactsManager implementation is not specified."))
             .AddSingleton(typeof(ConfigurationFactory))
             .AddSingleton(typeof(IConfiguration<>), typeof(Configuration<>))
             .AddTransient(typeof(LoaderContext), _ => null!)
             .AddSingleton(typeof(Bot), typeof(TBot));
-        if (_connectorType != null)
-        {
-            serviceCollection.AddSingleton(typeof(IConnector), _connectorType);
-        }
-
-        if (_messageApiType != null)
-        {
-            serviceCollection.AddSingleton(_messageApiType);
-            serviceCollection.AddSingleton(typeof(IMessageApi), provider => provider.GetService(_messageApiType)!);
-        }
+            
+        // Dispatcher
+         if (_dispatcherTypes.Count == 0)
+         {
+              throw new ArgumentNullException(nameof(IDispatcher), "The IDispatcher implementation is not specified.");
+         }
+         else if (_dispatcherTypes.Count == 1)
+         {
+              serviceCollection.AddSingleton(typeof(IDispatcher), _dispatcherTypes[0]);
+         }
+         else
+         {
+              foreach(var t in _dispatcherTypes)
+              {
+                  serviceCollection.AddSingleton(t);
+              }
+              serviceCollection.AddSingleton<IDispatcher>(sp => 
+              {
+                  var list = new List<IDispatcher>();
+                  foreach(var t in _dispatcherTypes) list.Add((IDispatcher)sp.GetRequiredService(t));
+                  return new AggregateDispatcher(list);
+              });
+         }
+ 
+         // ContactsManager
+         if (_contactsManagerTypes.Count == 0)
+         {
+              throw new ArgumentNullException(nameof(IContactsManager), "The IContactsManager implementation is not specified.");
+         }
+         else if (_contactsManagerTypes.Count == 1)
+         {
+              serviceCollection.AddSingleton(typeof(IContactsManager), _contactsManagerTypes[0]);
+         }
+         else
+         {
+              foreach(var t in _contactsManagerTypes)
+              {
+                  serviceCollection.AddSingleton(t);
+              }
+              serviceCollection.AddSingleton<IContactsManager>(sp => 
+              {
+                  var list = new List<IContactsManager>();
+                  foreach(var t in _contactsManagerTypes) list.Add((IContactsManager)sp.GetRequiredService(t));
+                  return new AggregateContactsManager(list);
+              });
+         }
+ 
+         // Connectors
+         if (_connectorTypes.Count == 1)
+         {
+             serviceCollection.AddSingleton(typeof(IConnector), _connectorTypes[0]);
+         }
+         else if (_connectorTypes.Count > 1)
+         {
+             foreach (var type in _connectorTypes)
+             {
+                 // 注册具体的连接器为它们自己的类型
+                 serviceCollection.AddSingleton(type);
+             }
+             // 注册聚合器作为主要的 IConnector
+             serviceCollection.AddSingleton<IConnector>(sp => 
+             {
+                 var list = new List<IConnector>();
+                 foreach(var t in _connectorTypes) list.Add((IConnector)sp.GetRequiredService(t));
+                 return new AggregateConnector(list);
+             });
+         }
+ 
+         // MessageApi
+         if (_messageApiTypes.Count > 0)
+         {
+             if (_messageApiTypes.Count == 1)
+             {
+                 serviceCollection.AddSingleton(_messageApiTypes[0]);
+                 serviceCollection.AddSingleton(typeof(IMessageApi), provider => provider.GetService(_messageApiTypes[0])!);
+             }
+             else
+             {
+                 foreach (var type in _messageApiTypes)
+                 {
+                     serviceCollection.AddSingleton(type); // 注册自身类型
+                 }
+                 serviceCollection.AddSingleton<IMessageApi>(sp => 
+                 {
+                     var list = new List<IMessageApi>();
+                     foreach(var t in _messageApiTypes) list.Add((IMessageApi)sp.GetRequiredService(t));
+                     return new AggregateMessageApi(list);
+                 });
+             }
+         }
 
         serviceCollection.AddSingleton(serviceCollection);
     }
@@ -198,26 +321,6 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     private static Action<ILoggingBuilder> CreateDefaultLoggerConfiguration()
     {
-        return builder => builder
-            .AddSimpleConsole(options =>
-            {
-                options.IncludeScopes = true;
-                //options.SingleLine = true;
-                options.TimestampFormat = "hh:mm:ss.ffzz ";
-            })
-            .AddFilter((ns, level) =>
-            {
-#if !DEBUG
-                if (ns?.StartsWith("Microsoft") == true && level < LogLevel.Warning)
-                    return false;
-                if (level < LogLevel.Information)
-                    return false;
-                return true;
-#else
-                if (ns?.StartsWith("Microsoft") == true && level < LogLevel.Information)
-                    return false;
-                return true;
-#endif
-            });
+        return logging => logging.AddConsole();
     }
 }
