@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.32126.317
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11312.210 d18.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework", "MilkiBotFramework\MilkiBotFramework.csproj", "{EC607AE2-8633-43C0-9A8A-05ECDEDAACEF}"
 EndProject
@@ -34,6 +34,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework.Platforms.QQ", "Platforms\MilkiBotFramework.Platforms.QQ\MilkiBotFramework.Platforms.QQ.csproj", "{4E16093A-2AD0-401F-95DA-98534179E21F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinioTest", "Tests\MinioTest\MinioTest.csproj", "{24E556DA-AF45-4BB2-ADF9-E1034D4198E2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MilkiBotFramework.Platforms.Discord", "Platforms\MilkiBotFramework.Platforms.Discord\MilkiBotFramework.Platforms.Discord.csproj", "{3D1E18B5-7097-D813-635A-4FC1F9EB891C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -89,6 +91,10 @@ Global
 		{24E556DA-AF45-4BB2-ADF9-E1034D4198E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{24E556DA-AF45-4BB2-ADF9-E1034D4198E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{24E556DA-AF45-4BB2-ADF9-E1034D4198E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D1E18B5-7097-D813-635A-4FC1F9EB891C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D1E18B5-7097-D813-635A-4FC1F9EB891C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D1E18B5-7097-D813-635A-4FC1F9EB891C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D1E18B5-7097-D813-635A-4FC1F9EB891C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -102,6 +108,7 @@ Global
 		{332404CB-044D-44FA-A1DB-F786DA574BEC} = {94A508B0-181B-4A87-886A-1311F050BCCA}
 		{4E16093A-2AD0-401F-95DA-98534179E21F} = {BCF7067F-759B-4EED-96C8-014AF9E7DAC6}
 		{24E556DA-AF45-4BB2-ADF9-E1034D4198E2} = {94A508B0-181B-4A87-886A-1311F050BCCA}
+		{3D1E18B5-7097-D813-635A-4FC1F9EB891C} = {BCF7067F-759B-4EED-96C8-014AF9E7DAC6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EF1E1C70-5C03-4DF5-9DBD-7F7DCF2418E4}
