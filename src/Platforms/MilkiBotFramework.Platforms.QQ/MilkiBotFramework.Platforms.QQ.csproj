@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.3.9" />
+    <PackageReference Include="Avalonia" Version="11.3.10" />
     <PackageReference Include="Minio" Version="7.0.0" />
     <PackageReference Include="NSec.Cryptography" Version="25.4.0" />
     <PackageReference Include="Qiniu" Version="8.7.0" />
