@@ -4,7 +4,7 @@
 [![Build Status](https://img.shields.io/github/actions/workflow/status/Milkitic/MilkiBotFramework/pr-build-check.yml?branch=main&style=flat-square)](https://github.com/Milkitic/MilkiBotFramework/actions)
 [![License: GPLv3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](https://opensource.org/license/gpl-3-0)
 
-基于 .NET 8 的高性能机器人框架，内置 OneBot、官方机器人接口实现。
+基于 .NET 10 的高性能机器人框架，内置 OneBot、官方机器人接口实现。
 
 本项目提供了一个现代化、高效率的 .NET 机器人开发解决方案，以构建功能丰富的聊天机器人或进行快速原型开发。
 
