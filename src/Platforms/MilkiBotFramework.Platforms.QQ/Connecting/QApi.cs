@@ -3,6 +3,7 @@ using System.Text.Json;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
+using MilkiBotFramework.Platforms.QQ.Messaging;
 using MilkiBotFramework.Platforms.QQ.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.QQ.ObjectStore;
 
