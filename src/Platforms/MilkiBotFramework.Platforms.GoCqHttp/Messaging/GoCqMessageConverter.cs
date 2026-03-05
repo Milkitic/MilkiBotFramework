@@ -34,7 +34,7 @@ public class GoCqMessageConverter : IRichMessageConverter
         if (message is MemoryImage memImage)
         {
             await using var ms = new MemoryStream();
-            switch (memImage.ImageType)
+            switch (memImage.ImageEncodingOptions.ImageType)
             {
                 case ImageType.Jpeg:
                     await memImage.ImageSource.SaveAsync(ms, new JpegEncoder());
