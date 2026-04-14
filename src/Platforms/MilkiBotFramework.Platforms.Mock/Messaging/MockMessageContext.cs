@@ -25,7 +25,29 @@ public class MockMessage
     public string Content { get; set; } = "";
     public string? GroupId { get; set; } = null;
     public string? GroupName { get; set; } = null;
+    public bool HasImage => !string.IsNullOrWhiteSpace(ImagePath) || !string.IsNullOrWhiteSpace(ImageUrl);
+
+    public bool HasText => !string.IsNullOrWhiteSpace(Content);
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string? ImagePath { get; set; }
+    public string? ImageSource => !string.IsNullOrWhiteSpace(ImagePath) ? ImagePath : ImageUrl;
+
+    public string ImageTitle
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(ImagePath))
+            {
+                return $"[图片] {Path.GetFileName(ImagePath)}";
+            }
+
+            return !string.IsNullOrWhiteSpace(ImageUrl)
+                ? $"[图片] {ImageUrl}"
+                : "[图片]";
+        }
+    }
+
+    public string? ImageUrl { get; set; }
     public bool IsBotMessage { get; set; } = false;
     public string SenderId { get; set; } = "";
     public string SenderName { get; set; } = "";

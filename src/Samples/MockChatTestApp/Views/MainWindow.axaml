@@ -71,6 +71,7 @@
       <DockPanel Grid.Column="1">
         <!--  消息显示区  -->
         <ScrollViewer
+          x:Name="MessageScrollViewer"
           Height="400"
           DockPanel.Dock="Top"
           VerticalScrollBarVisibility="Auto">
@@ -95,10 +96,28 @@
                     Padding="12,8"
                     Background="{StaticResource UserMessageColor}"
                     CornerRadius="8">
-                    <TextBlock
-                      Foreground="Black"
-                      Text="{Binding Content}"
-                      TextWrapping="Wrap" />
+                    <StackPanel>
+                      <TextBlock
+                        IsVisible="{Binding HasText}"
+                        Foreground="Black"
+                        Text="{Binding Content}"
+                        TextWrapping="Wrap" />
+                      <Border
+                        Margin="0,6,0,0"
+                        Padding="8,6"
+                        IsVisible="{Binding HasImage}"
+                        Background="#E8F1FD"
+                        CornerRadius="6"
+                        Cursor="Hand"
+                        PointerPressed="OnImageMessageClick"
+                        Tag="{Binding ImageSource}">
+                        <TextBlock
+                          Foreground="#0D47A1"
+                          Text="{Binding ImageTitle}"
+                          TextDecorations="Underline"
+                          TextWrapping="Wrap" />
+                      </Border>
+                    </StackPanel>
                   </Border>
                 </StackPanel>
               </DataTemplate>

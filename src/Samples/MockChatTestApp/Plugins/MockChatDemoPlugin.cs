@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using MilkiBotFramework.Messaging;
+using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.Mock.Messaging;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Attributes;
@@ -33,9 +35,28 @@ public class MockChatDemoPlugin : BasicPlugin<MockMessageContext>
 /echo <message> - Echo your message
 /hello [name] - Greet someone
 /time - Show current time
+/image <pathOrUrl> - Send image by local path or http/https url
 /count [number] - Count to a number
 /ping - Pong!";
         return Reply(helpText);
+    }
+
+    [CommandHandler]
+    public IResponse Image([Argument] string pathOrUrl)
+    {
+        if (Uri.TryCreate(pathOrUrl, UriKind.Absolute, out var uri) &&
+            (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+        {
+            return Reply(new LinkImage(pathOrUrl));
+        }
+
+        var fullPath = Path.IsPathRooted(pathOrUrl) ? pathOrUrl : Path.GetFullPath(pathOrUrl);
+        if (!File.Exists(fullPath))
+        {
+            return Reply($"Image file not found: {fullPath}");
+        }
+
+        return Reply(new FileImage(fullPath));
     }
 
     [CommandHandler]

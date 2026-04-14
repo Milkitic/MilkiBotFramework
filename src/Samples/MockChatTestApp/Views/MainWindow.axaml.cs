@@ -1,12 +1,14 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using MilkiBotFramework;
-using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Platforms.Mock;
 using MilkiBotFramework.Platforms.Mock.Connecting;
 using MilkiBotFramework.Platforms.Mock.Messaging;
@@ -30,6 +32,28 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         MessageList.ItemsSource = _messages;
+        MockMessageApi.MessageSent += OnMockMessageSent;
+        Closed += OnWindowClosed;
+    }
+
+    private void OnWindowClosed(object? sender, EventArgs e)
+    {
+        MockMessageApi.MessageSent -= OnMockMessageSent;
+    }
+
+    private void AppendMessage(MockMessage message)
+    {
+        _messages.Add(message);
+        _ = ScrollToBottomAsync();
+    }
+
+    private async Task ScrollToBottomAsync()
+    {
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            var verticalOffset = Math.Max(0, MessageScrollViewer.Extent.Height - MessageScrollViewer.Viewport.Height);
+            MessageScrollViewer.Offset = new Vector(0, verticalOffset);
+        }, DispatcherPriority.Background);
     }
 
     /// <summary>
@@ -45,6 +69,8 @@ public partial class MainWindow : Window
 
         try
         {
+            MockMessageApi.ClearSentMessages();
+
             _bot = new BotBuilder()
                 .UseMock()
                 .Build();
@@ -52,9 +78,6 @@ public partial class MainWindow : Window
             // 获取连接器和配置
             _connector = (MockConnector)_bot.Connector;
             _mockOptions = (MockBotOptions)_bot.Options;
-
-            // 订阅消息事件
-            _bot.OnMessageReceived += OnBotMessageReceived;
 
             // 启动 Bot
             _isBotRunning = true;
@@ -154,7 +177,7 @@ public partial class MainWindow : Window
             };
 
             // 显示用户消息
-            _messages.Add(userMessage);
+            AppendMessage(userMessage);
 
             // 模拟发送给 Bot
             await _connector.SimulateReceiveMessageAsync(userMessage);
@@ -182,24 +205,72 @@ public partial class MainWindow : Window
     private void OnClearMessagesClick(object? sender, RoutedEventArgs e)
     {
         _messages.Clear();
+        MockMessageApi.ClearSentMessages();
     }
 
     /// <summary>
-    ///     Bot 消息接收事件处理
+    ///     Mock MessageApi 发送事件处理
     /// </summary>
-    private Task OnBotMessageReceived(DispatchMessageEvent e)
+    private void OnMockMessageSent(MockMessage msg)
     {
-        // 获取 Bot 的回复
-        var sentMessages = MockMessageApi.GetSentMessages();
-        foreach (var msg in sentMessages)
+        if (!ShouldDisplayInCurrentChat(msg))
         {
-            if (msg.Timestamp > DateTimeOffset.Now.AddSeconds(-5))
-            {
-                Dispatcher.UIThread.InvokeAsync(() => { _messages.Add(msg); }, DispatcherPriority.Normal);
-            }
+            return;
         }
 
-        return Task.CompletedTask;
+        Dispatcher.UIThread.InvokeAsync(() => { AppendMessage(msg); }, DispatcherPriority.Normal);
+    }
+
+    private bool ShouldDisplayInCurrentChat(MockMessage msg)
+    {
+        if (_currentChatMode == "group")
+        {
+            return !string.IsNullOrWhiteSpace(msg.GroupId);
+        }
+
+        return string.IsNullOrWhiteSpace(msg.GroupId);
+    }
+
+    /// <summary>
+    ///     点击图片消息后，调用系统图片查看器/浏览器打开
+    /// </summary>
+    private void OnImageMessageClick(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is not Control { Tag: string source } || string.IsNullOrWhiteSpace(source))
+        {
+            return;
+        }
+
+        try
+        {
+            if (Uri.TryCreate(source, UriKind.Absolute, out var uri) &&
+                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = source,
+                    UseShellExecute = true
+                });
+                return;
+            }
+
+            var imagePath = Path.IsPathRooted(source) ? source : Path.GetFullPath(source);
+            if (!File.Exists(imagePath))
+            {
+                ShowNotice($"Image file not found: {imagePath}", "Error");
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = imagePath,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            ShowNotice($"Error opening image: {ex.Message}", "Error");
+        }
     }
 
     /// <summary>
@@ -207,7 +278,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void AddSystemMessage(string text)
     {
-        _messages.Add(new MockMessage
+        AppendMessage(new MockMessage
         {
             SenderName = "System",
             Content = text,
@@ -221,7 +292,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void AddGroupSystemMessage(string text)
     {
-        _messages.Add(new MockMessage
+        AppendMessage(new MockMessage
         {
             SenderName = "System",
             Content = text,
