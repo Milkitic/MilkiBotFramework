@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Messaging;
@@ -39,11 +39,21 @@ public class QApi : IMessageApi
 
     public async Task<string> SendPrivateMessageAsync(string userId, string message, IRichMessage? richMessage, MessageContext messageContext)
     {
+        return await SendMessageCoreAsync("users", userId, "GROUP_MSG_RECEIVE", "C2C_MSG_RECEIVE", richMessage, messageContext);
+    }
+
+    public async Task<string> SendChannelMessageAsync(string channelId, string message, IRichMessage? richMessage, MessageContext messageContext, string? subChannelId)
+    {
+        return await SendMessageCoreAsync("groups", channelId, "GROUP_MSG_RECEIVE", "GROUP_MSG_RECEIVE", richMessage, messageContext);
+    }
+
+    private async Task<string> SendMessageCoreAsync(string entityType, string entityId, string textEventId, string imageEventId, IRichMessage? richMessage, MessageContext messageContext)
+    {
         var (imageMessages, otherMessages) = await RefactorMessages(richMessage);
         var broadcast = richMessage is RichMessage { FirstIsReply: false };
         var messageId = messageContext.MessageId;
         var host = _qApiConnector.Host;
-        var messageUrl = $"https://{host}/v2/users/{userId}/messages";
+        var messageUrl = $"https://{host}/v2/{entityType}/{entityId}/messages";
 
         if (imageMessages.Count <= 0 && otherMessages != null)
         {
@@ -59,7 +69,7 @@ public class QApi : IMessageApi
                     msg_type = 0,
                     msg_id = messageId,
                     msg_seq = _qApiConnector.MessageSequence + Random.Shared.Next(0, 1000),
-                    event_id = "GROUP_MSG_RECEIVE"
+                    event_id = textEventId
                 };
             var result = await _lightHttpClient.HttpPost<object>(messageUrl, messageRequest,
                 new Dictionary<string, string>
@@ -91,103 +101,7 @@ public class QApi : IMessageApi
                 srv_send_msg = false
             };
 
-            var uploadUrl = $"https://{host}/v2/users/{userId}/files";
-            var uploadResult = await _lightHttpClient.HttpPost<object>(uploadUrl, uploadRequest, new Dictionary<string, string>
-            {
-                { "Authorization",await  _qApiConnector.GetAuthorizationAsync() }
-            });
-
-            sb.AppendLine(uploadResult.ToString());
-            var fileInfo = ((JsonElement)uploadResult).GetProperty("file_info").GetString();
-
-            object sendImgRequest = broadcast
-                ? new
-                {
-                    // ReSharper disable once RedundantAnonymousTypePropertyName
-                    content = content,
-                    msg_type = 7,
-                    media = new
-                    {
-                        file_info = fileInfo
-                    },
-                }
-                : new
-                {
-                    // ReSharper disable once RedundantAnonymousTypePropertyName
-                    content = content,
-                    msg_type = 7,
-                    media = new
-                    {
-                        file_info = fileInfo
-                    },
-                    msg_id = messageId,
-                    msg_seq = _qApiConnector.MessageSequence + Random.Shared.Next(0, 1000),
-                    event_id = "C2C_MSG_RECEIVE"
-                };
-            var sendImgResult = await _lightHttpClient.HttpPost<object>(messageUrl, sendImgRequest, new Dictionary<string, string>
-            {
-                { "Authorization", await _qApiConnector.GetAuthorizationAsync() }
-            });
-
-            sb.AppendLine(sendImgResult.ToString());
-        }
-
-        return sb.ToString();
-    }
-
-    public async Task<string> SendChannelMessageAsync(string channelId, string message, IRichMessage? richMessage, MessageContext messageContext, string? subChannelId)
-    {
-        var (imageMessages, otherMessages) = await RefactorMessages(richMessage);
-        var broadcast = richMessage is RichMessage { FirstIsReply: false };
-        var messageId = messageContext.MessageId;
-        var host = _qApiConnector.Host;
-        var messageUrl = $"https://{host}/v2/groups/{channelId}/messages";
-
-        if (imageMessages.Count <= 0 && otherMessages != null)
-        {
-            object messageRequest = broadcast
-                ? new
-                {
-                    content = otherMessages,
-                    msg_type = 0,
-                }
-                : new
-                {
-                    content = otherMessages,
-                    msg_type = 0,
-                    msg_id = messageId,
-                    msg_seq = _qApiConnector.MessageSequence + Random.Shared.Next(0, 1000),
-                    event_id = "GROUP_MSG_RECEIVE"
-                };
-            var result = await _lightHttpClient.HttpPost<object>(messageUrl, messageRequest, new Dictionary<string, string>
-            {
-                { "Authorization", await _qApiConnector.GetAuthorizationAsync() }
-            });
-            var str = result.ToString();
-            return str ?? "";
-        }
-
-        var sb = new StringBuilder();
-        for (var i = 0; i < imageMessages.Count; i++)
-        {
-            var imageMessage = imageMessages[i];
-            var content = i == imageMessages.Count - 1 ? otherMessages : null;
-            var imageUrl = imageMessage switch
-            {
-                MemoryImage memoryImage => await _objectStorageProvider.UploadImage(memoryImage.ImageSource, memoryImage.ImageEncodingOptions),
-                LinkImage linkImage => linkImage.Uri,
-                FileImage fileImage => await _objectStorageProvider.UploadImage(fileImage.Path),
-                _ => throw new ArgumentOutOfRangeException(nameof(imageMessage), imageMessage.GetType(), null)
-            };
-
-            object uploadRequest = new
-            {
-                file_type = 1,
-                url = imageUrl,
-                srv_send_msg = false
-            };
-
-            var uploadUrl = $"https://{host}/v2/groups/{channelId}/files";
+            var uploadUrl = $"https://{host}/v2/{entityType}/{entityId}/files";
             var uploadResult = await _lightHttpClient.HttpPost<object>(uploadUrl, uploadRequest, new Dictionary<string, string>
             {
                 { "Authorization", await _qApiConnector.GetAuthorizationAsync() }
@@ -218,7 +132,7 @@ public class QApi : IMessageApi
                     },
                     msg_id = messageId,
                     msg_seq = _qApiConnector.MessageSequence + Random.Shared.Next(0, 1000),
-                    event_id = "GROUP_MSG_RECEIVE"
+                    event_id = imageEventId
                 };
             var sendImgResult = await _lightHttpClient.HttpPost<object>(messageUrl, sendImgRequest, new Dictionary<string, string>
             {

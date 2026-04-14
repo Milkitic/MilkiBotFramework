@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
@@ -12,9 +12,6 @@ namespace MilkiBotFramework.Platforms.QQ.Connecting;
 [Obsolete]
 public class QApiWsConnector : WebSocketClientConnector
 {
-    private const string ProductHost = "api.sgroup.qq.com";
-    private const string SandboxHost = "sandbox.api.sgroup.qq.com";
-
     private readonly LightHttpClient _httpClient;
     private readonly QContactsManager? _contactsManager;
     private readonly ILogger<QApiWsConnector> _logger;
@@ -82,14 +79,14 @@ public class QApiWsConnector : WebSocketClientConnector
         get
         {
             if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
-            return Connection.IsDevelopment ? SandboxHost : ProductHost;
+            return QApiTokenHelper.GetHost(Connection);
         }
     }
 
     public override async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
-        await RequestAccessTokenAsync(Connection);
+        await UpdateAccessTokenAsync();
         await RequestEndpointAsync();
 
         TargetUri = _wsUrl;
@@ -114,7 +111,7 @@ public class QApiWsConnector : WebSocketClientConnector
 
         if (isResume == false || DateTime.Now >= _tokenExpireTime)
         {
-            await RequestAccessTokenAsync(Connection!);
+            await UpdateAccessTokenAsync();
         }
 
         if (isResume == true || await TryIdentifyAsync() == true)
@@ -139,23 +136,11 @@ public class QApiWsConnector : WebSocketClientConnector
         _cts = null;
     }
 
-    private async Task RequestAccessTokenAsync(QConnection connection)
+    private async Task UpdateAccessTokenAsync()
     {
-        var response = await _httpClient.HttpPost<string>(
-            "https://bots.qq.com/app/getAppAccessToken",
-            new
-            {
-                appId = connection.AppId,
-                clientSecret = connection.ClientSecret
-            });
-
-        var jsonNode = JsonNode.Parse(response)!;
-        ValidateResult(jsonNode);
-
-        var accessToken = jsonNode["access_token"]!.GetValue<string>();
-        var expiresIn = int.Parse(jsonNode["expires_in"]!.GetValue<string>());
+        var (accessToken, expireTime) = await QApiTokenHelper.RequestAccessTokenAsync(_httpClient, Connection!);
         _accessToken = accessToken;
-        _tokenExpireTime = DateTime.Now.AddSeconds(expiresIn);
+        _tokenExpireTime = expireTime;
     }
 
     private async Task RequestEndpointAsync()
@@ -166,7 +151,7 @@ public class QApiWsConnector : WebSocketClientConnector
                 ["Authorization"] = Authorization
             });
         var jsonNode2 = JsonNode.Parse(response2)!;
-        ValidateResult(jsonNode2);
+        QApiTokenHelper.ValidateResult(jsonNode2);
         _wsUrl = jsonNode2["url"]!.GetValue<string>();
     }
 
@@ -320,15 +305,6 @@ public class QApiWsConnector : WebSocketClientConnector
         }
     }
 
-    private static void ValidateResult(JsonNode jsonNode)
-    {
-        var code = jsonNode["code"];
-        if (code != null)
-        {
-            var message = jsonNode["message"];
-            throw new QApiException(code.GetValue<int>().ToString(), message?.GetValue<string>());
-        }
-    }
     //public Task ConnectAsync()
     //{
     //    if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));

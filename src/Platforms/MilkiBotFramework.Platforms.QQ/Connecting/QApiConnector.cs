@@ -11,8 +11,6 @@ namespace MilkiBotFramework.Platforms.QQ.Connecting;
 public class QApiConnector : AspnetcoreConnector
 {
     private readonly LightHttpClient _httpClient;
-    private const string ProductHost = "api.sgroup.qq.com";
-    private const string SandboxHost = "sandbox.api.sgroup.qq.com";
 
     private readonly ILogger<QApiConnector> _logger;
 
@@ -41,7 +39,7 @@ public class QApiConnector : AspnetcoreConnector
         get
         {
             if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
-            return Connection.IsDevelopment ? SandboxHost : ProductHost;
+            return QApiTokenHelper.GetHost(Connection);
         }
     }
 
@@ -50,7 +48,7 @@ public class QApiConnector : AspnetcoreConnector
     public override async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
-        await RequestAccessTokenAsync(Connection);
+        await UpdateAccessTokenAsync();
         await base.ConnectAsync(cancellationToken);
     }
 
@@ -70,15 +68,33 @@ public class QApiConnector : AspnetcoreConnector
         if (DateTime.Now >= _tokenExpireTime.AddSeconds(-60))
         {
             _logger.LogInformation("Token expired, refreshing..");
-            await RequestAccessTokenAsync(Connection);
+            await UpdateAccessTokenAsync();
         }
 
         return $"QQBot {_accessToken}";
     }
 
-    private async Task RequestAccessTokenAsync(QConnection connection)
+    private async Task UpdateAccessTokenAsync()
     {
-        var response = await _httpClient.HttpPost<string>(
+        var (accessToken, expireTime) = await QApiTokenHelper.RequestAccessTokenAsync(_httpClient, Connection);
+        _accessToken = accessToken;
+        _tokenExpireTime = expireTime;
+    }
+}
+
+internal static class QApiTokenHelper
+{
+    private const string ProductHost = "api.sgroup.qq.com";
+    private const string SandboxHost = "sandbox.api.sgroup.qq.com";
+
+    public static string GetHost(QConnection connection)
+    {
+        return connection.IsDevelopment ? SandboxHost : ProductHost;
+    }
+
+    public static async Task<(string AccessToken, DateTime ExpireTime)> RequestAccessTokenAsync(LightHttpClient httpClient, QConnection connection)
+    {
+        var response = await httpClient.HttpPost<string>(
             "https://bots.qq.com/app/getAppAccessToken",
             new
             {
@@ -91,11 +107,10 @@ public class QApiConnector : AspnetcoreConnector
 
         var accessToken = jsonNode["access_token"]!.GetValue<string>();
         var expiresIn = int.Parse(jsonNode["expires_in"]!.GetValue<string>());
-        _accessToken = accessToken;
-        _tokenExpireTime = DateTime.Now.AddSeconds(expiresIn);
+        return (accessToken, DateTime.Now.AddSeconds(expiresIn));
     }
 
-    private static void ValidateResult(JsonNode jsonNode)
+    public static void ValidateResult(JsonNode jsonNode)
     {
         var code = jsonNode["code"];
         if (code != null)
