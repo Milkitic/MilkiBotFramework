@@ -4,6 +4,7 @@ using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.RequestModel;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel;
 using MilkiBotFramework.Platforms.GoCqHttp.Connecting.ResponseModel.Guild;
+using MilkiBotFramework.Platforms.GoCqHttp.Messaging;
 
 namespace MilkiBotFramework.Platforms.GoCqHttp.Connecting;
 
