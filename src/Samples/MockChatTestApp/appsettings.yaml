@@ -1,0 +1,19 @@
+# Mock Chat Test Application 配置文件
+
+# Mock 平台配置
+Config:
+  # 虚拟群组配置
+  GroupId: mock_group_001
+  GroupName: Mock Test Group
+  
+  # 虚拟用户配置
+  UserId: mock_user_001
+  UserName: Mock User
+  
+  # Bot 配置
+  BotUserId: mock_bot_001
+  BotUserName: Mock Bot
+
+# Bot 基础配置
+RootAccounts:
+  - mock_user_001

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.3.11312.210 d18.3
+VisualStudioVersion = 18.3.11312.210
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MilkiBotFramework", "MilkiBotFramework\MilkiBotFramework.csproj", "{EC607AE2-8633-43C0-9A8A-05ECDEDAACEF}"
 EndProject
@@ -36,6 +36,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinioTest", "Tests\MinioTest\MinioTest.csproj", "{24E556DA-AF45-4BB2-ADF9-E1034D4198E2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MilkiBotFramework.Platforms.Discord", "Platforms\MilkiBotFramework.Platforms.Discord\MilkiBotFramework.Platforms.Discord.csproj", "{3D1E18B5-7097-D813-635A-4FC1F9EB891C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MilkiBotFramework.Platforms.Mock", "Platforms\MilkiBotFramework.Platforms.Mock\MilkiBotFramework.Platforms.Mock.csproj", "{2A33A72E-F4EA-C2CD-74E7-B2B20897F234}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MockChatTestApp", "Samples\MockChatTestApp\MockChatTestApp.csproj", "{204A22AE-2DC2-09D8-C890-382E62A684E8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -95,6 +99,14 @@ Global
 		{3D1E18B5-7097-D813-635A-4FC1F9EB891C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D1E18B5-7097-D813-635A-4FC1F9EB891C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3D1E18B5-7097-D813-635A-4FC1F9EB891C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A33A72E-F4EA-C2CD-74E7-B2B20897F234}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A33A72E-F4EA-C2CD-74E7-B2B20897F234}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A33A72E-F4EA-C2CD-74E7-B2B20897F234}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A33A72E-F4EA-C2CD-74E7-B2B20897F234}.Release|Any CPU.Build.0 = Release|Any CPU
+		{204A22AE-2DC2-09D8-C890-382E62A684E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{204A22AE-2DC2-09D8-C890-382E62A684E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{204A22AE-2DC2-09D8-C890-382E62A684E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{204A22AE-2DC2-09D8-C890-382E62A684E8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -109,6 +121,8 @@ Global
 		{4E16093A-2AD0-401F-95DA-98534179E21F} = {BCF7067F-759B-4EED-96C8-014AF9E7DAC6}
 		{24E556DA-AF45-4BB2-ADF9-E1034D4198E2} = {94A508B0-181B-4A87-886A-1311F050BCCA}
 		{3D1E18B5-7097-D813-635A-4FC1F9EB891C} = {BCF7067F-759B-4EED-96C8-014AF9E7DAC6}
+		{2A33A72E-F4EA-C2CD-74E7-B2B20897F234} = {BCF7067F-759B-4EED-96C8-014AF9E7DAC6}
+		{204A22AE-2DC2-09D8-C890-382E62A684E8} = {A130D3F4-6E65-4F6C-A0EE-2412DA1D2C7E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EF1E1C70-5C03-4DF5-9DBD-7F7DCF2418E4}

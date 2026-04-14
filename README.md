@@ -92,10 +92,10 @@
 
 **TODO:**
 - [ ] 新增命令选择器的重写支持，为将来采用LLM function calling作尽早支持。
-- [ ] 支持单实例多Platform，以进行多平台互联。
  
 **WIP:**
 - [ ] 内置QQ官方API
+- [ ] Discord API
 
 **FINISHED:**
 - [x] 基本框架功能
@@ -148,3 +148,122 @@
 
 ## 📄 许可证 (License)
 本项目采用 [GPL-3.0 License](https://opensource.org/license/gpl-3-0) 开源。
+
+## 🧪 本地测试工具 (Mock Platform)
+
+框架内置了一个 **Mock Platform**，用于在不需要真实平台连接的情况下进行本地测试和开发。
+
+### 什么是 Mock Platform?
+
+Mock Platform 是一个虚拟平台实现，提供：
+
+*   **无网络依赖**：完全本地运行，不需要外部服务或消息平台。
+*   **快速迭代**：本地调试插件逻辑，无需启动真实平台。
+*   **聊天 UI 工具**：预置的 Avalonia 聊天界面，支持群聊和私聊模拟。
+*   **插件演示**：内置示例插件，可直接运行和测试。
+
+### 使用 Mock Platform 进行本地测试
+
+最简单的 Mock Platform 使用示例：
+
+```cs
+using MilkiBotFramework;
+using MilkiBotFramework.Platforms.Mock;
+
+return await new BotBuilder()
+    .UseMock()                    // 使用 Mock 平台替代真实平台
+    .Build()
+    .RunAsync();
+```
+
+### 运行 MockChatTestApp
+
+我们提供了一个完整的聊天 UI 应用 `MockChatTestApp` 进行交互式测试：
+
+```bash
+cd src/Samples/MockChatTestApp
+dotnet run
+```
+
+应用界面：
+
+*   **左侧**：会话列表（群聊、私聊）
+*   **中侧**：实时消息展示
+*   **底部**：消息输入框
+*   **顶部**：Bot 控制按钮（启动、停止、清空）
+
+#### 试试这些命令
+
+```
+/help              # 显示帮助信息
+/echo hello        # 回显你的消息
+/hello World       # 问候
+/time              # 显示当前时间
+/ping              # Ping/Pong
+/count 10          # 异步计数演示
+```
+
+### 扩展 Mock Platform
+
+#### 自定义虚拟数据
+
+编辑 `appsettings.yaml`：
+
+```yaml
+Config:
+  GroupId: my_group
+  GroupName: My Test Group
+  UserId: my_user
+  UserName: My User
+  BotUserId: my_bot
+  BotUserName: My Bot
+```
+
+#### 添加自定义插件
+
+在 `MockChatTestApp/Plugins/` 中创建新插件：
+
+```cs
+[PluginIdentifier(guid: "your-guid", name: "Your Plugin")]
+public class YourPlugin : BasicPlugin
+{
+    [CommandHandler]
+    public IResponse Cmd([Argument] string arg)
+        => Reply($"Custom response: {arg}");
+}
+```
+
+#### 集成到单元测试
+
+可在 xUnit 测试中使用 Mock Platform 进行 Bot 逻辑测试，无需启动真实平台：
+
+```cs
+[Fact]
+public async Task TestBotEchoCommand()
+{
+    var bot = new BotBuilder()
+        .UseMock()
+        .Build();
+    
+    var connector = (MockConnector)bot.Connector;
+    
+    var testMessage = new MockMessage
+    {
+        SenderId = "test_user",
+        SenderName = "Test User",
+        Content = "/echo hello"
+    };
+    
+    await connector.SimulateReceiveMessageAsync(testMessage);
+    // 验证 Bot 响应...
+}
+```
+
+### Mock Platform 项目结构
+
+*   `Connecting/` - 虚拟连接器实现
+*   `Dispatching/` - 消息分发器
+*   `Messaging/` - 虚拟消息模型
+*   `ContactsManaging/` - 虚拟联系人管理
+*   更多细节见 [Mock Platform README](src/Platforms/MilkiBotFramework.Platforms.Mock/README.md)
+

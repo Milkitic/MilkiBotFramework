@@ -1,0 +1,131 @@
+<Window
+  x:Class="MockChatTestApp.Views.MainWindow"
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  Title="Mock Chat Test Application"
+  Width="800"
+  Height="600">
+  <Window.Resources>
+    <SolidColorBrush x:Key="BotMessageColor">#E3F2FD</SolidColorBrush>
+    <SolidColorBrush x:Key="UserMessageColor">#F5F5F5</SolidColorBrush>
+  </Window.Resources>
+  <DockPanel>
+    <!--  菜单栏  -->
+    <StackPanel
+      Margin="8"
+      DockPanel.Dock="Top"
+      Orientation="Horizontal">
+      <Button
+        Margin="0,0,8,0"
+        Padding="12,8"
+        Click="OnStartBotClick"
+        Content="Start Bot" />
+      <Button
+        Margin="0,0,8,0"
+        Padding="12,8"
+        Click="OnStopBotClick"
+        Content="Stop Bot" />
+      <Button
+        Padding="12,8"
+        Click="OnClearMessagesClick"
+        Content="Clear Messages" />
+    </StackPanel>
+
+    <!--  主容器  -->
+    <Grid ColumnDefinitions="*,2*" DockPanel.Dock="Bottom">
+      <!--  左侧：会话列表  -->
+      <StackPanel
+        Grid.Column="0"
+        Margin="8"
+        Background="#F5F5F5">
+        <TextBlock
+          Margin="0,0,0,12"
+          FontSize="14"
+          FontWeight="Bold"
+          Text="Conversations" />
+
+        <!--  群聊  -->
+        <Border
+          Margin="0,4"
+          Padding="8"
+          Background="White"
+          CornerRadius="4"
+          Cursor="Hand"
+          PointerPressed="OnGroupChatSelected">
+          <TextBlock FontSize="12" Text="Mock Test Group" />
+        </Border>
+
+        <!--  私聊  -->
+        <Border
+          Margin="0,4"
+          Padding="8"
+          Background="White"
+          CornerRadius="4"
+          Cursor="Hand"
+          PointerPressed="OnPrivateChatSelected">
+          <TextBlock FontSize="12" Text="Mock User (Private)" />
+        </Border>
+      </StackPanel>
+
+      <!--  右侧：聊天窗口  -->
+      <DockPanel Grid.Column="1">
+        <!--  消息显示区  -->
+        <ScrollViewer
+          Height="400"
+          DockPanel.Dock="Top"
+          VerticalScrollBarVisibility="Auto">
+          <ItemsControl x:Name="MessageList" Margin="12">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <StackPanel MaxWidth="500" Margin="0,4">
+                  <!--  用户名和时间戳  -->
+                  <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
+                    <TextBlock
+                      Margin="0,0,8,0"
+                      FontWeight="Bold"
+                      Text="{Binding SenderName}" />
+                    <TextBlock
+                      FontSize="11"
+                      Foreground="#888"
+                      Text="{Binding Timestamp, StringFormat=HH:mm:ss}" />
+                  </StackPanel>
+
+                  <!--  消息气泡  -->
+                  <Border
+                    Padding="12,8"
+                    Background="{StaticResource UserMessageColor}"
+                    CornerRadius="8">
+                    <TextBlock
+                      Foreground="Black"
+                      Text="{Binding Content}"
+                      TextWrapping="Wrap" />
+                  </Border>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <!--  输入区  -->
+        <StackPanel
+          Margin="12,12,12,12"
+          DockPanel.Dock="Bottom"
+          Orientation="Horizontal">
+          <TextBox
+            x:Name="MessageInput"
+            Margin="0,0,8,0"
+            Padding="8"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Center"
+            KeyDown="OnMessageInputKeyDown"
+            Watermark="Type a message..." />
+          <Button
+            Width="80"
+            Padding="12,8"
+            Click="OnSendMessageClick"
+            Content="Send" />
+        </StackPanel>
+      </DockPanel>
+    </Grid>
+  </DockPanel>
+</Window>
