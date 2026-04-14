@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
@@ -8,21 +9,9 @@ namespace MilkiBotFramework.Platforms.Discord.Connecting;
 
 public class DiscordConnector : IConnector
 {
-    private readonly DiscordBotOptions _options;
-    private readonly ILogger<DiscordConnector> _logger;
     private readonly DiscordSocketClient _client;
-
-    // 用于在 Dispatcher 中检索原始消息
-    public static readonly ConcurrentDictionary<string, SocketMessage> MessageCache = new();
-
-    public event Func<string, Task>? RawMessageReceived;
-
-    public string? TargetUri { get; set; }
-    public string? BindingPath { get; set; }
-    public ConnectionType ConnectionType { get; set; }
-    public TimeSpan ErrorReconnectTimeout { get; set; }
-    public TimeSpan MessageTimeout { get; set; }
-    public System.Text.Encoding? Encoding { get; set; }
+    private readonly ILogger<DiscordConnector> _logger;
+    private readonly DiscordBotOptions _options;
 
     public DiscordConnector(BotOptions options, ILogger<DiscordConnector> logger)
     {
@@ -34,9 +23,12 @@ public class DiscordConnector : IConnector
         _options = discordOptions;
         _logger = logger;
 
+        var gatewayIntents = discordOptions.GatewayIntents
+                             ?? (GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent);
+
         var config = new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
+            GatewayIntents = gatewayIntents
         };
         _client = new DiscordSocketClient(config);
 
@@ -51,9 +43,61 @@ public class DiscordConnector : IConnector
 
     public DiscordSocketClient Client => _client;
 
+    /// <summary>
+    ///     用于在 Dispatcher 中检索原始消息的缓存。
+    ///     <para>改为实例字段，避免多 Bot 实例场景下的静态共享冲突。</para>
+    /// </summary>
+    public ConcurrentDictionary<string, SocketMessage> MessageCache { get; } = new();
+
+    public event Func<string, Task>? RawMessageReceived;
+
+    public string? TargetUri { get; set; }
+    public string? BindingPath { get; set; }
+    public ConnectionType ConnectionType { get; set; }
+    public TimeSpan ErrorReconnectTimeout { get; set; }
+    public TimeSpan MessageTimeout { get; set; }
+    public Encoding? Encoding { get; set; }
+
+    public async Task ConnectAsync(CancellationToken cancellationToken)
+    {
+        // Discord.Net 的 LoginAsync/StartAsync 不直接支持 CancellationToken，
+        // 使用 Task.WhenAny 实现超时取消
+        var connectTask = Task.Run(async () =>
+        {
+            await _client.LoginAsync(TokenType.Bot, _options.Token);
+            await _client.StartAsync();
+        }, cancellationToken);
+
+        var timeoutTask = Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
+        var completedTask = await Task.WhenAny(connectTask, timeoutTask);
+
+        if (completedTask == timeoutTask)
+        {
+            _logger.LogWarning("Discord connection timed out, attempting to continue...");
+        }
+        else
+        {
+            await connectTask; // 传播可能的异常
+        }
+    }
+
+    public async Task DisconnectAsync()
+    {
+        await _client.StopAsync();
+        await _client.LogoutAsync();
+    }
+
+    public async Task<string> SendMessageAsync(string message, string state)
+    {
+        // 这个方法通常用于底层 WebSocket 发送字符串，对于 Discord SDK 并不适用
+        // 我们在 MessageApi 中实现具体的发送逻辑
+        throw new NotSupportedException("Use MessageApi to send messages.");
+    }
+
     private async Task Client_MessageReceived(SocketMessage arg)
     {
-        if (arg.Author.IsBot) return;
+        // 只过滤自身 Bot 的消息，不过滤其他 Bot 的消息
+        if (arg.Author.Id == _client.CurrentUser.Id) return;
 
         var guid = Guid.NewGuid().ToString();
         MessageCache.TryAdd(guid, arg);
@@ -64,9 +108,18 @@ public class DiscordConnector : IConnector
             await RawMessageReceived.Invoke(guid);
         }
 
-        // 清理 Cache (简单起见，这里不做复杂清理，假设 Dispatcher 会处理或者定期清理)
-        // 实际生产中应该有一个过期策略
-        _ = Task.Delay(TimeSpan.FromMinutes(1)).ContinueWith(_ => { MessageCache.TryRemove(guid, out SocketMessage _); });
+        // 清理 Cache：1 分钟后自动移除，添加错误处理
+        _ = Task.Delay(TimeSpan.FromMinutes(1)).ContinueWith(t =>
+        {
+            if (t.IsFaulted)
+            {
+                _logger.LogWarning(t.Exception, "Error occurred while cleaning up message cache for guid: {Guid}",
+                    guid);
+                return;
+            }
+
+            MessageCache.TryRemove(guid, out _);
+        });
     }
 
     private Task LogAsync(LogMessage arg)
@@ -92,24 +145,5 @@ public class DiscordConnector : IConnector
         }
 
         return Task.CompletedTask;
-    }
-
-    public async Task ConnectAsync(CancellationToken cancellationToken)
-    {
-        await _client.LoginAsync(TokenType.Bot, _options.Token);
-        await _client.StartAsync();
-    }
-
-    public async Task DisconnectAsync()
-    {
-        await _client.StopAsync();
-        await _client.LogoutAsync();
-    }
-
-    public async Task<string> SendMessageAsync(string message, string state)
-    {
-        // 这个方法通常用于底层 WebSocket 发送字符串，对于 Discord SDK 并不适用
-        // 我们在 MessageApi 中实现具体的发送逻辑
-        throw new NotSupportedException("Use MessageApi to send messages.");
     }
 }

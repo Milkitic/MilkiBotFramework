@@ -5,11 +5,13 @@ namespace MilkiBotFramework.Platforms.Discord.Messaging;
 
 public class DiscordMessageContext : MessageContext
 {
-    public DiscordMessageContext(IRichMessageConverter richMessageConverter, SocketMessage? socketMessage) 
+    public DiscordMessageContext(IRichMessageConverter richMessageConverter)
         : base(richMessageConverter)
     {
-        SocketMessage = socketMessage;
     }
 
-    public SocketMessage? SocketMessage { get; set; }
+    /// <summary>
+    ///     Discord 原始消息对象，由 <see cref="Dispatching.DiscordDispatcher" /> 在分发时赋值。
+    /// </summary>
+    public SocketMessage? SocketMessage { get; internal set; }
 }

@@ -19,7 +19,8 @@ public static class BotBuilderExtensions
             .UseContactsManager<DiscordContactsManager>()
             .UseDispatcher<DiscordDispatcher>()
             .UseMessageApi<DiscordMessageApi>()
-            .UseOptions<DiscordBotOptions>(null);
+            .UseOptions<DiscordBotOptions>(null)
+            .UseRichMessageConverter<DiscordMessageConverter>();
 
         builder.UseConnector<DiscordConnector>();
 
