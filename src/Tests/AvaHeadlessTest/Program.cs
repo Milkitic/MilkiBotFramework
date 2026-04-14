@@ -3,7 +3,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Layout;
-using Avalonia.ReactiveUI;
 using Avalonia.Threading;
 using Avalonia.Vulkan;
 using MilkiBotFramework.Imaging.Avalonia;
@@ -22,23 +21,27 @@ internal class Program
         try
         {
             AvaloniaOptions.GetApplicationFunc = taskCompletionSource => new App(taskCompletionSource);
-            AvaloniaOptions.CustomConfigureFunc = k => k           .With(new Win32PlatformOptions
+            AvaloniaOptions.CustomConfigureFunc = k => k
+                .With(new Win32PlatformOptions
                 {
-                    RenderingMode = new []
-                    {
+                    RenderingMode =
+                    [
                         Win32RenderingMode.Vulkan
-                    }
+                    ]
                 })
-                .With(new X11PlatformOptions(){RenderingMode =new[] { X11RenderingMode.Vulkan } })
-                .With(new VulkanOptions()
+                .With(new X11PlatformOptions
                 {
-                    VulkanInstanceCreationOptions = new VulkanInstanceCreationOptions()
+                    RenderingMode = [X11RenderingMode.Vulkan]
+                })
+                .With(new VulkanOptions
+                {
+                    VulkanInstanceCreationOptions = new VulkanInstanceCreationOptions
                     {
                         UseDebug = true
                     }
                 }).WithInterFont();
             var vm = new AvaTestViewModel();
-            var processor = new AvaRenderingProcessor<AvaTestControl>(true);
+            var processor = new AvaRenderingProcessor<AvaTestControl>(RenderingMode.Headless);
             var sb = await processor.ProcessAsync(vm);
             Console.WriteLine(sb.Bounds);
             Directory.CreateDirectory("output");
@@ -103,7 +106,6 @@ internal class Program
         return AppBuilder.Configure(() => new App(waitComplete))
             .UsePlatformDetect()
             .WithInterFont()
-            .LogToTrace()
-            .UseReactiveUI();
+            .LogToTrace();
     }
 }

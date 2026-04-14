@@ -1,9 +1,8 @@
 using Discord;
-using Discord.WebSocket;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
-using MilkiBotFramework.Platforms.Discord.Connecting;
+using MilkiBotFramework.Platforms.Discord.Messaging;
 
 namespace MilkiBotFramework.Platforms.Discord.Connecting;
 

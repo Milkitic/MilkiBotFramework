@@ -10,20 +10,17 @@ namespace MilkiBotFramework.Platforms.Discord;
 
 public static class BotBuilderExtensions
 {
-    public static TBuilder UseDiscord<TBot, TBuilder>(this BotBuilderBase<TBot, TBuilder> builder, Action<DiscordBotOptions>? configureOptions = null)
+    public static TBuilder UseDiscord<TBot, TBuilder>(this BotBuilderBase<TBot, TBuilder> builder)
         where TBot : Bot where TBuilder : BotBuilderBase<TBot, TBuilder>
     {
         builder
-            .ConfigureServices(k =>
-            {
-                k.AddScoped(typeof(DiscordMessageContext));
-            })
+            .ConfigureServices(k => { k.AddScoped(typeof(DiscordMessageContext)); })
             .UseCommandLineAnalyzer<CommandLineAnalyzer>(new DefaultParameterConverter())
             .UseContactsManager<DiscordContactsManager>()
             .UseDispatcher<DiscordDispatcher>()
             .UseMessageApi<DiscordMessageApi>()
-            .UseOptions<DiscordBotOptions>(configureOptions);
-            
+            .UseOptions<DiscordBotOptions>(null);
+
         builder.UseConnector<DiscordConnector>();
 
         return (TBuilder)builder;
