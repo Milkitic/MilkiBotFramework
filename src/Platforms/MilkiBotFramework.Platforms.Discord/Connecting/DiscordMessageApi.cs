@@ -33,7 +33,8 @@ public class DiscordMessageApi : IMessageApi
     public async Task<string> SendChannelMessageAsync(string channelId, string message, IRichMessage? richMessage,
         MessageContext messageContext, string? subChannelId)
     {
-        if (!ulong.TryParse(channelId, out var id))
+        var targetId = subChannelId ?? channelId;
+        if (!ulong.TryParse(targetId, out var id))
             return string.Empty;
 
         var channel = await _connector.Client.GetChannelAsync(id) as IMessageChannel;

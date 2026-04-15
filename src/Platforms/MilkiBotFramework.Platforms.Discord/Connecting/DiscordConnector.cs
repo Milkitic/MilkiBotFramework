@@ -4,6 +4,8 @@ using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
+using MilkiBotFramework.ContactsManaging.Models;
+using MilkiBotFramework.Platforms.Discord.Messaging;
 
 namespace MilkiBotFramework.Platforms.Discord.Connecting;
 
@@ -34,6 +36,11 @@ public class DiscordConnector : IConnector
 
         _client.Log += LogAsync;
         _client.MessageReceived += Client_MessageReceived;
+        _client.ChannelCreated += Client_ChannelCreated;
+        _client.ChannelDestroyed += Client_ChannelDestroyed;
+        _client.UserJoined += Client_UserJoined;
+        _client.UserLeft += Client_UserLeft;
+        _client.GuildMemberUpdated += Client_GuildMemberUpdated;
         _client.Ready += () =>
         {
             _logger.LogInformation("Discord Bot is Ready!");
@@ -48,6 +55,11 @@ public class DiscordConnector : IConnector
     ///     <para>改为实例字段，避免多 Bot 实例场景下的静态共享冲突。</para>
     /// </summary>
     public ConcurrentDictionary<string, SocketMessage> MessageCache { get; } = new();
+
+    /// <summary>
+    ///     用于在 Dispatcher 中检索联系人增量事件的缓存。
+    /// </summary>
+    public ConcurrentDictionary<string, DiscordContactEvent> ContactEventCache { get; } = new();
 
     public event Func<string, Task>? RawMessageReceived;
 
@@ -99,27 +111,102 @@ public class DiscordConnector : IConnector
         // 只过滤自身 Bot 的消息，不过滤其他 Bot 的消息
         if (arg.Author.Id == _client.CurrentUser.Id) return;
 
-        var guid = Guid.NewGuid().ToString();
-        MessageCache.TryAdd(guid, arg);
+        await PublishCachedMessageAsync(guid => MessageCache.TryAdd(guid, arg),
+            guid => MessageCache.TryRemove(guid, out _),
+            "message");
+    }
 
-        // 传递 Guid 给 Dispatcher
+    private Task Client_ChannelCreated(SocketChannel channel)
+    {
+        if (channel is not SocketGuildChannel guildChannel || channel is not ITextChannel)
+            return Task.CompletedTask;
+
+        var evt = new DiscordChannelCreated(guildChannel.Guild.Id.ToString(), guildChannel.Id.ToString(),
+            guildChannel.Name);
+        return PublishCachedMessageAsync(guid => ContactEventCache.TryAdd(guid, evt),
+            guid => ContactEventCache.TryRemove(guid, out _),
+            "channel-created");
+    }
+
+    private Task Client_ChannelDestroyed(SocketChannel channel)
+    {
+        if (channel is not SocketGuildChannel guildChannel || channel is not ITextChannel)
+            return Task.CompletedTask;
+
+        var evt = new DiscordChannelRemoved(guildChannel.Guild.Id.ToString(), guildChannel.Id.ToString());
+        return PublishCachedMessageAsync(guid => ContactEventCache.TryAdd(guid, evt),
+            guid => ContactEventCache.TryRemove(guid, out _),
+            "channel-removed");
+    }
+
+    private Task Client_UserJoined(SocketGuildUser user)
+    {
+        if (user.IsBot)
+            return Task.CompletedTask;
+
+        var evt = new DiscordMemberJoined(user.Guild.Id.ToString(), user.Id.ToString(), user.Nickname,
+            GetMemberRole(user));
+        return PublishCachedMessageAsync(guid => ContactEventCache.TryAdd(guid, evt),
+            guid => ContactEventCache.TryRemove(guid, out _),
+            "member-joined");
+    }
+
+    private Task Client_UserLeft(SocketGuild guild, SocketUser user)
+    {
+        if (user.IsBot)
+            return Task.CompletedTask;
+
+        var evt = new DiscordMemberLeft(guild.Id.ToString(), user.Id.ToString());
+        return PublishCachedMessageAsync(guid => ContactEventCache.TryAdd(guid, evt),
+            guid => ContactEventCache.TryRemove(guid, out _),
+            "member-left");
+    }
+
+    private Task Client_GuildMemberUpdated(Cacheable<SocketGuildUser, ulong> oldUser, SocketGuildUser newUser)
+    {
+        if (newUser.IsBot)
+            return Task.CompletedTask;
+
+        var evt = new DiscordMemberUpdated(newUser.Guild.Id.ToString(), newUser.Id.ToString(), newUser.Nickname,
+            GetMemberRole(newUser));
+        return PublishCachedMessageAsync(guid => ContactEventCache.TryAdd(guid, evt),
+            guid => ContactEventCache.TryRemove(guid, out _),
+            "member-updated");
+    }
+
+    private async Task PublishCachedMessageAsync(Func<string, bool> add,
+        Action<string> remove,
+        string eventType)
+    {
+        var guid = Guid.NewGuid().ToString();
+        if (!add(guid))
+            return;
+
         if (RawMessageReceived != null)
         {
             await RawMessageReceived.Invoke(guid);
         }
 
-        // 清理 Cache：1 分钟后自动移除，添加错误处理
         _ = Task.Delay(TimeSpan.FromMinutes(1)).ContinueWith(t =>
         {
             if (t.IsFaulted)
             {
-                _logger.LogWarning(t.Exception, "Error occurred while cleaning up message cache for guid: {Guid}",
-                    guid);
+                _logger.LogWarning(t.Exception, "Error occurred while cleaning up {EventType} cache for guid: {Guid}",
+                    eventType, guid);
                 return;
             }
 
-            MessageCache.TryRemove(guid, out _);
+            remove(guid);
         });
+    }
+
+    private static MemberRole GetMemberRole(SocketGuildUser user)
+    {
+        if (user.Guild.OwnerId == user.Id)
+            return MemberRole.Owner;
+        if (user.Roles.Any(r => r.Permissions.Administrator))
+            return MemberRole.Admin;
+        return MemberRole.Member;
     }
 
     private Task LogAsync(LogMessage arg)

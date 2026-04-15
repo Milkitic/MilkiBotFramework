@@ -35,6 +35,44 @@ public class DiscordDispatcher : DispatcherBase<DiscordMessageContext>
         var guid = messageContext.RawTextMessage;
         strIdentity = guid;
 
+        if (guid != null && _discordConnector.ContactEventCache.TryGetValue(guid, out var contactEvent))
+        {
+            messageContext.ContactEvent = contactEvent;
+
+            string? guildId = null;
+            string? userId = null;
+            switch (contactEvent)
+            {
+                case DiscordChannelCreated channelCreated:
+                    guildId = channelCreated.GuildId;
+                    break;
+                case DiscordChannelRemoved channelRemoved:
+                    guildId = channelRemoved.GuildId;
+                    break;
+                case DiscordMemberJoined memberJoined:
+                    guildId = memberJoined.GuildId;
+                    userId = memberJoined.UserId;
+                    break;
+                case DiscordMemberLeft memberLeft:
+                    guildId = memberLeft.GuildId;
+                    userId = memberLeft.UserId;
+                    break;
+                case DiscordMemberUpdated memberUpdated:
+                    guildId = memberUpdated.GuildId;
+                    userId = memberUpdated.UserId;
+                    break;
+            }
+
+            if (guildId != null && userId != null)
+            {
+                var noticeIdentity = new MessageIdentity(guildId, MessageType.Notice);
+                messageContext.MessageUserIdentity = new MessageUserIdentity(noticeIdentity, userId);
+            }
+
+            messageIdentity = MessageIdentity.NoticeMessage;
+            return true;
+        }
+
         if (guid != null && _discordConnector.MessageCache.TryGetValue(guid, out var socketMessage))
         {
             messageContext.SocketMessage = socketMessage;
@@ -72,6 +110,12 @@ public class DiscordDispatcher : DispatcherBase<DiscordMessageContext>
 
     protected override bool TrySetTextMessage(DiscordMessageContext messageContext)
     {
+        if (messageContext.ContactEvent != null)
+        {
+            messageContext.TextMessage = string.Empty;
+            return true;
+        }
+
         if (messageContext.SocketMessage != null)
         {
             messageContext.TextMessage = messageContext.SocketMessage.Content;
