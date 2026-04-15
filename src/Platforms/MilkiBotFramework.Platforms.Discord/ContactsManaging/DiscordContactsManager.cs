@@ -7,6 +7,7 @@ using MilkiBotFramework.ContactsManaging.Results;
 using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Platforms.Discord.Connecting;
+using MilkiBotFramework.Platforms.Discord.Messaging;
 using MilkiBotFramework.Tasking;
 
 namespace MilkiBotFramework.Platforms.Discord.ContactsManaging;
@@ -73,19 +74,52 @@ public class DiscordContactsManager : ContactsManagerBase
         var baseResult = await base.TryGetOrAddChannelInfo(channelId, subChannelId);
         if (baseResult.IsSuccess) return baseResult;
 
-        if (!ulong.TryParse(channelId, out var id))
+        if (!ulong.TryParse(channelId, out var guildId))
             return ChannelInfoResult.Fail;
 
-        var channel = await _connector.Client.GetChannelAsync(id);
+        var guild = _connector.Client.GetGuild(guildId);
+        if (guild == null)
+            return ChannelInfoResult.Fail;
+
+        if (subChannelId == null)
+        {
+            var channelInfo = new ChannelInfo(channelId)
+            {
+                Name = guild.Name
+            };
+            ChannelMapping.AddOrUpdate(channelId, channelInfo, (_, _) => channelInfo);
+            return new ChannelInfoResult { IsSuccess = true, ChannelInfo = channelInfo };
+        }
+
+        if (!ulong.TryParse(subChannelId, out var subId))
+            return ChannelInfoResult.Fail;
+
+        var channel = await _connector.Client.GetChannelAsync(subId);
         if (channel is not SocketGuildChannel guildChannel)
             return ChannelInfoResult.Fail;
 
-        var channelInfo = new ChannelInfo(channelId)
+        // 只处理文本类频道，避免把语音等类型错误映射为可发送子频道
+        if (channel is not SocketTextChannel and not SocketThreadChannel)
+            return ChannelInfoResult.Fail;
+
+        if (!ChannelMapping.ContainsKey(channelId))
         {
+            var rootChannelInfo = new ChannelInfo(channelId)
+            {
+                Name = guild.Name
+            };
+            ChannelMapping.AddOrUpdate(channelId, rootChannelInfo, (_, _) => rootChannelInfo);
+        }
+
+        var subChannelInfo = new ChannelInfo(channelId)
+        {
+            SubChannelId = subChannelId,
             Name = guildChannel.Name
         };
-        ChannelMapping.AddOrUpdate(channelId, channelInfo, (_, _) => channelInfo);
-        return new ChannelInfoResult { IsSuccess = true, ChannelInfo = channelInfo };
+
+        var subChannels = SubChannelMapping.GetOrAdd(channelId, _ => new());
+        subChannels.AddOrUpdate(subChannelId, subChannelInfo, (_, _) => subChannelInfo);
+        return new ChannelInfoResult { IsSuccess = true, ChannelInfo = subChannelInfo };
     }
 
     /// <summary>
@@ -117,7 +151,12 @@ public class DiscordContactsManager : ContactsManagerBase
             MemberRole = GetMemberRole(guildUser)
         };
 
-        var success = ChannelMapping.TryGetValue(channelId, out var channelInfo);
+        var targetChannels = subChannelId == null
+            ? ChannelMapping
+            : SubChannelMapping.GetOrAdd(channelId, _ => new());
+
+        var targetKey = subChannelId ?? channelId;
+        var success = targetChannels.TryGetValue(targetKey, out var channelInfo);
         if (!success)
         {
             var channelResult = await TryGetOrAddChannelInfo(channelId, subChannelId);
@@ -136,8 +175,53 @@ public class DiscordContactsManager : ContactsManagerBase
 
     protected override bool GetContactsUpdateInfo(MessageContext messageContext, out ContactsUpdateInfo? updateInfo)
     {
-        updateInfo = null;
-        return false;
+        if (messageContext is not DiscordMessageContext { ContactEvent: not null } discordMessageContext)
+        {
+            updateInfo = null;
+            return false;
+        }
+
+        updateInfo = discordMessageContext.ContactEvent switch
+        {
+            DiscordChannelCreated created => new ContactsUpdateInfo(created.GuildId)
+            {
+                SubId = created.ChannelId,
+                Name = created.Name,
+                ContactsUpdateRole = ContactsUpdateRole.SubChannel,
+                ContactsUpdateType = ContactsUpdateType.Added
+            },
+            DiscordChannelRemoved removed => new ContactsUpdateInfo(removed.GuildId)
+            {
+                SubId = removed.ChannelId,
+                ContactsUpdateRole = ContactsUpdateRole.SubChannel,
+                ContactsUpdateType = ContactsUpdateType.Removed
+            },
+            DiscordMemberJoined joined => new ContactsUpdateInfo(joined.GuildId)
+            {
+                UserId = joined.UserId,
+                Name = joined.Nickname,
+                MemberRole = joined.MemberRole,
+                ContactsUpdateRole = ContactsUpdateRole.Member,
+                ContactsUpdateType = ContactsUpdateType.Added
+            },
+            DiscordMemberLeft left => new ContactsUpdateInfo(left.GuildId)
+            {
+                UserId = left.UserId,
+                ContactsUpdateRole = ContactsUpdateRole.Member,
+                ContactsUpdateType = ContactsUpdateType.Removed
+            },
+            DiscordMemberUpdated updated => new ContactsUpdateInfo(updated.GuildId)
+            {
+                UserId = updated.UserId,
+                Name = updated.Nickname,
+                MemberRole = updated.MemberRole,
+                ContactsUpdateRole = ContactsUpdateRole.Member,
+                ContactsUpdateType = ContactsUpdateType.Changed
+            },
+            _ => null
+        };
+
+        return updateInfo != null;
     }
 
     protected override bool GetContactsCore(
@@ -151,13 +235,38 @@ public class DiscordContactsManager : ContactsManagerBase
 
         foreach (var guild in _connector.Client.Guilds)
         {
-            foreach (var channel in guild.Channels)
+            var guildId = guild.Id.ToString();
+            var rootChannelInfo = new ChannelInfo(guildId)
             {
-                if (channel is not SocketTextChannel textChannel)
+                Name = guild.Name
+            };
+
+            foreach (var user in guild.Users)
+            {
+                if (user.IsBot)
                     continue;
 
-                var channelInfo = new ChannelInfo(channel.Id.ToString())
+                var memberInfo = new MemberInfo(guildId, user.Id.ToString(), null)
                 {
+                    Nickname = user.Nickname,
+                    MemberRole = GetMemberRole(user)
+                };
+
+                rootChannelInfo.Members.TryAdd(memberInfo.UserId, memberInfo);
+            }
+
+            channels[guildId] = rootChannelInfo;
+
+            var subChannelDict = SubChannelMapping.GetOrAdd(guildId, _ => new());
+            foreach (var channel in guild.Channels)
+            {
+                if (channel is not SocketTextChannel and not SocketThreadChannel)
+                    continue;
+
+                var channelId = channel.Id.ToString();
+                var subChannelInfo = new ChannelInfo(guildId)
+                {
+                    SubChannelId = channelId,
                     Name = channel.Name
                 };
 
@@ -166,15 +275,17 @@ public class DiscordContactsManager : ContactsManagerBase
                     if (user.IsBot)
                         continue;
 
-                    var memberInfo = new MemberInfo(channel.Id.ToString(), user.Id.ToString(), null)
+                    var memberInfo = new MemberInfo(guildId, user.Id.ToString(), channelId)
                     {
                         Nickname = user.Nickname,
                         MemberRole = GetMemberRole(user)
                     };
-                    channelInfo.Members.TryAdd(memberInfo.UserId, memberInfo);
+
+                    subChannelInfo.Members.TryAdd(memberInfo.UserId, memberInfo);
                 }
 
-                channels.TryAdd(channelInfo.ChannelId, channelInfo);
+                subChannelDict[channelId] = subChannelInfo;
+                subChannels[channelId] = subChannelInfo;
             }
         }
 
