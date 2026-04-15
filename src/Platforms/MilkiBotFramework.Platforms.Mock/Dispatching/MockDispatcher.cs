@@ -47,10 +47,12 @@ public class MockDispatcher : DispatcherBase<MockMessageContext>
 
             if (messageType == MessageType.Channel)
             {
+                var groupId = mockMessage.GroupId!;
+
                 // 群聊消息
                 messageIdentity = new MessageIdentity(
-                    mockMessage.GroupId,
-                    mockMessage.GroupId, // 简化处理
+                    groupId,
+                    null,
                     MessageType.Channel);
 
                 messageContext.MessageUserIdentity = new MessageUserIdentity(
