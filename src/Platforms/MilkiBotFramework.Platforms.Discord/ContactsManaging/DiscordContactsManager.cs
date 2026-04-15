@@ -64,9 +64,11 @@ public class DiscordContactsManager : ContactsManagerBase
     }
 
     /// <summary>
-    /// 尝试获取或添加频道信息。
-    /// <para>注意：在 Discord 适配器中，<paramref name="channelId"/> 参数实际传入的是 GuildId（由 Dispatcher 的 MessageIdentity.Id 映射），
-    /// 而非 Discord 的 ChannelId。Discord 的 ChannelId 通过 <paramref name="subChannelId"/> 传入。</para>
+    ///     尝试获取或添加频道信息。
+    ///     <para>
+    ///         注意：在 Discord 适配器中，<paramref name="channelId" /> 参数实际传入的是 GuildId（由 Dispatcher 的 MessageIdentity.Id 映射），
+    ///         而非 Discord 的 ChannelId。Discord 的 ChannelId 通过 <paramref name="subChannelId" /> 传入。
+    ///     </para>
     /// </summary>
     public override async Task<ChannelInfoResult> TryGetOrAddChannelInfo(string channelId, string? subChannelId = null)
     {
@@ -89,11 +91,14 @@ public class DiscordContactsManager : ContactsManagerBase
     }
 
     /// <summary>
-    /// 尝试获取或添加成员信息。
-    /// <para>注意：在 Discord 适配器中，<paramref name="channelId"/> 参数实际传入的是 GuildId（由 Dispatcher 的 MessageIdentity.Id 映射），
-    /// 这是因为框架的 channelId 在群组场景下对应 Discord 的 GuildId。</para>
+    ///     尝试获取或添加成员信息。
+    ///     <para>
+    ///         注意：在 Discord 适配器中，<paramref name="channelId" /> 参数实际传入的是 GuildId（由 Dispatcher 的 MessageIdentity.Id 映射），
+    ///         这是因为框架的 channelId 在群组场景下对应 Discord 的 GuildId。
+    ///     </para>
     /// </summary>
-    public override async Task<MemberInfoResult> TryGetOrAddMemberInfo(string channelId, string userId, string? subChannelId = null)
+    public override async Task<MemberInfoResult> TryGetOrAddMemberInfo(string channelId, string userId,
+        string? subChannelId = null)
     {
         var baseResult = await base.TryGetOrAddMemberInfo(channelId, userId, subChannelId);
         if (baseResult.IsSuccess) return baseResult;
