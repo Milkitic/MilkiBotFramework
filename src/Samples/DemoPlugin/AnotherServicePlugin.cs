@@ -6,7 +6,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.Platforms.GoCqHttp.Connecting;
+using MilkiBotFramework.Platforms.OneBot.Connecting;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.Attributes;
 
@@ -18,15 +18,15 @@ public class AnotherServicePlugin : ServicePlugin
 {
     private readonly ILogger<AnotherServicePlugin> _logger;
     private readonly IMessageApi _messageApi;
-    private readonly GoCqApi _goCqApi;
+    private readonly OneBotApi _oneBotApi;
 
     public AnotherServicePlugin(ILogger<AnotherServicePlugin> logger,
         IMessageApi messageApi,
-        GoCqApi goCqApi)
+        OneBotApi oneBotApi)
     {
         _logger = logger;
         _messageApi = messageApi;
-        _goCqApi = goCqApi;
+        _oneBotApi = oneBotApi;
     }
 
     protected override async Task OnInitialized()
