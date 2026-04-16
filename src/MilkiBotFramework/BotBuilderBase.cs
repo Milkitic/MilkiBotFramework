@@ -198,6 +198,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
             .AddSingleton<EventBus>()
             .AddSingleton<LightHttpClient>()
             .AddSingleton<PluginManager>()
+            .AddSingleton<IMessageContextEnricher, MessageContextEnricher>()
             .AddSingleton(new ConfigLoggerProvider(_configureLogger))
             .AddSingleton(typeof(ICommandLineAnalyzer),
                 _commandAnalyzerType ?? typeof(CommandLineAnalyzer))

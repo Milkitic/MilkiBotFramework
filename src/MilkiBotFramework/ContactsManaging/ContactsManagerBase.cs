@@ -73,7 +73,7 @@ public abstract class ContactsManagerBase : IContactsManager
         else
         {
             if (SubChannelMapping.TryGetValue(channelId, out var subChannels) &&
-                subChannels.TryGetValue(channelId, out var channelInfo) &&
+                subChannels.TryGetValue(subChannelId, out var channelInfo) &&
                 channelInfo.Members.TryGetValue(userId, out var memberInfo))
             {
                 return Task.FromResult(new MemberInfoResult
@@ -146,7 +146,7 @@ public abstract class ContactsManagerBase : IContactsManager
 
     private async Task OnEventReceived(DispatchMessageEvent e)
     {
-        if (e.MessageType != MessageType.Notice) return;
+        if (e.MessageContext.MessageIdentity?.MessageType != MessageType.Notice) return;
 
         var messageContext = e.MessageContext;
         var success = GetContactsUpdateInfo(messageContext, out var contactsUpdateInfo);
@@ -186,7 +186,8 @@ public abstract class ContactsManagerBase : IContactsManager
         else
         {
             if (!SubChannelMapping.TryGetValue(updateInfo.Id, out var dict) ||
-                !dict.TryGetValue(updateInfo.Id, out var subChannelInfo))
+                updateInfo.SubId == null ||
+                !dict.TryGetValue(updateInfo.SubId, out var subChannelInfo))
                 return;
             members = subChannelInfo.Members;
         }
@@ -362,7 +363,7 @@ public abstract class ContactsManagerBase : IContactsManager
         list.AddRange(list2);
 
         if (list.Count > 0)
-            _eventBus.StartPublishTask(new ContactsUpdateEvent { Events = list });
+            _ = _eventBus.StartPublishTask(new ContactsUpdateEvent { Events = list });
     }
 
     private List<ContactsUpdateSingleEvent> RefreshPrivates(Dictionary<string, PrivateInfo> privates, ILogger logger)
