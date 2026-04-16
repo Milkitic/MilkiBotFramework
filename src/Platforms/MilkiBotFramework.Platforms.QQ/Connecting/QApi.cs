@@ -9,28 +9,23 @@ using MilkiBotFramework.Platforms.QQ.ObjectStore;
 
 namespace MilkiBotFramework.Platforms.QQ.Connecting;
 
-public class QApi : IMessageApi
+public class QApi : IPlatformMessageApi
 {
     private readonly LightHttpClient _lightHttpClient;
     private readonly IObjectStorageProvider _objectStorageProvider;
     private readonly QApiConnector _qApiConnector;
 
-    public QApi(LightHttpClient lightHttpClient, IObjectStorageProvider objectStorageProvider, IConnector connector)
+    public QApi(LightHttpClient lightHttpClient, IObjectStorageProvider objectStorageProvider, QApiConnector connector)
     {
         _lightHttpClient = lightHttpClient;
         _objectStorageProvider = objectStorageProvider;
-        if (connector is QApiConnector qApiConnector)
-        {
-            Connector = connector;
-            _qApiConnector = qApiConnector;
-        }
-        else
-        {
-            throw new Exception($"Except for {typeof(QApiConnector)}, but actual is {connector.GetType()}");
-        }
+        Connector = connector;
+        _qApiConnector = connector;
     }
 
-    public IConnector Connector { get; }
+    public string PlatformId => PlatformIds.Qq;
+
+    public QApiConnector Connector { get; }
 
     public bool Supports(MessageContext messageContext)
     {

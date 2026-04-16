@@ -10,6 +10,8 @@ namespace MilkiBotFramework.Platforms.QQ.ContactsManaging;
 
 public sealed class QContactsManager : ContactsManagerBase
 {
+    public override string PlatformId => PlatformIds.Qq;
+
     public QContactsManager(
         BotTaskScheduler botTaskScheduler,
         ILogger<QContactsManager> logger)

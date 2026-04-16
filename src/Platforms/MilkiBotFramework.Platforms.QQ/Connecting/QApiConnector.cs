@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Net.Http;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Logging;
@@ -8,7 +7,7 @@ using MilkiBotFramework.Connecting;
 
 namespace MilkiBotFramework.Platforms.QQ.Connecting;
 
-public class QApiConnector : AspnetcoreConnector
+public class QApiConnector : AspnetcoreConnector, IPlatformConnector
 {
     private readonly LightHttpClient _httpClient;
 
@@ -26,11 +25,12 @@ public class QApiConnector : AspnetcoreConnector
         _httpClient = httpClient;
     }
 
+    public string PlatformId => PlatformIds.Qq;
 
-    public QConnection Connection { get; internal set; }
+    public QConnection Connection { get; set; } = new();
     public override string BindingPath
     {
-        get => Connection.CallbackPath;
+        get => Connection.CallbackPath ?? string.Empty;
         set => Connection.CallbackPath = value;
     }
 

@@ -3,8 +3,10 @@ using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Platforms.QQ.Messaging;
 
-public class QMessageConverter : IRichMessageConverter
+public class QMessageConverter : IPlatformRichMessageConverter
 {
+    public string PlatformId => PlatformIds.Qq;
+
     public async ValueTask<string> EncodeAsync(IRichMessage message)
     {
         return await message.EncodeAsync();
