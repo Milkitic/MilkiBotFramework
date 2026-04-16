@@ -24,12 +24,9 @@ namespace DemoBot
         };
 
         private readonly ILogger<WeatherForecastController> _logger;
-        private readonly PluginManager _pluginManager;
-
-        public WeatherForecastController(ILogger<WeatherForecastController> logger, PluginManager pluginManager)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger)
         {
             _logger = logger;
-            _pluginManager = pluginManager;
         }
 
         [HttpGet(Name = "GetWeatherForecast")]

@@ -19,17 +19,14 @@ public class AnotherServicePlugin : ServicePlugin
     private readonly ILogger<AnotherServicePlugin> _logger;
     private readonly IMessageApi _messageApi;
     private readonly GoCqApi _goCqApi;
-    private readonly PluginManager _pluginManager;
 
     public AnotherServicePlugin(ILogger<AnotherServicePlugin> logger,
         IMessageApi messageApi,
-        GoCqApi goCqApi,
-        PluginManager pluginManager)
+        GoCqApi goCqApi)
     {
         _logger = logger;
         _messageApi = messageApi;
         _goCqApi = goCqApi;
-        _pluginManager = pluginManager;
     }
 
     protected override async Task OnInitialized()

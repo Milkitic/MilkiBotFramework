@@ -33,8 +33,6 @@ public class MessageContext
     public MessageAuthority Authority { get; set; }
     public DateTimeOffset ReceivedTime { get; set; }
 
-    public IReadOnlyList<PluginInfo> ExecutedPlugins { get; } = new List<PluginInfo>();
-    public List<PluginInfo> NextPlugins { get; internal set; } = new();
     public CommandLineResult? CommandLineResult { get; internal set; }
 
     public RichMessage GetRichMessage()

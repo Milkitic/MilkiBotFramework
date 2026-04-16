@@ -7,22 +7,22 @@ namespace MilkiBotFramework.Dispatching;
 public sealed class MessageDispatchCoordinator
 {
     private readonly IContactsManager _contactsManager;
-    private readonly PluginManager _pluginManager;
     private readonly MessageDispatchNotifier _messageDispatchNotifier;
+    private readonly PluginRuntime _pluginRuntime;
 
     public MessageDispatchCoordinator(IContactsManager contactsManager,
-        PluginManager pluginManager,
-        MessageDispatchNotifier messageDispatchNotifier)
+        MessageDispatchNotifier messageDispatchNotifier,
+        PluginRuntime pluginRuntime)
     {
         _contactsManager = contactsManager;
-        _pluginManager = pluginManager;
+        _pluginRuntime = pluginRuntime;
         _messageDispatchNotifier = messageDispatchNotifier;
     }
 
     public async Task DispatchAsync(MessageContext messageContext)
     {
         await _contactsManager.HandleMessageAsync(messageContext);
-        await _pluginManager.HandleMessageAsync(messageContext);
+        await _pluginRuntime.HandleMessageAsync(messageContext);
         await _messageDispatchNotifier.NotifyAsync(messageContext);
     }
 }

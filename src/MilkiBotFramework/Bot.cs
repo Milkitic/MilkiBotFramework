@@ -26,14 +26,14 @@ public class Bot
         BotTaskScheduler botTaskScheduler,
         MessageDispatchNotifier messageDispatchNotifier,
         LightHttpClient lightHttpClient,
-        PluginManager pluginManager)
+        PluginCatalog pluginCatalog)
     {
         MessageApi = messageApi;
         RichMessageConverter = richMessageConverter;
         ServiceProvider = serviceProvider;
         Connector = connector;
         Dispatcher = dispatcher;
-        PluginManager = pluginManager;
+        PluginCatalog = pluginCatalog;
         LightHttpClient = lightHttpClient;
         Options = options;
         BotTaskScheduler = botTaskScheduler;
@@ -55,7 +55,7 @@ public class Bot
     public BotOptions Options { get; }
     public BotTaskScheduler BotTaskScheduler { get; }
     public LightHttpClient LightHttpClient { get; }
-    public PluginManager PluginManager { get; }
+    public PluginCatalog PluginCatalog { get; }
 
     public int Run()
     {
@@ -78,7 +78,7 @@ public class Bot
                 // ignored
             }
 
-            PluginManager.InitializeAllPlugins().Wait();
+            PluginCatalog.InitializeAllPlugins().Wait();
             ContactsManager.InitializeTasks();
         }
         catch (Exception ex)
@@ -113,7 +113,7 @@ public class Bot
                 // ignored
             }
 
-            await PluginManager.InitializeAllPlugins();
+            await PluginCatalog.InitializeAllPlugins();
             ContactsManager.InitializeTasks();
         }
         catch (Exception ex)

@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
@@ -14,9 +14,34 @@ using MilkiBotFramework.Utils;
 
 namespace MilkiBotFramework.Plugining;
 
-public partial class PluginManager
+public partial class PluginCatalog
 {
-    //todo: Same command; Same guid
+    private readonly ILogger<PluginCatalog> _logger;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IServiceCollection _serviceCollection;
+    private readonly BotOptions _botOptions;
+
+    private readonly Dictionary<string, LoaderContext> _loaderContexts = new();
+    private readonly HashSet<PluginInfo> _plugins = new();
+
+    private PluginDescriptor[] _executionPlan = Array.Empty<PluginDescriptor>();
+
+    public PluginCatalog(ILogger<PluginCatalog> logger,
+        IServiceProvider serviceProvider,
+        IServiceCollection serviceCollection,
+        BotOptions botOptions)
+    {
+        _serviceProvider = serviceProvider;
+        _serviceCollection = serviceCollection;
+        _botOptions = botOptions;
+        _logger = logger;
+    }
+
+    public IReadOnlyList<PluginInfo> GetAllPlugins()
+    {
+        return _plugins.ToArray();
+    }
+
     public async Task InitializeAllPlugins()
     {
         var sw = Stopwatch.StartNew();
@@ -42,6 +67,8 @@ public partial class PluginManager
             await CreateContextAndAddPlugins(contextName, files);
         }
 
+        RebuildExecutionPlan();
+
         _logger.LogInformation("Activating singleton plugins...");
         foreach (var loaderContext in _loaderContexts.Values)
         {
@@ -56,7 +83,7 @@ public partial class PluginManager
                     try
                     {
                         var instance = (PluginBase?)serviceProvider.GetService(pluginInfo.Type);
-                        if (instance != null) await InitializePlugin(instance, pluginInfo);
+                        if (instance != null) await InitializePluginAsync(instance, pluginInfo);
                     }
                     catch (Exception ex)
                     {
@@ -73,6 +100,29 @@ public partial class PluginManager
         _logger.LogInformation($"Plugin initialization done in {sw.Elapsed.TotalSeconds:N3}s!");
     }
 
+    internal IReadOnlyList<PluginDescriptor> GetExecutionPlan()
+    {
+        return _executionPlan;
+    }
+
+    internal async Task InitializePluginAsync(PluginBase instance, PluginInfo pluginInfo)
+    {
+        instance.Metadata = pluginInfo.Metadata;
+        instance.PluginHome = pluginInfo.PluginHome;
+        instance.IsInitialized = true;
+        await instance.OnInitialized();
+    }
+
+    private void RebuildExecutionPlan()
+    {
+        _executionPlan = _loaderContexts.Values
+            .SelectMany(loaderContext => loaderContext.AssemblyContexts.Values
+                .SelectMany(assemblyContext => assemblyContext.PluginInfos
+                    .Select(pluginInfo => new PluginDescriptor(loaderContext, pluginInfo))))
+            .OrderBy(descriptor => descriptor.PluginInfo.Index)
+            .ToArray();
+    }
+
     private async Task CreateContextAndAddPlugins(string? contextName, IEnumerable<string> files)
     {
         var assemblyResults = AssemblyHelper.AnalyzePluginsInAssemblyFilesByDnlib(_logger, files);
@@ -82,7 +132,7 @@ public partial class PluginManager
         var isRuntimeContext = contextName == null;
 
         var ctx = !isRuntimeContext
-            ? new AssemblyLoadContext(contextName) // No need to hot unload.
+            ? new AssemblyLoadContext(contextName)
             : AssemblyLoadContext.Default;
         var dict = new Dictionary<string, AssemblyContext>();
         var loaderContext = new LoaderContext
@@ -94,7 +144,7 @@ public partial class PluginManager
             AssemblyContexts = new ReadOnlyDictionary<string, AssemblyContext>(dict)
         };
 
-        foreach (var assemblyResult in assemblyResults.OrderBy(k => k.TypeResults.Length)) // Load dependency first
+        foreach (var assemblyResult in assemblyResults.OrderBy(k => k.TypeResults.Length))
         {
             var assemblyPath = assemblyResult.AssemblyPath;
             var assemblyFullName = assemblyResult.AssemblyFullName;
@@ -124,16 +174,16 @@ public partial class PluginManager
                 catch (Exception ex)
                 {
                     _logger.LogWarning($"Failed to load dependency {assemblyFilename}: {ex.Message}");
-                } // add dependencies
+                }
 
                 continue;
             }
 
-            bool isValid = false;
+            var isValid = false;
 
             try
             {
-                Assembly assembly = ctx.LoadFromAssemblyPath(assemblyPath);
+                var assembly = ctx.LoadFromAssemblyPath(assemblyPath);
                 var defaultAuthor = assembly.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company;
                 var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
                     ?.InformationalVersion ?? "0.0.1-alpha";
@@ -274,11 +324,6 @@ public partial class PluginManager
         }
 
         var allTypes = _serviceCollection;
-        //    .Where(o => o.Lifetime == ServiceLifetime.Singleton);
-        //var allTrTypes = _serviceCollection
-        //    .Where(o => o.Lifetime == ServiceLifetime.Transient);
-        //var allScopedTypes = _serviceCollection
-        //    .Where(o => o.Lifetime == ServiceLifetime.Scoped);
         foreach (var serviceDescriptor in allTypes)
         {
             var ns = serviceDescriptor.ServiceType.Namespace!;
@@ -328,13 +373,15 @@ public partial class PluginManager
                 {
                     if (ns.StartsWith("Microsoft.AspNetCore")) continue;
                     if (serviceDescriptor.ImplementationType == null) continue;
-                    loaderContext.ServiceCollection.AddScoped(serviceDescriptor.ServiceType, serviceDescriptor.ImplementationType);
+                    loaderContext.ServiceCollection.AddScoped(serviceDescriptor.ServiceType,
+                        serviceDescriptor.ImplementationType);
                 }
                 else if (serviceDescriptor.Lifetime == ServiceLifetime.Transient)
                 {
                     if (ns.StartsWith("Microsoft.AspNetCore")) continue;
                     if (serviceDescriptor.ImplementationType == null) continue;
-                    loaderContext.ServiceCollection.AddTransient(serviceDescriptor.ServiceType, serviceDescriptor.ImplementationType);
+                    loaderContext.ServiceCollection.AddTransient(serviceDescriptor.ServiceType,
+                        serviceDescriptor.ImplementationType);
                 }
             }
         }
@@ -349,8 +396,7 @@ public partial class PluginManager
         {
             foreach (var dbContextType in assemblyContext.Value.DbContextTypes)
             {
-                var dbFolder =
-                    _botOptions.PluginDatabaseDir /*Path.Combine(_botOptions.PluginDatabaseDir, loaderContext.Name)*/;
+                var dbFolder = _botOptions.PluginDatabaseDir;
                 var dbFilename =
                     $"{loaderContext.Name}.{Path.GetFileNameWithoutExtension(assemblyContext.Key)}.{dbContextType.Name}.db";
                 var dbPath = Path.Combine(dbFolder, dbFilename);
@@ -394,14 +440,6 @@ public partial class PluginManager
         }
 
         _loaderContexts.Add(loaderContext.Name, loaderContext);
-    }
-
-    private async Task InitializePlugin(PluginBase instance, PluginInfo pluginInfo)
-    {
-        instance.Metadata = pluginInfo.Metadata;
-        instance.PluginHome = pluginInfo.PluginHome;
-        instance.IsInitialized = true;
-        await instance.OnInitialized();
     }
 
     private PluginInfo GetPluginInfo(Type type, Type baseType, string? defaultAuthor)
@@ -517,58 +555,59 @@ public partial class PluginManager
             ParameterType = targetType,
         };
 
-        bool isReady = false;
+        var isReady = false;
         foreach (var attr in attrs)
         {
-            if (attr is OptionAttribute option)
+            switch (attr)
             {
-                parameterInfo.Abbr = option.Abbreviate == '\0' ? null : option.Abbreviate;
-                parameterInfo.DefaultValue = parameter.DefaultValue == DBNull.Value
-                    ? option.DefaultValue
-                    : parameter.DefaultValue;
-                parameterInfo.Name = option.Name;
-                parameterInfo.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
-                parameterInfo.Authority = option.Authority;
-                isReady = true;
-            }
-            else if (attr is ArgumentAttribute argument)
-            {
-                parameterInfo.DefaultValue = parameter.DefaultValue == DBNull.Value
-                    ? argument.DefaultValue
-                    : parameter.DefaultValue;
-
-                parameterInfo.IsArgument = true;
-                parameterInfo.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
-                parameterInfo.Authority = argument.Authority;
-                isReady = true;
-            }
-            else if (attr is DescriptionAttribute description)
-            {
-                parameterInfo.Description = ReplaceVariable(description.Description);
-                //parameterInfo.HelpAuthority = help.Authority;
+                case OptionAttribute optionAttribute:
+                    parameterInfo.Authority = optionAttribute.Authority;
+                    parameterInfo.Abbr = optionAttribute.Abbreviate == '\0' ? null : optionAttribute.Abbreviate;
+                    parameterInfo.DefaultValue = optionAttribute.DefaultValue;
+                    parameterInfo.Name = optionAttribute.Name;
+                    parameterInfo.ValueConverter = CreateParameterConverter(optionAttribute.Converter);
+                    isReady = true;
+                    break;
+                case ArgumentAttribute argumentAttribute:
+                    parameterInfo.Authority = argumentAttribute.Authority;
+                    parameterInfo.DefaultValue = argumentAttribute.DefaultValue;
+                    parameterInfo.ValueConverter = CreateParameterConverter(argumentAttribute.Converter);
+                    parameterInfo.IsArgument = true;
+                    isReady = true;
+                    break;
+                case DescriptionAttribute descriptionAttribute:
+                    parameterInfo.Description = descriptionAttribute.Description;
+                    break;
             }
         }
 
         if (!isReady)
         {
             parameterInfo.IsServiceArgument = true;
-            parameterInfo.IsArgument = true;
         }
 
         return parameterInfo;
     }
 
-    private string? ReplaceVariable(string? content)
+    private static IParameterConverter CreateParameterConverter(Type? converterType)
     {
-        if (content == null) return content;
-        if (_botOptions.Variables.Count > 0)
+        if (converterType == null)
         {
-            foreach (var (key, value) in _botOptions.Variables)
-            {
-                content = content.Replace($"${{{key}}}", value);
-            }
+            return DefaultParameterConverter.Instance;
         }
 
-        return content;
+        return (IParameterConverter)Activator.CreateInstance(converterType)!;
+    }
+
+    private string? ReplaceVariable(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+
+        foreach (var (key, value) in _botOptions.Variables)
+        {
+            text = text.Replace($"${{{key}}}", value);
+        }
+
+        return text;
     }
 }

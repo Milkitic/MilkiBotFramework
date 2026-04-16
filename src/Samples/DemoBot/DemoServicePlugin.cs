@@ -18,19 +18,16 @@ public class DemoServicePlugin : ServicePlugin
     private readonly ILogger<DemoServicePlugin> _logger;
     private readonly IMessageApi _messageApi;
     private readonly DemoPlugin _demoPlugin;
-    private readonly PluginManager _pluginManager;
     private readonly MyPluginDbContext _myPluginDbContext;
 
     public DemoServicePlugin(ILogger<DemoServicePlugin> logger,
         IMessageApi messageApi,
         DemoPlugin demoPlugin,
-        PluginManager pluginManager,
         MyPluginDbContext myPluginDbContext)
     {
         _logger = logger;
         _messageApi = messageApi;
         _demoPlugin = demoPlugin;
-        _pluginManager = pluginManager;
         _myPluginDbContext = myPluginDbContext;
     }
 
