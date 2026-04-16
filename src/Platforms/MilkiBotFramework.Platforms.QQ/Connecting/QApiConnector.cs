@@ -28,7 +28,7 @@ public class QApiConnector : AspnetcoreConnector, IPlatformConnector
     public string PlatformId => PlatformIds.Qq;
 
     public QConnection Connection { get; set; } = new();
-    public override string BindingPath
+    public override string? BindingPath
     {
         get => Connection.CallbackPath ?? string.Empty;
         set => Connection.CallbackPath = value;
