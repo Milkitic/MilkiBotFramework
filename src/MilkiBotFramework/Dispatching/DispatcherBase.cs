@@ -1,16 +1,14 @@
 ﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 
 namespace MilkiBotFramework.Dispatching;
 
 /// <summary>
 /// 表示一个类，用以分发处理后的消息。
-/// <para>该类可处理原始的字符串消息，将结果以<see cref="EventBus"/>的途径分发。</para>
+/// <para>该类负责将平台入站消息标准化为 <see cref="MessageContext"/>，并交由消息编排器继续处理。</para>
 /// </summary>
 /// <typeparam name="TMessageContext"><see cref="MessageContext"/>类型</typeparam>
 public abstract class DispatcherBase<TMessageContext> : IDispatcher
@@ -18,21 +16,21 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
 {
     private readonly IConnector _connector;
     private readonly IMessageContextEnricher _messageContextEnricher;
+    private readonly MessageDispatchCoordinator _messageDispatchCoordinator;
     private readonly ILogger _logger;
     private readonly IServiceProvider _serviceProvider;
-    private readonly EventBus _eventBus;
 
     public DispatcherBase(IConnector connector,
         IMessageContextEnricher messageContextEnricher,
+        MessageDispatchCoordinator messageDispatchCoordinator,
         ILogger logger,
-        IServiceProvider serviceProvider,
-        EventBus eventBus)
+        IServiceProvider serviceProvider)
     {
         _connector = connector;
         _messageContextEnricher = messageContextEnricher;
+        _messageDispatchCoordinator = messageDispatchCoordinator;
         _logger = logger;
         _serviceProvider = serviceProvider;
-        _eventBus = eventBus;
         _connector.MessageReceived += Connector_MessageReceived;
     }
 
@@ -75,7 +73,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         }
 
         await _messageContextEnricher.EnrichAsync(messageContext);
-        await _eventBus.PublishAsync(new DispatchMessageEvent(messageContext));
+        await _messageDispatchCoordinator.DispatchAsync(messageContext);
         return true;
     }
 

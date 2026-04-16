@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
-using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Platforms.OneBot.Connecting;
 using MilkiBotFramework.Platforms.OneBot.Connecting.ResponseModel;
@@ -18,9 +17,8 @@ public sealed class OneBotContactsManager : ContactsManagerBase
 
     public OneBotContactsManager(OneBotApi oneBotApi,
         BotTaskScheduler botTaskScheduler,
-        ILogger<OneBotContactsManager> logger,
-        EventBus eventBus)
-        : base(botTaskScheduler, logger, eventBus)
+        ILogger<OneBotContactsManager> logger)
+        : base(botTaskScheduler, logger)
     {
         _oneBotApi = oneBotApi;
         _logger = logger;

@@ -2,7 +2,6 @@
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
-using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Tasking;
@@ -11,7 +10,7 @@ namespace MilkiBotFramework;
 
 public class Bot
 {
-    public event Func<DispatchMessageEvent, Task>? OnMessageReceived;
+    public event Func<MessageContext, Task>? OnMessageReceived;
 
     private int _exitCode;
     private TaskCompletionSource? _connectionTcs;
@@ -25,13 +24,12 @@ public class Bot
         IServiceProvider serviceProvider,
         BotOptions options,
         BotTaskScheduler botTaskScheduler,
-        EventBus eventBus,
+        MessageDispatchNotifier messageDispatchNotifier,
         LightHttpClient lightHttpClient,
         PluginManager pluginManager)
     {
         MessageApi = messageApi;
         RichMessageConverter = richMessageConverter;
-        EventBus = eventBus;
         ServiceProvider = serviceProvider;
         Connector = connector;
         Dispatcher = dispatcher;
@@ -41,10 +39,10 @@ public class Bot
         BotTaskScheduler = botTaskScheduler;
         ContactsManager = contactsManager;
         Logger = logger;
-        eventBus.Subscribe<DispatchMessageEvent>(async k =>
+        messageDispatchNotifier.MessageDispatched += async messageContext =>
         {
-            if (OnMessageReceived != null) await OnMessageReceived(k);
-        });
+            if (OnMessageReceived != null) await OnMessageReceived(messageContext);
+        };
     }
 
     public IConnector Connector { get; }
@@ -56,7 +54,6 @@ public class Bot
     public IServiceProvider ServiceProvider { get; }
     public BotOptions Options { get; }
     public BotTaskScheduler BotTaskScheduler { get; }
-    public EventBus EventBus { get; }
     public LightHttpClient LightHttpClient { get; }
     public PluginManager PluginManager { get; }
 

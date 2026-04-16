@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
-using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Tasking;
 
@@ -19,9 +18,8 @@ public class MockContactsManager : ContactsManagerBase
     public MockContactsManager(
         BotTaskScheduler botTaskScheduler,
         ILogger<MockContactsManager> logger,
-        BotOptions botOptions,
-        EventBus eventBus)
-        : base(botTaskScheduler, logger, eventBus)
+        BotOptions botOptions)
+        : base(botTaskScheduler, logger)
     {
         if (botOptions is not MockBotOptions mockOptions)
         {

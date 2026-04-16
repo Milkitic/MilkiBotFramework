@@ -4,8 +4,6 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
-using MilkiBotFramework.Dispatching;
-using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Tasking;
 
@@ -19,8 +17,9 @@ public abstract class ContactsManagerBase : IContactsManager
 {
     private readonly BotTaskScheduler _botTaskScheduler;
     private readonly ILogger _logger;
-    private readonly EventBus _eventBus;
     private bool _initialized;
+
+    public event Func<ContactsUpdateEvent, Task>? ContactsUpdated;
 
     protected SelfInfo? SelfInfo;
 
@@ -34,12 +33,10 @@ public abstract class ContactsManagerBase : IContactsManager
     protected readonly ConcurrentDictionary<string, Avatar> UserAvatarMapping = new();
     protected readonly ConcurrentDictionary<string, Avatar> ChannelAvatarMapping = new();
 
-    public ContactsManagerBase(BotTaskScheduler botTaskScheduler, ILogger logger, EventBus eventBus)
+    public ContactsManagerBase(BotTaskScheduler botTaskScheduler, ILogger logger)
     {
         _botTaskScheduler = botTaskScheduler;
         _logger = logger;
-        _eventBus = eventBus;
-        _eventBus.Subscribe<DispatchMessageEvent>(OnEventReceived);
     }
 
     public void InitializeTasks()
@@ -144,11 +141,10 @@ public abstract class ContactsManagerBase : IContactsManager
             .Do(RefreshContacts));
     }
 
-    private async Task OnEventReceived(DispatchMessageEvent e)
+    public async Task HandleMessageAsync(MessageContext messageContext)
     {
-        if (e.MessageContext.MessageIdentity?.MessageType != MessageType.Notice) return;
+        if (messageContext.MessageIdentity?.MessageType != MessageType.Notice) return;
 
-        var messageContext = e.MessageContext;
         var success = GetContactsUpdateInfo(messageContext, out var contactsUpdateInfo);
         if (!success) return;
 
@@ -214,7 +210,7 @@ public abstract class ContactsManagerBase : IContactsManager
             members.TryRemove(userId, out memberInfo);
         }
 
-        await _eventBus.PublishAsync((ContactsUpdateEvent)new ContactsUpdateSingleEvent
+        await NotifyContactsUpdatedAsync((ContactsUpdateEvent)new ContactsUpdateSingleEvent
         {
             MemberInfo = memberInfo,
             UpdateType = updateInfo.ContactsUpdateType,
@@ -246,7 +242,7 @@ public abstract class ContactsManagerBase : IContactsManager
             ChannelMapping.TryRemove(updateInfo.Id, out channelInfo);
         }
 
-        await _eventBus.PublishAsync((ContactsUpdateEvent)new ContactsUpdateSingleEvent
+        await NotifyContactsUpdatedAsync((ContactsUpdateEvent)new ContactsUpdateSingleEvent
         {
             ChannelInfo = channelInfo,
             UpdateType = updateInfo.ContactsUpdateType,
@@ -284,7 +280,7 @@ public abstract class ContactsManagerBase : IContactsManager
             dict.TryRemove(updateInfo.SubId, out channelInfo);
         }
 
-        await _eventBus.PublishAsync((ContactsUpdateEvent)new ContactsUpdateSingleEvent
+        await NotifyContactsUpdatedAsync((ContactsUpdateEvent)new ContactsUpdateSingleEvent
         {
             SubChannelInfo = channelInfo,
             UpdateType = updateInfo.ContactsUpdateType,
@@ -318,7 +314,7 @@ public abstract class ContactsManagerBase : IContactsManager
             PrivateMapping.TryRemove(updateInfo.Id, out privateInfo);
         }
 
-        await _eventBus.PublishAsync((ContactsUpdateEvent)new ContactsUpdateSingleEvent
+        await NotifyContactsUpdatedAsync((ContactsUpdateEvent)new ContactsUpdateSingleEvent
         {
             PrivateInfo = privateInfo,
             UpdateType = updateInfo.ContactsUpdateType,
@@ -363,7 +359,20 @@ public abstract class ContactsManagerBase : IContactsManager
         list.AddRange(list2);
 
         if (list.Count > 0)
-            _ = _eventBus.StartPublishTask(new ContactsUpdateEvent { Events = list });
+            _ = NotifyContactsUpdatedAsync(new ContactsUpdateEvent { Events = list });
+
+    }
+
+    private Task NotifyContactsUpdatedAsync(ContactsUpdateEvent updateEvent)
+    {
+        var handlers = ContactsUpdated;
+        if (handlers == null)
+            return Task.CompletedTask;
+
+        return Task.WhenAll(handlers
+            .GetInvocationList()
+            .Cast<Func<ContactsUpdateEvent, Task>>()
+            .Select(handler => handler(updateEvent)));
     }
 
     private List<ContactsUpdateSingleEvent> RefreshPrivates(Dictionary<string, PrivateInfo> privates, ILogger logger)

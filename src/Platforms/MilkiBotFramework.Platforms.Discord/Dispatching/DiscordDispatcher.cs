@@ -3,7 +3,6 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Dispatching;
-using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Platforms.Discord.Messaging;
 using MessageType = MilkiBotFramework.Messaging.MessageType;
@@ -14,10 +13,10 @@ public class DiscordDispatcher : DispatcherBase<DiscordMessageContext>
 {
     public DiscordDispatcher(IConnector connector,
         IMessageContextEnricher messageContextEnricher,
+        MessageDispatchCoordinator messageDispatchCoordinator,
         ILogger<DiscordDispatcher> logger,
-        IServiceProvider serviceProvider,
-        EventBus eventBus)
-        : base(connector, messageContextEnricher, logger, serviceProvider, eventBus)
+        IServiceProvider serviceProvider)
+        : base(connector, messageContextEnricher, messageDispatchCoordinator, logger, serviceProvider)
     {
     }
 

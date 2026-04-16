@@ -5,7 +5,6 @@ using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
-using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Platforms.Discord.Connecting;
 using MilkiBotFramework.Platforms.Discord.Messaging;
@@ -20,8 +19,7 @@ public class DiscordContactsManager : ContactsManagerBase
 
     public DiscordContactsManager(IConnector connector,
         BotTaskScheduler botTaskScheduler,
-        ILogger<DiscordContactsManager> logger,
-        EventBus eventBus) : base(botTaskScheduler, logger, eventBus)
+        ILogger<DiscordContactsManager> logger) : base(botTaskScheduler, logger)
     {
         _connector = connector as DiscordConnector
                      ?? throw new ArgumentException("Connector must be DiscordConnector", nameof(connector));

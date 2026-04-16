@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Dispatching;
-using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Platforms.Mock.Messaging;
 
@@ -15,10 +14,10 @@ public class MockDispatcher : DispatcherBase<MockMessageContext>
     public MockDispatcher(
         IConnector connector,
         IMessageContextEnricher messageContextEnricher,
+        MessageDispatchCoordinator messageDispatchCoordinator,
         ILogger<MockDispatcher> logger,
-        IServiceProvider serviceProvider,
-        EventBus eventBus)
-        : base(connector, messageContextEnricher, logger, serviceProvider, eventBus)
+        IServiceProvider serviceProvider)
+        : base(connector, messageContextEnricher, messageDispatchCoordinator, logger, serviceProvider)
     {
     }
 

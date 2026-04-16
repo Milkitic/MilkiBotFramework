@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
-using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Plugining;
 using MilkiBotFramework.Plugining.CommandLine;
@@ -195,10 +194,11 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
             .AddLogging(k => configureLogger(k))
             .AddSingleton(GetOptionInstance())
             .AddSingleton<BotTaskScheduler>()
-            .AddSingleton<EventBus>()
             .AddSingleton<LightHttpClient>()
             .AddSingleton<PluginManager>()
             .AddSingleton<IMessageContextEnricher, MessageContextEnricher>()
+            .AddSingleton<MessageDispatchNotifier>()
+            .AddSingleton<MessageDispatchCoordinator>()
             .AddSingleton(new ConfigLoggerProvider(_configureLogger))
             .AddSingleton(typeof(ICommandLineAnalyzer),
                 _commandAnalyzerType ?? typeof(CommandLineAnalyzer))

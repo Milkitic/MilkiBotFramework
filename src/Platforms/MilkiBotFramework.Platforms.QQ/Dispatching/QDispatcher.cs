@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Dispatching;
-using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Platforms.QQ.Messaging;
 
@@ -12,10 +11,10 @@ public class QDispatcher : DispatcherBase<QMessageContext>
 {
     public QDispatcher(IConnector connector,
         IMessageContextEnricher messageContextEnricher,
+        MessageDispatchCoordinator messageDispatchCoordinator,
         ILogger<QDispatcher> logger,
-        IServiceProvider serviceProvider,
-        EventBus eventBus)
-        : base(connector, messageContextEnricher, logger, serviceProvider, eventBus)
+        IServiceProvider serviceProvider)
+        : base(connector, messageContextEnricher, messageDispatchCoordinator, logger, serviceProvider)
     {
     }
 

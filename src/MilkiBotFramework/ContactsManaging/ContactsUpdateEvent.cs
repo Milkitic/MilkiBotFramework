@@ -1,8 +1,6 @@
-﻿using MilkiBotFramework.Event;
+﻿namespace MilkiBotFramework.ContactsManaging;
 
-namespace MilkiBotFramework.ContactsManaging;
-
-public sealed class ContactsUpdateEvent : IEventBusEvent
+public sealed class ContactsUpdateEvent
 {
     public IReadOnlyList<ContactsUpdateSingleEvent> Events { get; init; } = Array.Empty<ContactsUpdateSingleEvent>();
 

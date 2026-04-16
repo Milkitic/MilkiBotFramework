@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
-using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Tasking;
 
@@ -13,9 +12,8 @@ public sealed class QContactsManager : ContactsManagerBase
 {
     public QContactsManager(
         BotTaskScheduler botTaskScheduler,
-        ILogger<QContactsManager> logger,
-        EventBus eventBus)
-        : base(botTaskScheduler, logger, eventBus)
+        ILogger<QContactsManager> logger)
+        : base(botTaskScheduler, logger)
     {
     }
 

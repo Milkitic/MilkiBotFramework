@@ -3,8 +3,6 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.Dispatching;
-using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Plugining.CommandLine;
@@ -26,7 +24,6 @@ public partial class PluginManager
     // sub directory per loader
     private readonly HashSet<PluginInfo> _plugins = new();
     private readonly Dictionary<string, LoaderContext> _loaderContexts = new();
-    private readonly EventBus _eventBus;
 
     private readonly ConcurrentDictionary<MessageUserIdentity, AsyncMessage> _asyncMessageDict = new();
 
@@ -37,8 +34,7 @@ public partial class PluginManager
         ICommandLineAnalyzer commandLineAnalyzer,
         IServiceProvider serviceProvider,
         IServiceCollection serviceCollection,
-        BotOptions botOptions,
-        EventBus eventBus)
+        BotOptions botOptions)
     {
         _serviceProvider = serviceProvider;
         _serviceCollection = serviceCollection;
@@ -48,8 +44,6 @@ public partial class PluginManager
         _logger = logger;
         _commandLineAnalyzer = commandLineAnalyzer;
         _commandInjector = new CommandInjector(commandLineAnalyzer, logger2);
-        _eventBus = eventBus;
-        _eventBus.Subscribe<DispatchMessageEvent>(OnEventReceived);
     }
 
     public IReadOnlyList<PluginInfo> GetAllPlugins()
@@ -57,16 +51,16 @@ public partial class PluginManager
         return _plugins.ToArray();
     }
 
-    private async Task OnEventReceived(DispatchMessageEvent e)
+    public async Task HandleMessageAsync(MessageContext messageContext)
     {
-        var messageType = e.MessageContext.MessageIdentity?.MessageType;
+        var messageType = messageContext.MessageIdentity?.MessageType;
         if (messageType is MessageType.Private or MessageType.Channel)
         {
-            await HandleTextMessage(e.MessageContext);
+            await HandleTextMessage(messageContext);
         }
         else
         {
-            await HandleNoticeMessage(e.MessageContext);
+            await HandleNoticeMessage(messageContext);
         }
     }
 
