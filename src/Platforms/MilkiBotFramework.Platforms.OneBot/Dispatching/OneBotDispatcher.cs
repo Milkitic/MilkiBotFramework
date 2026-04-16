@@ -1,8 +1,6 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
@@ -14,29 +12,25 @@ namespace MilkiBotFramework.Platforms.OneBot.Dispatching
     public class OneBotDispatcher : DispatcherBase<OneBotMessageContext>
     {
         public OneBotDispatcher(IConnector connector,
-            IContactsManager contactsManager,
+            IMessageContextEnricher messageContextEnricher,
             ILogger<OneBotDispatcher> logger,
             IServiceProvider serviceProvider,
-            BotOptions botOptions,
             EventBus eventBus)
-            : base(connector, contactsManager, logger, serviceProvider, botOptions, eventBus)
+            : base(connector, messageContextEnricher, logger, serviceProvider, eventBus)
         {
         }
 
-        protected override bool TrySetTextMessage(OneBotMessageContext messageContext)
+        protected override bool TryPopulateMessageContext(OneBotMessageContext messageContext,
+            InboundMessage inboundMessage,
+            out string? failureReason)
         {
-            if (messageContext.MessageIdentity == MessageIdentity.MetaMessage ||
-                messageContext.MessageIdentity == MessageIdentity.NoticeMessage) return false;
-            messageContext.TextMessage = messageContext.RawMessage.Message;
-            return true;
-        }
-
-        protected override bool TryGetIdentityByRawMessage(OneBotMessageContext messageContext,
-            [NotNullWhen(true)] out MessageIdentity? messageIdentity,
-            out string? strIdentity)
-        {
-            var rawJson = messageContext.RawTextMessage;
-            strIdentity = null;
+            var rawJson = inboundMessage.RawText;
+            failureReason = null;
+            if (string.IsNullOrWhiteSpace(rawJson))
+            {
+                failureReason = "empty-raw-text";
+                return false;
+            }
 
             JsonDocument jDoc;
             try
@@ -45,14 +39,14 @@ namespace MilkiBotFramework.Platforms.OneBot.Dispatching
             }
             catch (JsonException)
             {
-                messageIdentity = null;
+                failureReason = "invalid-json";
                 return false;
             }
 
             var hasProperty = jDoc.RootElement.TryGetProperty("post_type", out var postTypeElement);
             if (!hasProperty)
             {
-                messageIdentity = null;
+                failureReason = "missing-post_type";
                 return false;
             }
 
@@ -61,13 +55,14 @@ namespace MilkiBotFramework.Platforms.OneBot.Dispatching
 
             if (postType == "meta_event")
             {
-                messageIdentity = MessageIdentity.MetaMessage;
+                messageContext.MessageIdentity = MessageIdentity.MetaMessage;
                 return true;
             }
 
             if (postType == "notice")
             {
-                messageIdentity = MessageIdentity.NoticeMessage;
+                messageContext.MessageIdentity = MessageIdentity.NoticeMessage;
+                messageContext.TextMessage = string.Empty;
                 return true;
             }
 
@@ -77,46 +72,47 @@ namespace MilkiBotFramework.Platforms.OneBot.Dispatching
                 if (messageType == "private")
                 {
                     var parsedObj = JsonSerializer.Deserialize<PrivateMessage>(rawJson)!;
-                    messageIdentity = new MessageIdentity(parsedObj.UserId, MessageType.Private);
+                    messageContext.MessageIdentity = new MessageIdentity(parsedObj.UserId, MessageType.Private);
 
                     messageContext.RawMessage = parsedObj;
-                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageIdentity, parsedObj.UserId);
+                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageContext.MessageIdentity, parsedObj.UserId);
                     messageContext.ReceivedTime = parsedObj.Time;
                     messageContext.MessageId = parsedObj.MessageId;
+                    messageContext.TextMessage = parsedObj.Message;
                     return true;
                 }
 
                 if (messageType == "group")
                 {
                     var parsedObj = JsonSerializer.Deserialize<GroupMessage>(rawJson)!;
-                    messageIdentity = new MessageIdentity(parsedObj.GroupId, MessageType.Channel);
+                    messageContext.MessageIdentity = new MessageIdentity(parsedObj.GroupId, MessageType.Channel);
 
                     messageContext.RawMessage = parsedObj;
-                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageIdentity, parsedObj.UserId);
+                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageContext.MessageIdentity, parsedObj.UserId);
                     messageContext.ReceivedTime = parsedObj.Time;
                     messageContext.MessageId = parsedObj.MessageId;
+                    messageContext.TextMessage = parsedObj.Message;
                     return true;
                 }
 
                 if (messageType == "guild")
                 {
                     var parsedObj = JsonSerializer.Deserialize<GuildMessage>(rawJson)!;
-                    messageIdentity = new MessageIdentity(parsedObj.GuildId, parsedObj.ChannelId, MessageType.Channel);
+                    messageContext.MessageIdentity = new MessageIdentity(parsedObj.GuildId, parsedObj.ChannelId, MessageType.Channel);
 
                     messageContext.RawMessage = parsedObj;
-                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageIdentity, parsedObj.UserId);
+                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageContext.MessageIdentity, parsedObj.UserId);
                     messageContext.ReceivedTime = parsedObj.Time;
                     messageContext.MessageId = parsedObj.MessageId;
+                    messageContext.TextMessage = parsedObj.Message;
                     return true;
                 }
 
-                messageIdentity = null;
-                strIdentity = postType + "." + messageType;
+                failureReason = postType + "." + messageType;
                 return false;
             }
 
-            messageIdentity = null;
-            strIdentity = postType;
+            failureReason = postType;
             return false;
         }
     }

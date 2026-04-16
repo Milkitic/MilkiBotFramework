@@ -59,7 +59,7 @@ public class QApiConnector : AspnetcoreConnector
         {
             var jsonString = json.ToJsonString();
             _logger.LogDebug(jsonString);
-            await InvokeRawMessageAsync(jsonString);
+            await PublishInboundMessageAsync(InboundMessage.FromRawText(jsonString, "qq-http"));
         }
     }
 

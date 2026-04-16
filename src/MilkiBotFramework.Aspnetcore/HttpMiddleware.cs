@@ -36,7 +36,7 @@ public class HttpMiddleware
                 _logger.LogDebug("!!!POST STR: " + bodyStr);
                 try
                 {
-                    await _dispatcher.InvokeRawMessageReceived(bodyStr);
+                    await _dispatcher.InvokeMessageReceived(InboundMessage.FromRawText(bodyStr, "http"));
                 }
                 catch (Exception ex)
                 {

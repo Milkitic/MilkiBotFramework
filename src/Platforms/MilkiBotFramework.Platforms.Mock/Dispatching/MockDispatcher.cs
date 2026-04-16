@@ -1,11 +1,8 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
-using MilkiBotFramework.Platforms.Mock.Connecting;
 using MilkiBotFramework.Platforms.Mock.Messaging;
 
 namespace MilkiBotFramework.Platforms.Mock.Dispatching;
@@ -17,75 +14,43 @@ public class MockDispatcher : DispatcherBase<MockMessageContext>
 {
     public MockDispatcher(
         IConnector connector,
-        IContactsManager contactsManager,
+        IMessageContextEnricher messageContextEnricher,
         ILogger<MockDispatcher> logger,
         IServiceProvider serviceProvider,
-        BotOptions botOptions,
         EventBus eventBus)
-        : base(connector, contactsManager, logger, serviceProvider, botOptions, eventBus)
+        : base(connector, messageContextEnricher, logger, serviceProvider, eventBus)
     {
     }
 
-    protected override bool TryGetIdentityByRawMessage(
+    protected override bool TryPopulateMessageContext(
         MockMessageContext messageContext,
-        [NotNullWhen(true)] out MessageIdentity? messageIdentity,
-        out string? strIdentity)
+        InboundMessage inboundMessage,
+        out string? failureReason)
     {
-        var messageId = messageContext.RawTextMessage;
-        strIdentity = messageId;
+        failureReason = null;
 
-        if (messageId != null && MockConnector.MessageCache.TryGetValue(messageId, out var mockMessage))
+        if (inboundMessage.GetPayload<MockMessage>() is not { } mockMessage)
         {
-            messageContext.RawMessage = mockMessage;
-            messageContext.MessageId = mockMessage.Id;
-            messageContext.ReceivedTime = mockMessage.Timestamp;
+            failureReason = inboundMessage.Payload?.GetType().Name ?? inboundMessage.RawText ?? "unknown-mock-inbound";
+            return false;
+        }
 
-            // 判断消息类型：群聊或私聊
-            var messageType = !string.IsNullOrEmpty(mockMessage.GroupId)
-                ? MessageType.Channel
-                : MessageType.Private;
+        messageContext.RawMessage = mockMessage;
+        messageContext.MessageId = mockMessage.Id;
+        messageContext.ReceivedTime = mockMessage.Timestamp;
+        messageContext.TextMessage = mockMessage.Content;
 
-            if (messageType == MessageType.Channel)
-            {
-                var groupId = mockMessage.GroupId!;
-
-                // 群聊消息
-                messageIdentity = new MessageIdentity(
-                    groupId,
-                    null,
-                    MessageType.Channel);
-
-                messageContext.MessageUserIdentity = new MessageUserIdentity(
-                    messageIdentity,
-                    mockMessage.SenderId);
-            }
-            else
-            {
-                // 私聊消息
-                messageIdentity = new MessageIdentity(
-                    mockMessage.SenderId,
-                    MessageType.Private);
-
-                messageContext.MessageUserIdentity = new MessageUserIdentity(
-                    messageIdentity,
-                    mockMessage.SenderId);
-            }
-
+        if (!string.IsNullOrEmpty(mockMessage.GroupId))
+        {
+            messageContext.MessageIdentity = new MessageIdentity(mockMessage.GroupId, null, MessageType.Channel);
+            messageContext.MessageUserIdentity = new MessageUserIdentity(messageContext.MessageIdentity,
+                mockMessage.SenderId);
             return true;
         }
 
-        messageIdentity = null;
-        return false;
-    }
-
-    protected override bool TrySetTextMessage(MockMessageContext messageContext)
-    {
-        if (messageContext.RawMessage != null)
-        {
-            messageContext.TextMessage = messageContext.RawMessage.Content;
-            return true;
-        }
-
-        return false;
+        messageContext.MessageIdentity = new MessageIdentity(mockMessage.SenderId, MessageType.Private);
+        messageContext.MessageUserIdentity = new MessageUserIdentity(messageContext.MessageIdentity,
+            mockMessage.SenderId);
+        return true;
     }
 }

@@ -59,7 +59,8 @@ public partial class PluginManager
 
     private async Task OnEventReceived(DispatchMessageEvent e)
     {
-        if (e.MessageType is MessageType.Private or MessageType.Channel)
+        var messageType = e.MessageContext.MessageIdentity?.MessageType;
+        if (messageType is MessageType.Private or MessageType.Channel)
         {
             await HandleTextMessage(e.MessageContext);
         }

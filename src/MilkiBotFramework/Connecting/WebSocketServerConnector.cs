@@ -7,7 +7,7 @@ namespace MilkiBotFramework.Connecting;
 
 public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposable, IAsyncDisposable
 {
-    public event Func<string, Task>? RawMessageReceived;
+    public event Func<InboundMessage, Task>? MessageReceived;
 
     private readonly ILogger<WebSocketServerConnector> _logger;
 
@@ -25,7 +25,7 @@ public abstract class WebSocketServerConnector : IWebSocketConnector, IDisposabl
             {
                 if (_socket != null) await _socket.Send(message);
             },
-            RawMessageReceived,
+            MessageReceived,
             TryGetStateByMessage
         );
     }

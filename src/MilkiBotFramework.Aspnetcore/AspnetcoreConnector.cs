@@ -10,7 +10,7 @@ namespace MilkiBotFramework.Aspnetcore;
 
 public class AspnetcoreConnector : IConnector
 {
-    public event Func<string, Task>? RawMessageReceived;
+    public event Func<InboundMessage, Task>? MessageReceived;
 
     protected readonly IWebSocketConnector? WebSocketConnector;
     private readonly ILogger<AspnetcoreConnector> _logger;
@@ -77,9 +77,9 @@ public class AspnetcoreConnector : IConnector
         throw new NotSupportedException();
     }
 
-    protected async Task InvokeRawMessageAsync(string arg)
+    protected async Task PublishInboundMessageAsync(InboundMessage inboundMessage)
     {
-        if (RawMessageReceived != null) await RawMessageReceived.Invoke(arg);
+        if (MessageReceived != null) await MessageReceived.Invoke(inboundMessage);
     }
 
     internal async Task OnWebSocketOpen(WebSocket webSocket)
@@ -202,9 +202,9 @@ public class AspnetcoreConnector : IConnector
 
     private async Task ConnectInnerWsClient()
     {
-        WebSocketConnector!.RawMessageReceived += (s) =>
+        WebSocketConnector!.MessageReceived += inboundMessage =>
         {
-            if (RawMessageReceived != null) return RawMessageReceived(s);
+            if (MessageReceived != null) return MessageReceived(inboundMessage);
             return Task.CompletedTask;
         };
 
@@ -240,7 +240,7 @@ public class AspnetcoreConnector : IConnector
                         CancellationToken.None);
                 }
             },
-            RawMessageReceived,
+            MessageReceived,
             TryGetStateByMessage
         );
     }

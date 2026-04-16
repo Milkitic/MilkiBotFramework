@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Text;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Platforms.Mock.Messaging;
@@ -10,11 +9,6 @@ namespace MilkiBotFramework.Platforms.Mock.Connecting;
 /// </summary>
 public class MockConnector : IConnector
 {
-    /// <summary>
-    ///     消息缓存，存储虚拟接收到的消息
-    /// </summary>
-    public static readonly ConcurrentDictionary<string, MockMessage> MessageCache = new();
-
     private readonly MockBotOptions _options;
     private bool _connected = false;
 
@@ -29,7 +23,7 @@ public class MockConnector : IConnector
         OnMessageSimulated += HandleSimulatedMessage;
     }
 
-    public event Func<string, Task>? RawMessageReceived;
+    public event Func<InboundMessage, Task>? MessageReceived;
 
     public string? TargetUri { get; set; }
     public string? BindingPath { get; set; }
@@ -74,19 +68,10 @@ public class MockConnector : IConnector
         if (!_connected)
             throw new InvalidOperationException("Mock connector is not connected");
 
-        var messageId = Guid.NewGuid().ToString();
-        MessageCache.TryAdd(messageId, message);
-
-        if (RawMessageReceived != null)
+        if (MessageReceived != null)
         {
-            await RawMessageReceived.Invoke(messageId);
+            await MessageReceived.Invoke(InboundMessage.FromPayload(message, message.Content, "mock"));
         }
-
-        // 自动清理（1分钟后过期）
-        _ = Task.Delay(TimeSpan.FromMinutes(1)).ContinueWith(_ =>
-        {
-            MessageCache.TryRemove(messageId, out MockMessage? _);
-        });
     }
 
     private async Task HandleSimulatedMessage(MockMessage message)

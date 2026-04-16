@@ -5,10 +5,11 @@ namespace MilkiBotFramework.Dispatching;
 
 public sealed class DispatchMessageEvent : IEventBusEvent
 {
-    public DispatchMessageEvent(MessageContext messageContext, MessageType messageType)
+    public DispatchMessageEvent(MessageContext messageContext)
     {
         MessageContext = messageContext;
-        MessageType = messageType;
+        MessageType = messageContext.MessageIdentity?.MessageType
+                      ?? throw new ArgumentException("Message identity is required.", nameof(messageContext));
     }
 
     public MessageContext MessageContext { get; }

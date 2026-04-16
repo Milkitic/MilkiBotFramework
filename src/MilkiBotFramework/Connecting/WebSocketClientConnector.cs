@@ -11,7 +11,7 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
 {
     public event Action<ReconnectionInfo>? ReconnectionHappened;
     public event Action<DisconnectionInfo>? DisconnectionHappened;
-    public event Func<string, Task>? RawMessageReceived;
+    public event Func<InboundMessage, Task>? MessageReceived;
 
     protected WebsocketClient? Client;
     private readonly ILogger<WebSocketClientConnector> _logger;
@@ -29,9 +29,9 @@ public abstract class WebSocketClientConnector : IWebSocketConnector, IDisposabl
                 Client?.Send(message);
                 return Task.CompletedTask;
             },
-            async message =>
+            async inboundMessage =>
             {
-                if (RawMessageReceived != null) await RawMessageReceived.Invoke(message);
+                if (MessageReceived != null) await MessageReceived.Invoke(inboundMessage);
             },
             TryGetStateByMessage
         );

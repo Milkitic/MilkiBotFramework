@@ -1,8 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
 using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
@@ -13,30 +11,25 @@ namespace MilkiBotFramework.Platforms.QQ.Dispatching;
 public class QDispatcher : DispatcherBase<QMessageContext>
 {
     public QDispatcher(IConnector connector,
-        IContactsManager contactsManager,
+        IMessageContextEnricher messageContextEnricher,
         ILogger<QDispatcher> logger,
         IServiceProvider serviceProvider,
-        BotOptions botOptions,
         EventBus eventBus)
-        : base(connector, contactsManager, logger, serviceProvider, botOptions, eventBus)
+        : base(connector, messageContextEnricher, logger, serviceProvider, eventBus)
     {
     }
 
-    protected override bool TrySetTextMessage(QMessageContext messageContext)
+    protected override bool TryPopulateMessageContext(QMessageContext messageContext,
+        InboundMessage inboundMessage,
+        out string? failureReason)
     {
-        if (messageContext.MessageIdentity == MessageIdentity.MetaMessage ||
-            messageContext.MessageIdentity == MessageIdentity.NoticeMessage) return false;
-        messageContext.TextMessage = messageContext.RawMessage;
-        //throw new NotImplementedException();
-        return true;
-    }
-
-    protected override bool TryGetIdentityByRawMessage(QMessageContext messageContext,
-        [NotNullWhen(true)] out MessageIdentity? messageIdentity,
-        out string? strIdentity)
-    {
-        var rawJson = messageContext.RawTextMessage;
-        strIdentity = null;
+        var rawJson = inboundMessage.RawText;
+        failureReason = null;
+        if (string.IsNullOrWhiteSpace(rawJson))
+        {
+            failureReason = "empty-raw-text";
+            return false;
+        }
 
         var jDoc = JsonDocument.Parse(rawJson);
         messageContext.RawJsonDocument = jDoc;
@@ -54,12 +47,13 @@ public class QDispatcher : DispatcherBase<QMessageContext>
                     var content = dProp.GetProperty("content").GetString()!.Trim();
                     var timestamp = DateTimeOffset.Parse(dProp.GetProperty("timestamp").GetString()!);
 
-                    messageIdentity = new MessageIdentity(groupId, MessageType.Channel);
+                    messageContext.MessageIdentity = new MessageIdentity(groupId, MessageType.Channel);
 
                     messageContext.RawMessage = content;
-                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageIdentity, memberId);
+                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageContext.MessageIdentity, memberId);
                     messageContext.ReceivedTime = timestamp;
                     messageContext.MessageId = messageId;
+                    messageContext.TextMessage = content;
                     return true;
                 }
             }
@@ -72,19 +66,21 @@ public class QDispatcher : DispatcherBase<QMessageContext>
                     var content = dProp.GetProperty("content").GetString()!.Trim();
                     var timestamp = DateTimeOffset.Parse(dProp.GetProperty("timestamp").GetString()!);
 
-                    messageIdentity = new MessageIdentity(userId, MessageType.Private);
+                    messageContext.MessageIdentity = new MessageIdentity(userId, MessageType.Private);
 
                     messageContext.RawMessage = content;
-                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageIdentity, userId);
+                    messageContext.MessageUserIdentity = new MessageUserIdentity(messageContext.MessageIdentity, userId);
                     messageContext.ReceivedTime = timestamp;
                     messageContext.MessageId = messageId;
+                    messageContext.TextMessage = content;
                     return true;
                 }
             }
-            //throw new NotImplementedException();
         }
 
-        messageIdentity = null;
+        failureReason = jDoc.RootElement.TryGetProperty("t", out var identityProp)
+            ? identityProp.GetString()
+            : "unknown-qq-event";
         return false;
     }
 }

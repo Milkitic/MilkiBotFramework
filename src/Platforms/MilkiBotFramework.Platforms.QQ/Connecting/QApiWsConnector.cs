@@ -33,14 +33,18 @@ public class QApiWsConnector : WebSocketClientConnector
         _httpClient = httpClient;
         _contactsManager = (QContactsManager?)contactsManager;
         _logger = logger;
-        RawMessageReceived += QApiConnector_RawMessageReceived;
+        MessageReceived += QApiConnector_MessageReceived;
     }
 
     public string Authorization => $"QQBot {_accessToken}";
     public int MessageSequence => _lastSequence;
 
-    private Task QApiConnector_RawMessageReceived(string message)
+    private Task QApiConnector_MessageReceived(InboundMessage inboundMessage)
     {
+        var message = inboundMessage.RawText;
+        if (string.IsNullOrWhiteSpace(message))
+            return Task.CompletedTask;
+
         var jsonDocument = JsonDocument.Parse(message);
         var rootElement = jsonDocument.RootElement;
         var opProp = rootElement.GetProperty("op");

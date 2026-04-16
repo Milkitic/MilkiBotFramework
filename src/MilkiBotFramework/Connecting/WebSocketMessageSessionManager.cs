@@ -11,7 +11,7 @@ public class WebSocketMessageSessionManager
     private readonly ILogger _logger;
 
     private readonly Func<string, Task> _sendAction;
-    private readonly Func<string, Task>? _rawReceivedFunc;
+    private readonly Func<InboundMessage, Task>? _messageReceivedFunc;
     private readonly TryGetStateByMessageDelegate _tryGetStateDelegate;
 
     private readonly ConcurrentDictionary<string, WebSocketMessageSession> _sessions = new();
@@ -20,13 +20,13 @@ public class WebSocketMessageSessionManager
     public WebSocketMessageSessionManager(ILogger logger,
         Func<TimeSpan> getMessageTimeout,
         Func<string, Task> sendAction,
-        Func<string, Task>? rawReceivedFunc,
+        Func<InboundMessage, Task>? messageReceivedFunc,
         TryGetStateByMessageDelegate tryGetStateDelegate)
     {
         _getMessageTimeout = getMessageTimeout;
         _logger = logger;
         _sendAction = sendAction;
-        _rawReceivedFunc = rawReceivedFunc;
+        _messageReceivedFunc = messageReceivedFunc;
         _tryGetStateDelegate = tryGetStateDelegate;
     }
 
@@ -73,7 +73,7 @@ public class WebSocketMessageSessionManager
         var hasState = _tryGetStateDelegate(msg, out var state);
         if (!hasState || string.IsNullOrEmpty(state))
         {
-            _rawReceivedFunc?.Invoke(msg);
+            _messageReceivedFunc?.Invoke(InboundMessage.FromRawText(msg, "websocket"));
             return Task.CompletedTask;
         }
 
@@ -92,7 +92,7 @@ public class WebSocketMessageSessionManager
         else
         {
             _logger.LogWarning($"Rollback to raw message due to unknown response state: {state}.");
-            _rawReceivedFunc?.Invoke(msg);
+            _messageReceivedFunc?.Invoke(InboundMessage.FromRawText(msg, "websocket"));
         }
 
         return Task.CompletedTask;

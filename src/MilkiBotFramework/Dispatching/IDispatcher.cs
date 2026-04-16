@@ -1,7 +1,9 @@
-﻿namespace MilkiBotFramework.Dispatching
+﻿using MilkiBotFramework.Connecting;
+
+namespace MilkiBotFramework.Dispatching
 {
     public interface IDispatcher
     {
-        Task InvokeRawMessageReceived(string rawMessage);
+        Task InvokeMessageReceived(InboundMessage inboundMessage);
     }
 }

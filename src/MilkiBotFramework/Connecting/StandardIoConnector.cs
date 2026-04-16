@@ -6,7 +6,7 @@ namespace MilkiBotFramework.Connecting
 {
     internal class StandardIoConnector : IConnector, IDisposable
     {
-        public event Func<string, Task>? RawMessageReceived;
+        public event Func<InboundMessage, Task>? MessageReceived;
         private readonly ILogger _logger;
         private readonly AsyncLock _singletonIoLock = new();
         private bool _enable;

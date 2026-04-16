@@ -76,7 +76,7 @@ RootAccounts:
 
 ### 自定义分发逻辑
 
-如需自定义消息分发规则，编辑 `Dispatching/MockDispatcher.cs` 的 `TryGetIdentityByRawMessage()` 方法。
+如需自定义消息分发规则，编辑 `Dispatching/MockDispatcher.cs` 的 `TryPopulateMessageContext()` 方法。
 
 ### 扩展联系人管理
 

@@ -38,7 +38,7 @@ public class WebSocketMessageFilter : IDisposable
             }
         });
         webSocketClientConnector.DisconnectionHappened += WebSocketClientConnector_DisconnectionHappened;
-        webSocketClientConnector.RawMessageReceived += WebSocketClientConnector_RawMessageReceived;
+        webSocketClientConnector.MessageReceived += WebSocketClientConnector_MessageReceived;
     }
 
     public async Task<T?> FilterMessageAsync<T>(Func<WebSocketAsyncMessage, T?> filter)
@@ -75,9 +75,10 @@ public class WebSocketMessageFilter : IDisposable
         //_autoResetEvent.Set();
     }
 
-    private Task WebSocketClientConnector_RawMessageReceived(string message)
+    private Task WebSocketClientConnector_MessageReceived(InboundMessage inboundMessage)
     {
-        EnqueueMessage(message);
+        if (!string.IsNullOrWhiteSpace(inboundMessage.RawText))
+            EnqueueMessage(inboundMessage.RawText);
         return Task.CompletedTask;
     }
 
@@ -91,7 +92,7 @@ public class WebSocketMessageFilter : IDisposable
     {
         if (_isDisposed) return;
         _isDisposed = true;
-        _webSocketClientConnector.RawMessageReceived -= WebSocketClientConnector_RawMessageReceived;
+        _webSocketClientConnector.MessageReceived -= WebSocketClientConnector_MessageReceived;
         _webSocketClientConnector.DisconnectionHappened -= WebSocketClientConnector_DisconnectionHappened;
 
         try

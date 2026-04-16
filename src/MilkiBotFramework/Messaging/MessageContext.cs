@@ -1,4 +1,5 @@
-﻿using MilkiBotFramework.ContactsManaging.Models;
+﻿using MilkiBotFramework.Connecting;
+using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.Messaging.RichMessages;
 using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Plugining.Loading;
@@ -17,7 +18,8 @@ public class MessageContext
         _richMessageConverter = richMessageConverter;
     }
 
-    public string RawTextMessage { get; internal set; } = null!;
+    public InboundMessage InboundMessage { get; internal set; } = null!;
+    public string? RawTextMessage => InboundMessage.RawText;
 
     public string? MessageId { get; set; }
     public virtual string? TextMessage { get; set; }
@@ -37,6 +39,6 @@ public class MessageContext
 
     public RichMessage GetRichMessage()
     {
-        return _richMessageConverter.Decode(TextMessage.AsMemory());
+        return _richMessageConverter.Decode((TextMessage ?? string.Empty).AsMemory());
     }
 }

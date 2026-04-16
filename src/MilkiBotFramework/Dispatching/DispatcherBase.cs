@@ -3,8 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
-using MilkiBotFramework.ContactsManaging;
-using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.Event;
 using MilkiBotFramework.Messaging;
 
@@ -19,42 +17,39 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
     where TMessageContext : MessageContext
 {
     private readonly IConnector _connector;
-    private readonly IContactsManager _contactsManager;
+    private readonly IMessageContextEnricher _messageContextEnricher;
     private readonly ILogger _logger;
     private readonly IServiceProvider _serviceProvider;
-    private readonly BotOptions _botOptions;
     private readonly EventBus _eventBus;
 
     public DispatcherBase(IConnector connector,
-        IContactsManager contactsManager,
+        IMessageContextEnricher messageContextEnricher,
         ILogger logger,
         IServiceProvider serviceProvider,
-        BotOptions botOptions,
         EventBus eventBus)
     {
         _connector = connector;
-        _contactsManager = contactsManager;
+        _messageContextEnricher = messageContextEnricher;
         _logger = logger;
         _serviceProvider = serviceProvider;
-        _botOptions = botOptions;
         _eventBus = eventBus;
-        _connector.RawMessageReceived += Connector_RawMessageReceived;
+        _connector.MessageReceived += Connector_MessageReceived;
     }
 
-    public async Task InvokeRawMessageReceived(string rawMessage)
+    public async Task InvokeMessageReceived(InboundMessage inboundMessage)
     {
-        await Connector_RawMessageReceived(rawMessage);
+        await Connector_MessageReceived(inboundMessage);
     }
 
-    private async Task Connector_RawMessageReceived(string rawMessage)
+    private async Task Connector_MessageReceived(InboundMessage inboundMessage)
     {
         try
         {
             var sw = Stopwatch.StartNew();
             using var scope = _serviceProvider.CreateScope();
             var messageContext = (TMessageContext)scope.ServiceProvider.GetService(typeof(TMessageContext))!;
-            messageContext.RawTextMessage = rawMessage;
-            if (await HandleMessageCore(messageContext))
+            messageContext.InboundMessage = inboundMessage;
+            if (await HandleMessageCore(messageContext, inboundMessage))
             {
                 _logger.LogDebug($"Total dispatching elapsed: {sw.Elapsed.TotalMilliseconds:N1}ms");
             }
@@ -65,86 +60,26 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
         }
     }
 
-    private async Task<bool> HandleMessageCore(TMessageContext messageContext)
+    private async Task<bool> HandleMessageCore(TMessageContext messageContext, InboundMessage inboundMessage)
     {
-        var hasIdentity = TryGetIdentityByRawMessage(messageContext, out var messageIdentity, out var strIdentity);
-        if (!hasIdentity)
+        var success = TryPopulateMessageContext(messageContext, inboundMessage, out var failureReason);
+        if (!success)
         {
-            if (strIdentity == null)
+            if (failureReason == null)
             {
-                //_logger.LogWarning("Unknown message identity.");
                 return false;
             }
 
-            _logger.LogWarning("Unknown message identity: " + strIdentity);
+            _logger.LogWarning("Failed to normalize inbound message: " + failureReason);
             return true;
         }
 
-        messageContext.MessageIdentity = messageIdentity;
-        switch (messageIdentity!.MessageType)
-        {
-            case MessageType.Private:
-                if (messageIdentity.Id == null) throw new ArgumentNullException(nameof(messageIdentity.Id));
-                var privateResult = await _contactsManager.TryGetOrAddPrivateInfo(messageIdentity.Id);
-                if (privateResult.IsSuccess)
-                {
-                    if (_botOptions.RootAccounts.Contains(messageIdentity.Id))
-                        messageContext.Authority = MessageAuthority.Root;
-                    else
-                        messageContext.Authority = MessageAuthority.Public;
-                    messageContext.PrivateInfo = privateResult.PrivateInfo;
-                }
-                else
-                {
-                    _logger.LogWarning("Failed to fill PrivateInfo automatically. This may leads to further plugin errors.");
-                }
-
-                break;
-            case MessageType.Channel:
-                if (messageIdentity.Id == null) throw new ArgumentNullException(nameof(MessageIdentity.Id));
-                var userId = messageContext.MessageUserIdentity?.UserId;
-                if (userId == null) throw new ArgumentNullException(nameof(MessageUserIdentity.UserId));
-                var channelResult = await _contactsManager.TryGetOrAddChannelInfo(messageIdentity.Id, messageIdentity.SubId);
-                var memberResult = await _contactsManager.TryGetOrAddMemberInfo(messageIdentity.Id, userId);
-                if (channelResult.IsSuccess)
-                    messageContext.ChannelInfo = channelResult.ChannelInfo;
-                else
-                    _logger.LogWarning("Failed to ChannelInfo automatically. This may leads to further plugin errors.");
-                if (memberResult.IsSuccess)
-                {
-                    if (_botOptions.RootAccounts.Contains(userId))
-                        messageContext.Authority = MessageAuthority.Root;
-                    else if (memberResult.MemberInfo!.MemberRole is MemberRole.Admin)
-                        messageContext.Authority = MessageAuthority.Admin;
-                    else if (memberResult.MemberInfo!.MemberRole is MemberRole.SubAdmin)
-                        messageContext.Authority = MessageAuthority.SubAdmin;
-                    else
-                        messageContext.Authority = MessageAuthority.Public;
-
-                    messageContext.MemberInfo = memberResult.MemberInfo;
-                }
-                else
-                {
-                    _logger.LogWarning("Failed to MemberInfo automatically. This may leads to further plugin errors.");
-                }
-
-                break;
-            case MessageType.Notice:
-                break;
-            case MessageType.Meta:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-
-        TrySetTextMessage(messageContext);
-        await _eventBus.PublishAsync(new DispatchMessageEvent(messageContext, messageIdentity.MessageType));
+        await _messageContextEnricher.EnrichAsync(messageContext);
+        await _eventBus.PublishAsync(new DispatchMessageEvent(messageContext));
         return true;
     }
 
-    protected abstract bool TrySetTextMessage(TMessageContext messageContext);
-
-    protected abstract bool TryGetIdentityByRawMessage(TMessageContext messageContext,
-        [NotNullWhen(true)] out MessageIdentity? messageIdentity,
-        out string? strIdentity);
+    protected abstract bool TryPopulateMessageContext(TMessageContext messageContext,
+        InboundMessage inboundMessage,
+        out string? failureReason);
 }
