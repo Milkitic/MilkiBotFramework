@@ -26,7 +26,7 @@ public class QApi : IMessageApi
         }
         else
         {
-            throw new Exception("Except for IGoCqConnector, but actual is " + connector.GetType());
+            throw new Exception($"Except for {typeof(QApiConnector)}, but actual is {connector.GetType()}");
         }
     }
 
