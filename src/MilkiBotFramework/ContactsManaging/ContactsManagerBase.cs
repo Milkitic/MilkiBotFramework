@@ -140,9 +140,13 @@ public abstract class ContactsManagerBase : IPlatformContactsManager
         [NotNullWhen(true)] out Dictionary<string, ChannelInfo>? subChannels,
         [NotNullWhen(true)] out Dictionary<string, PrivateInfo>? privates);
 
+    protected virtual string RefreshContactsTaskName => string.IsNullOrWhiteSpace(PlatformId)
+        ? "RefreshContactsTask"
+        : $"RefreshContactsTask[{PlatformId}]";
+
     protected virtual void InitializeTasksCore()
     {
-        _botTaskScheduler.AddTask("RefreshContactsTask", builder => builder
+        _botTaskScheduler.AddTask(RefreshContactsTaskName, builder => builder
             .ByInterval(TimeSpan.FromMinutes(5))
             .AtStartup()
             .Do(RefreshContacts));
