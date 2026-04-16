@@ -26,6 +26,8 @@ public class PluginCatalog
 
     private PluginDescriptor[] _executionPlan = Array.Empty<PluginDescriptor>();
 
+    public bool IsInitialized { get; private set; }
+
     public PluginCatalog(ILogger<PluginCatalog> logger,
         IServiceProvider serviceProvider,
         IServiceCollection serviceCollection,
@@ -44,6 +46,7 @@ public class PluginCatalog
 
     public async Task InitializeAllPlugins()
     {
+        IsInitialized = false;
         var sw = Stopwatch.StartNew();
         var pluginBaseDir = _botOptions.PluginBaseDir;
         if (!Directory.Exists(pluginBaseDir)) Directory.CreateDirectory(pluginBaseDir);
@@ -97,6 +100,7 @@ public class PluginCatalog
             }
         }
 
+        IsInitialized = true;
         _logger.LogInformation($"Plugin initialization done in {sw.Elapsed.TotalSeconds:N3}s!");
     }
 

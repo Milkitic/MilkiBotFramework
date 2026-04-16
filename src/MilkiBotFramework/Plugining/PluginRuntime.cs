@@ -14,6 +14,9 @@ public sealed class PluginRuntime
     private readonly CommandInjector _commandInjector;
     private readonly PluginCatalog _pluginCatalog;
     private readonly PluginResponseDispatcher _responseDispatcher;
+    private readonly object _executionCacheLock = new();
+
+    private volatile ExecutionCache? _executionCache;
 
     public PluginRuntime(ICommandLineAnalyzer commandLineAnalyzer,
         ILogger<PluginRuntime> logger,
@@ -285,9 +288,100 @@ public sealed class PluginRuntime
 
     private async Task<PluginExecutionContext> CreateExecutionContextAsync(bool includeBasicPlugins)
     {
+        var executionCache = _pluginCatalog.IsInitialized
+            ? GetOrCreateExecutionCache()
+            : BuildExecutionCache();
+        if (!includeBasicPlugins)
+        {
+            return new PluginExecutionContext(Array.Empty<IServiceScope>(),
+                Array.Empty<PluginExecutionInfo>(),
+                executionCache.NoticeHandlers,
+                executionCache.ResponseInterceptors,
+                executionCache.BindingFailureHandlers,
+                executionCache.PluginExceptionHandlers);
+        }
+
         var scopesByLoader = new Dictionary<LoaderContext, IServiceScope>();
         var scopes = new List<IServiceScope>();
         var basicPlugins = new List<PluginExecutionInfo>();
+
+        foreach (var descriptor in executionCache.BasicDescriptors)
+        {
+            var scope = GetOrCreateScope(descriptor.LoaderContext, scopesByLoader, scopes);
+            await AddBasicPluginAsync(descriptor.PluginInfo, scope, basicPlugins);
+        }
+
+        return new PluginExecutionContext(scopes,
+            basicPlugins,
+            executionCache.NoticeHandlers,
+            executionCache.ResponseInterceptors,
+            executionCache.BindingFailureHandlers,
+            executionCache.PluginExceptionHandlers);
+    }
+
+    private async Task AddBasicPluginAsync(PluginInfo pluginInfo,
+        IServiceScope scope,
+        ICollection<PluginExecutionInfo> basicPlugins)
+    {
+        var pluginInstance = (PluginBase)scope.ServiceProvider.GetService(pluginInfo.Type)!;
+        if (pluginInfo.Lifetime != PluginLifetime.Singleton)
+        {
+            try
+            {
+                await _pluginCatalog.InitializePluginAsync(pluginInstance, pluginInfo);
+                basicPlugins.Add(new PluginExecutionInfo(pluginInstance, pluginInfo, true, scope));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurs while initializing plugin: " + pluginInfo.Metadata.Name);
+            }
+        }
+        else
+        {
+            basicPlugins.Add(new PluginExecutionInfo(pluginInstance, pluginInfo, false, scope));
+        }
+    }
+
+    private static IServiceScope GetOrCreateScope(LoaderContext loaderContext,
+        IDictionary<LoaderContext, IServiceScope> scopesByLoader,
+        ICollection<IServiceScope> scopes)
+    {
+        if (scopesByLoader.TryGetValue(loaderContext, out var scope))
+        {
+            return scope;
+        }
+
+        scope = loaderContext.BuildServiceProvider().CreateScope();
+        scopesByLoader.Add(loaderContext, scope);
+        scopes.Add(scope);
+        return scope;
+    }
+
+    private ExecutionCache GetOrCreateExecutionCache()
+    {
+        var executionCache = _executionCache;
+        if (executionCache != null)
+        {
+            return executionCache;
+        }
+
+        lock (_executionCacheLock)
+        {
+            executionCache = _executionCache;
+            if (executionCache != null)
+            {
+                return executionCache;
+            }
+
+            executionCache = BuildExecutionCache();
+            _executionCache = executionCache;
+            return executionCache;
+        }
+    }
+
+    private ExecutionCache BuildExecutionCache()
+    {
+        var basicDescriptors = new List<PluginDescriptor>();
         var noticeHandlers = new List<PluginHook<INoticeHandler>>();
         var responseInterceptors = new List<IResponseInterceptor>();
         var bindingFailureHandlers = new List<IBindingFailureHandler>();
@@ -301,38 +395,9 @@ public sealed class PluginRuntime
                 continue;
             }
 
-            if (!scopesByLoader.TryGetValue(descriptor.LoaderContext, out var scope))
-            {
-                scope = descriptor.LoaderContext.BuildServiceProvider().CreateScope();
-                scopesByLoader.Add(descriptor.LoaderContext, scope);
-                scopes.Add(scope);
-            }
-
-            var pluginInstance = (PluginBase)scope.ServiceProvider.GetService(pluginInfo.Type)!;
             if (pluginInfo.PluginType == PluginType.Basic)
             {
-                if (!includeBasicPlugins)
-                {
-                    continue;
-                }
-
-                if (pluginInfo.Lifetime != PluginLifetime.Singleton)
-                {
-                    try
-                    {
-                        await _pluginCatalog.InitializePluginAsync(pluginInstance, pluginInfo);
-                        basicPlugins.Add(new PluginExecutionInfo(pluginInstance, pluginInfo, true, scope));
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error occurs while initializing plugin: " + pluginInfo.Metadata.Name);
-                    }
-                }
-                else
-                {
-                    basicPlugins.Add(new PluginExecutionInfo(pluginInstance, pluginInfo, false, scope));
-                }
-
+                basicDescriptors.Add(descriptor);
                 continue;
             }
 
@@ -341,43 +406,59 @@ public sealed class PluginRuntime
                 continue;
             }
 
-            if (pluginInstance is INoticeHandler noticeHandler)
-            {
-                noticeHandlers.Add(new PluginHook<INoticeHandler>(pluginInfo, noticeHandler));
-            }
-
-            if (pluginInstance is IResponseInterceptor responseInterceptor)
-            {
-                responseInterceptors.Add(responseInterceptor);
-            }
-
-            if (pluginInstance is IBindingFailureHandler bindingFailureHandler)
-            {
-                bindingFailureHandlers.Add(bindingFailureHandler);
-            }
-
-            if (pluginInstance is IPluginExceptionHandler pluginExceptionHandler)
-            {
-                pluginExceptionHandlers.Add(pluginExceptionHandler);
-            }
+            var serviceProvider = descriptor.LoaderContext.BuildServiceProvider();
+            var pluginInstance = (PluginBase)serviceProvider.GetService(pluginInfo.Type)!;
+            AddServiceHooks(pluginInfo,
+                pluginInstance,
+                noticeHandlers,
+                responseInterceptors,
+                bindingFailureHandlers,
+                pluginExceptionHandlers);
         }
 
-        return new PluginExecutionContext(scopes,
-            basicPlugins,
-            noticeHandlers,
-            responseInterceptors,
-            bindingFailureHandlers,
-            pluginExceptionHandlers);
+        return new ExecutionCache(basicDescriptors.ToArray(),
+            noticeHandlers.ToArray(),
+            responseInterceptors.ToArray(),
+            bindingFailureHandlers.ToArray(),
+            pluginExceptionHandlers.ToArray());
+    }
+
+    private static void AddServiceHooks(PluginInfo pluginInfo,
+        PluginBase pluginInstance,
+        ICollection<PluginHook<INoticeHandler>> noticeHandlers,
+        ICollection<IResponseInterceptor> responseInterceptors,
+        ICollection<IBindingFailureHandler> bindingFailureHandlers,
+        ICollection<IPluginExceptionHandler> pluginExceptionHandlers)
+    {
+        if (pluginInstance is INoticeHandler noticeHandler)
+        {
+            noticeHandlers.Add(new PluginHook<INoticeHandler>(pluginInfo, noticeHandler));
+        }
+
+        if (pluginInstance is IResponseInterceptor responseInterceptor)
+        {
+            responseInterceptors.Add(responseInterceptor);
+        }
+
+        if (pluginInstance is IBindingFailureHandler bindingFailureHandler)
+        {
+            bindingFailureHandlers.Add(bindingFailureHandler);
+        }
+
+        if (pluginInstance is IPluginExceptionHandler pluginExceptionHandler)
+        {
+            pluginExceptionHandlers.Add(pluginExceptionHandler);
+        }
     }
 
     private sealed class PluginExecutionContext : IAsyncDisposable
     {
-        public PluginExecutionContext(List<IServiceScope> scopes,
-            List<PluginExecutionInfo> basicPlugins,
-            List<PluginHook<INoticeHandler>> noticeHandlers,
-            List<IResponseInterceptor> responseInterceptors,
-            List<IBindingFailureHandler> bindingFailureHandlers,
-            List<IPluginExceptionHandler> pluginExceptionHandlers)
+        public PluginExecutionContext(IReadOnlyList<IServiceScope> scopes,
+            IReadOnlyList<PluginExecutionInfo> basicPlugins,
+            IReadOnlyList<PluginHook<INoticeHandler>> noticeHandlers,
+            IReadOnlyList<IResponseInterceptor> responseInterceptors,
+            IReadOnlyList<IBindingFailureHandler> bindingFailureHandlers,
+            IReadOnlyList<IPluginExceptionHandler> pluginExceptionHandlers)
         {
             Scopes = scopes;
             BasicPlugins = basicPlugins;
@@ -387,12 +468,12 @@ public sealed class PluginRuntime
             PluginExceptionHandlers = pluginExceptionHandlers;
         }
 
-        public List<IServiceScope> Scopes { get; }
-        public List<PluginExecutionInfo> BasicPlugins { get; }
-        public List<PluginHook<INoticeHandler>> NoticeHandlers { get; }
-        public List<IResponseInterceptor> ResponseInterceptors { get; }
-        public List<IBindingFailureHandler> BindingFailureHandlers { get; }
-        public List<IPluginExceptionHandler> PluginExceptionHandlers { get; }
+        public IReadOnlyList<IServiceScope> Scopes { get; }
+        public IReadOnlyList<PluginExecutionInfo> BasicPlugins { get; }
+        public IReadOnlyList<PluginHook<INoticeHandler>> NoticeHandlers { get; }
+        public IReadOnlyList<IResponseInterceptor> ResponseInterceptors { get; }
+        public IReadOnlyList<IBindingFailureHandler> BindingFailureHandlers { get; }
+        public IReadOnlyList<IPluginExceptionHandler> PluginExceptionHandlers { get; }
 
         public async ValueTask DisposeAsync()
         {
@@ -441,5 +522,27 @@ public sealed class PluginRuntime
 
         public PluginInfo PluginInfo { get; }
         public THook Hook { get; }
+    }
+
+    private sealed class ExecutionCache
+    {
+        public ExecutionCache(IReadOnlyList<PluginDescriptor> basicDescriptors,
+            IReadOnlyList<PluginHook<INoticeHandler>> noticeHandlers,
+            IReadOnlyList<IResponseInterceptor> responseInterceptors,
+            IReadOnlyList<IBindingFailureHandler> bindingFailureHandlers,
+            IReadOnlyList<IPluginExceptionHandler> pluginExceptionHandlers)
+        {
+            BasicDescriptors = basicDescriptors;
+            NoticeHandlers = noticeHandlers;
+            ResponseInterceptors = responseInterceptors;
+            BindingFailureHandlers = bindingFailureHandlers;
+            PluginExceptionHandlers = pluginExceptionHandlers;
+        }
+
+        public IReadOnlyList<PluginDescriptor> BasicDescriptors { get; }
+        public IReadOnlyList<PluginHook<INoticeHandler>> NoticeHandlers { get; }
+        public IReadOnlyList<IResponseInterceptor> ResponseInterceptors { get; }
+        public IReadOnlyList<IBindingFailureHandler> BindingFailureHandlers { get; }
+        public IReadOnlyList<IPluginExceptionHandler> PluginExceptionHandlers { get; }
     }
 }
