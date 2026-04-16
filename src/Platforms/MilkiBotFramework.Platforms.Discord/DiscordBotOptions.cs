@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Discord;
 
 namespace MilkiBotFramework.Platforms.Discord;
@@ -11,5 +12,20 @@ public class DiscordBotOptions : BotOptions
     /// </summary>
     public GatewayIntents? GatewayIntents { get; set; }
 
+    [Description("Discord 代理配置。未配置 Url 时，会回退到 HttpOptions.ProxyUrl；UseSystemProxy=true 时可直接使用系统代理。")]
+    public DiscordProxyOptions Proxy { get; set; } = new();
+
     public string Token { get; set; } = string.Empty;
+}
+
+public class DiscordProxyOptions
+{
+    [Description("是否启用 Discord 代理")]
+    public bool Enabled { get; set; }
+
+    [Description("是否使用系统代理；若同时配置 Url，则优先使用 Url")]
+    public bool UseSystemProxy { get; set; }
+
+    [Description("自定义代理地址，例如 http://127.0.0.1:7890")]
+    public string? Url { get; set; }
 }

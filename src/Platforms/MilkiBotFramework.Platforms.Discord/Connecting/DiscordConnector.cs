@@ -1,6 +1,9 @@
 using System.Collections.Concurrent;
+using System.Net;
 using System.Text;
 using Discord;
+using Discord.Net.Rest;
+using Discord.Net.WebSockets;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
@@ -32,6 +35,14 @@ public class DiscordConnector : IConnector
         {
             GatewayIntents = gatewayIntents
         };
+
+        var proxy = CreateProxy(discordOptions);
+        if (proxy != null)
+        {
+            config.RestClientProvider = DefaultRestClientProvider.Create(true, proxy);
+            config.WebSocketProvider = DefaultWebSocketProvider.Create(proxy);
+        }
+
         _client = new DiscordSocketClient(config);
 
         _client.Log += LogAsync;
@@ -207,6 +218,36 @@ public class DiscordConnector : IConnector
         if (user.Roles.Any(r => r.Permissions.Administrator))
             return MemberRole.Admin;
         return MemberRole.Member;
+    }
+
+    private static IWebProxy? CreateProxy(DiscordBotOptions options)
+    {
+        var proxy = options.Proxy;
+        var proxyUrl = string.IsNullOrWhiteSpace(proxy.Url)
+            ? options.HttpOptions.ProxyUrl
+            : proxy.Url;
+
+        if (!string.IsNullOrWhiteSpace(proxyUrl))
+        {
+            if (!Uri.TryCreate(proxyUrl, UriKind.Absolute, out var proxyUri))
+            {
+                throw new InvalidOperationException($"Invalid Discord proxy url: {proxyUrl}");
+            }
+
+            return new WebProxy(proxyUri)
+            {
+                Credentials = CredentialCache.DefaultCredentials
+            };
+        }
+
+        if (!proxy.Enabled || !proxy.UseSystemProxy)
+        {
+            return null;
+        }
+
+        var systemProxy = WebRequest.GetSystemWebProxy();
+        systemProxy.Credentials = CredentialCache.DefaultCredentials;
+        return systemProxy;
     }
 
     private Task LogAsync(LogMessage arg)

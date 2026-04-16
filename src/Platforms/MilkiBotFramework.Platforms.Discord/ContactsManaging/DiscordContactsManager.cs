@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
+using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.ContactsManaging.Models;
 using MilkiBotFramework.ContactsManaging.Results;
@@ -17,12 +18,13 @@ public class DiscordContactsManager : ContactsManagerBase
     private readonly DiscordConnector _connector;
     private readonly ILogger<DiscordContactsManager> _logger;
 
-    public DiscordContactsManager(DiscordConnector connector,
+    public DiscordContactsManager(IConnector connector,
         BotTaskScheduler botTaskScheduler,
         ILogger<DiscordContactsManager> logger,
         EventBus eventBus) : base(botTaskScheduler, logger, eventBus)
     {
-        _connector = connector;
+        _connector = connector as DiscordConnector
+                     ?? throw new ArgumentException("Connector must be DiscordConnector", nameof(connector));
         _logger = logger;
     }
 
