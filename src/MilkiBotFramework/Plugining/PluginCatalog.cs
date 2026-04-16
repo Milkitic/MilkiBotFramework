@@ -129,14 +129,15 @@ public class PluginCatalog
 
     private async Task CreateContextAndAddPlugins(string? contextName, IEnumerable<string> files)
     {
-        var assemblyResults = AssemblyHelper.AnalyzePluginsInAssemblyFilesByDnlib(_logger, files);
+        var assemblyFiles = files as string[] ?? files.ToArray();
+        var assemblyResults = AssemblyHelper.AnalyzePluginsInAssemblyFilesByDnlib(_logger, assemblyFiles);
         if (assemblyResults.Count <= 0 || assemblyResults.All(k => k.TypeResults.Length == 0))
             return;
 
         var isRuntimeContext = contextName == null;
 
         var ctx = !isRuntimeContext
-            ? new AssemblyLoadContext(contextName)
+            ? new PluginAssemblyLoadContext(contextName!, assemblyFiles)
             : AssemblyLoadContext.Default;
         var dict = new Dictionary<string, AssemblyContext>();
         var loaderContext = new LoaderContext
@@ -151,35 +152,11 @@ public class PluginCatalog
         foreach (var assemblyResult in assemblyResults.OrderBy(k => k.TypeResults.Length))
         {
             var assemblyPath = assemblyResult.AssemblyPath;
-            var assemblyFullName = assemblyResult.AssemblyFullName;
             var assemblyFilename = Path.GetFileName(assemblyPath);
             var typeResults = assemblyResult.TypeResults;
 
             if (typeResults.Length == 0)
             {
-                if (isRuntimeContext) continue;
-
-                try
-                {
-                    var inEntryAssembly =
-                        AssemblyLoadContext.Default.Assemblies.FirstOrDefault(k =>
-                            k.FullName == assemblyFullName);
-                    if (inEntryAssembly != null)
-                    {
-                        ctx.LoadFromAssemblyName(inEntryAssembly.GetName());
-                        _logger.LogDebug($"Dependency loaded {assemblyFilename} (Host)");
-                    }
-                    else
-                    {
-                        ctx.LoadFromAssemblyPath(assemblyPath);
-                        _logger.LogDebug($"Dependency loaded {assemblyFilename} (Plugin)");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning($"Failed to load dependency {assemblyFilename}: {ex.Message}");
-                }
-
                 continue;
             }
 
@@ -314,19 +291,6 @@ public class PluginCatalog
 
     private async Task InitializeLoaderContext(LoaderContext loaderContext)
     {
-        if (loaderContext.AssemblyLoadContext != AssemblyLoadContext.Default)
-        {
-            var existAssemblies = loaderContext.AssemblyLoadContext.Assemblies.Select(k => k.FullName).ToHashSet();
-
-            foreach (var assembly in AssemblyLoadContext.Default.Assemblies)
-            {
-                if (!assembly.IsDynamic && !existAssemblies.Contains(assembly.FullName))
-                {
-                    loaderContext.AssemblyLoadContext.LoadFromAssemblyName(assembly.GetName());
-                }
-            }
-        }
-
         var allTypes = _serviceCollection;
         foreach (var serviceDescriptor in allTypes)
         {

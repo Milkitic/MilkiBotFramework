@@ -14,7 +14,7 @@ public sealed class PluginRuntime
     private readonly CommandInjector _commandInjector;
     private readonly PluginCatalog _pluginCatalog;
     private readonly PluginResponseDispatcher _responseDispatcher;
-    private readonly object _executionCacheLock = new();
+    private readonly Lock _executionCacheLock = new();
 
     private volatile ExecutionCache? _executionCache;
 
