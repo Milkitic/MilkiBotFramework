@@ -33,7 +33,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     private Type? _commandAnalyzerType;
     private IParameterConverter? _defaultConverter;
-    private Type? _richMessageConverterType;
+    private readonly List<Type> _richMessageConverterTypes = new();
 
     private string? _optionPath;
     private Type? _optionType;
@@ -114,7 +114,11 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     public TBuilder UseRichMessageConverter<T>() where T : IRichMessageConverter
     {
-        _richMessageConverterType = typeof(T);
+        if (!_richMessageConverterTypes.Contains(typeof(T)))
+        {
+            _richMessageConverterTypes.Add(typeof(T));
+        }
+
         return (TBuilder)this;
     }
 
@@ -175,7 +179,12 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
         if (_defaultConverter != null) commandLineAnalyzer.DefaultParameterConverter = _defaultConverter;
 
         // Connector
-        var connectors = serviceProvider.GetServices<IConnector>();
+        var connectors = serviceProvider.GetServices<IPlatformConnector>().Cast<IConnector>().ToArray();
+        if (connectors.Length == 0)
+        {
+            connectors = serviceProvider.GetServices<IConnector>().ToArray();
+        }
+
         foreach (var c in connectors)
         {
             foreach (var configurator in _connectorConfigurators)
@@ -191,9 +200,11 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     protected virtual void ConfigServices(IServiceCollection serviceCollection)
     {
         var configureLogger = _configureLogger ??= CreateDefaultLoggerConfiguration();
+        var optionInstance = GetOptionInstance();
         serviceCollection
             .AddLogging(k => configureLogger(k))
-            .AddSingleton(GetOptionInstance())
+            .AddSingleton(typeof(BotOptions), optionInstance)
+            .AddSingleton(optionInstance.GetType(), optionInstance)
             .AddSingleton<BotTaskScheduler>()
             .AddSingleton<LightHttpClient>()
             .AddSingleton<PluginCatalog>()
@@ -207,11 +218,11 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
             .AddSingleton(new ConfigLoggerProvider(_configureLogger))
             .AddSingleton(typeof(ICommandLineAnalyzer),
                 _commandAnalyzerType ?? typeof(CommandLineAnalyzer))
-            .AddSingleton(typeof(IRichMessageConverter),
-                _richMessageConverterType ?? typeof(DefaultRichMessageConverter))
             .AddSingleton(typeof(ConfigurationFactory))
             .AddSingleton(typeof(IConfiguration<>), typeof(Configuration<>))
             .AddSingleton(typeof(Bot), typeof(TBot));
+
+        RegisterRichMessageConverters(serviceCollection);
             
         // Dispatcher
          if (_dispatcherTypes.Count == 0)
@@ -220,11 +231,16 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
          }
          else if (_dispatcherTypes.Count == 1)
          {
-              serviceCollection.AddSingleton(typeof(IDispatcher), _dispatcherTypes[0]);
+              RegisterPlatformService<IDispatcher, IPlatformDispatcher>(serviceCollection, _dispatcherTypes[0]);
          }
          else
          {
-              throw new InvalidOperationException("Multiple IDispatcher implementations are not supported. Create separate Bot instances for each platform.");
+              foreach (var dispatcherType in _dispatcherTypes)
+              {
+                  RegisterPlatformComponent<IPlatformDispatcher>(serviceCollection, dispatcherType);
+              }
+
+              serviceCollection.AddSingleton<IDispatcher, PlatformDispatcherRouter>();
          }
  
          // ContactsManager
@@ -234,11 +250,18 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
          }
          else if (_contactsManagerTypes.Count == 1)
          {
-              serviceCollection.AddSingleton(typeof(IContactsManager), _contactsManagerTypes[0]);
+              RegisterPlatformService<IContactsManager, IPlatformContactsManager>(serviceCollection,
+                  _contactsManagerTypes[0]);
          }
          else
          {
-              throw new InvalidOperationException("Multiple IContactsManager implementations are not supported. Create separate Bot instances for each platform.");
+              foreach (var contactsManagerType in _contactsManagerTypes)
+              {
+                  RegisterPlatformComponent<IPlatformContactsManager>(serviceCollection, contactsManagerType);
+              }
+
+              serviceCollection.AddSingleton<IPlatformContactsManagerRouter, PlatformContactsManagerRouter>();
+              serviceCollection.AddSingleton<IContactsManager, PlatformContactsManagerRouter>();
          }
  
          // Connectors
@@ -248,11 +271,16 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
          }
          else if (_connectorTypes.Count == 1)
          {
-             serviceCollection.AddSingleton(typeof(IConnector), _connectorTypes[0]);
+             RegisterPlatformService<IConnector, IPlatformConnector>(serviceCollection, _connectorTypes[0]);
          }
          else
          {
-             throw new InvalidOperationException("Multiple IConnector implementations are not supported. Create separate Bot instances for each platform.");
+             foreach (var connectorType in _connectorTypes)
+             {
+                 RegisterPlatformComponent<IPlatformConnector>(serviceCollection, connectorType);
+             }
+
+             serviceCollection.AddSingleton<IConnector, CompositeConnector>();
          }
  
          // MessageApi
@@ -262,12 +290,16 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
          }
          else if (_messageApiTypes.Count == 1)
          {
-             serviceCollection.AddSingleton(_messageApiTypes[0]);
-             serviceCollection.AddSingleton(typeof(IMessageApi), provider => provider.GetService(_messageApiTypes[0])!);
+             RegisterPlatformService<IMessageApi, IPlatformMessageApi>(serviceCollection, _messageApiTypes[0]);
          }
          else
          {
-             throw new InvalidOperationException("Multiple IMessageApi implementations are not supported. Create separate Bot instances for each platform.");
+             foreach (var messageApiType in _messageApiTypes)
+             {
+                 RegisterPlatformComponent<IPlatformMessageApi>(serviceCollection, messageApiType);
+             }
+
+             serviceCollection.AddSingleton<IMessageApi, PlatformMessageApiRouter>();
          }
 
         serviceCollection.AddSingleton(serviceCollection);
@@ -281,5 +313,50 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     private static Action<ILoggingBuilder> CreateDefaultLoggerConfiguration()
     {
         return logging => logging.AddConsole();
+    }
+
+    private void RegisterRichMessageConverters(IServiceCollection serviceCollection)
+    {
+        if (_richMessageConverterTypes.Count == 0)
+        {
+            serviceCollection.AddSingleton<IRichMessageConverter, DefaultRichMessageConverter>();
+            return;
+        }
+
+        if (_richMessageConverterTypes.Count == 1)
+        {
+            RegisterPlatformService<IRichMessageConverter, IPlatformRichMessageConverter>(serviceCollection,
+                _richMessageConverterTypes[0]);
+            return;
+        }
+
+        foreach (var converterType in _richMessageConverterTypes)
+        {
+            RegisterPlatformComponent<IPlatformRichMessageConverter>(serviceCollection, converterType);
+        }
+
+        serviceCollection.AddSingleton<IPlatformRichMessageConverterRouter, PlatformRichMessageConverterRouter>();
+        serviceCollection.AddSingleton<IRichMessageConverter, PlatformRichMessageConverterRouter>();
+    }
+
+    private static void RegisterPlatformService<TPrimaryService, TPlatformService>(IServiceCollection services,
+        Type implementationType)
+        where TPrimaryService : class
+        where TPlatformService : class
+    {
+        services.AddSingleton(implementationType);
+        services.AddSingleton(typeof(TPrimaryService), provider => provider.GetRequiredService(implementationType));
+        if (typeof(TPlatformService).IsAssignableFrom(implementationType))
+        {
+            services.AddSingleton(typeof(TPlatformService), provider => provider.GetRequiredService(implementationType));
+        }
+    }
+
+    private static void RegisterPlatformComponent<TPlatformService>(IServiceCollection services,
+        Type implementationType)
+        where TPlatformService : class
+    {
+        services.AddSingleton(implementationType);
+        services.AddSingleton(typeof(TPlatformService), provider => provider.GetRequiredService(implementationType));
     }
 }

@@ -1,9 +1,11 @@
 ﻿using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
+using MilkiBotFramework.Dispatching;
 
 namespace MilkiBotFramework.Aspnetcore
 {
@@ -94,19 +96,82 @@ namespace MilkiBotFramework.Aspnetcore
 
         protected virtual void ConfigureMiddleware(IServiceProvider serviceProvider)
         {
-            var connector = serviceProvider.GetService<IConnector>()!;
-            if (connector.ConnectionType == ConnectionType.ReverseWebSocket)
+            var dispatcher = serviceProvider.GetRequiredService<IDispatcher>();
+            var platformConnectors = serviceProvider.GetServices<IPlatformConnector>()
+                .OfType<AspnetcoreConnector>()
+                .Select(connector => (Connector: connector, Transport: ((IPlatformConnector)connector).PlatformId))
+                .ToArray();
+
+            if (platformConnectors.Length == 0 && serviceProvider.GetService<IConnector>() is AspnetcoreConnector singleConnector)
+            {
+                var transport = singleConnector is IPlatformConnector platformConnector
+                    ? platformConnector.PlatformId
+                    : "http";
+                platformConnectors = [(singleConnector, transport)];
+            }
+
+            if (platformConnectors.Any(k => k.Connector.ConnectionType == ConnectionType.ReverseWebSocket))
             {
                 var webSocketOptions = new WebSocketOptions
                 {
                     KeepAliveInterval = TimeSpan.FromSeconds(2)
                 };
                 WebApp.UseWebSockets(webSocketOptions);
-                WebApp.UseMiddleware<ReverseWebSocketMiddleware>();
             }
-            else if (connector.ConnectionType == ConnectionType.Http)
+
+            foreach (var (connector, transport) in platformConnectors)
             {
-                WebApp.UseMiddleware<HttpMiddleware>();
+                if (connector.ConnectionType == ConnectionType.ReverseWebSocket)
+                {
+                    WebApp.Use(async (context, next) =>
+                    {
+                        if (!context.Request.Path.Equals(connector.BindingPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            await next(context);
+                            return;
+                        }
+
+                        if (!context.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase))
+                        {
+                            context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+                            return;
+                        }
+
+                        if (!context.WebSockets.IsWebSocketRequest)
+                        {
+                            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                            return;
+                        }
+
+                        var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                        await connector.OnWebSocketOpen(webSocket);
+                    });
+                    continue;
+                }
+
+                if (connector.ConnectionType != ConnectionType.Http)
+                {
+                    continue;
+                }
+
+                WebApp.Use(async (context, next) =>
+                {
+                    if (!context.Request.Path.Equals(connector.BindingPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        await next(context);
+                        return;
+                    }
+
+                    if (!context.Request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase))
+                    {
+                        context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+                        return;
+                    }
+
+                    using var reader = new StreamReader(context.Request.Body, System.Text.Encoding.UTF8, true, 1024, true);
+                    var bodyStr = await reader.ReadToEndAsync();
+                    await dispatcher.InvokeMessageReceived(InboundMessage.FromRawText(bodyStr, transport));
+                });
             }
         }
 

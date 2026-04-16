@@ -11,14 +11,21 @@ namespace MilkiBotFramework.Platforms.Mock.Dispatching;
 /// </summary>
 public class MockDispatcher : DispatcherBase<MockMessageContext>
 {
+    public override string PlatformId => PlatformIds.Mock;
+
     public MockDispatcher(
-        IConnector connector,
         IMessageContextEnricher messageContextEnricher,
         MessageDispatchCoordinator messageDispatchCoordinator,
         ILogger<MockDispatcher> logger,
         IServiceProvider serviceProvider)
-        : base(connector, messageContextEnricher, messageDispatchCoordinator, logger, serviceProvider)
+        : base(messageContextEnricher, messageDispatchCoordinator, logger, serviceProvider)
     {
+    }
+
+    public override bool CanDispatch(InboundMessage inboundMessage)
+    {
+        return string.Equals(inboundMessage.Transport, PlatformId, StringComparison.OrdinalIgnoreCase)
+               || inboundMessage.GetPayload<MockMessage>() != null;
     }
 
     protected override bool TryPopulateMessageContext(

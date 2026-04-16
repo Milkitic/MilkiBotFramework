@@ -39,6 +39,7 @@ public class Bot
         BotTaskScheduler = botTaskScheduler;
         ContactsManager = contactsManager;
         Logger = logger;
+        Connector.MessageReceived += Dispatcher.InvokeMessageReceived;
         messageDispatchNotifier.MessageDispatched += async messageContext =>
         {
             if (OnMessageReceived != null) await OnMessageReceived(messageContext);

@@ -13,13 +13,15 @@ namespace MilkiBotFramework.ContactsManaging;
 /// 表示一个类，用以自动管理联系簿信息。
 /// <para>在MilkiBotFramework中，联系簿支持3种联系人类型，其中包括私聊、主频道与子频道。</para>
 /// </summary>
-public abstract class ContactsManagerBase : IContactsManager
+public abstract class ContactsManagerBase : IPlatformContactsManager
 {
     private readonly BotTaskScheduler _botTaskScheduler;
     private readonly ILogger _logger;
     private bool _initialized;
 
     public event Func<ContactsUpdateEvent, Task>? ContactsUpdated;
+
+    public virtual string PlatformId => string.Empty;
 
     protected SelfInfo? SelfInfo;
 
@@ -124,6 +126,11 @@ public abstract class ContactsManagerBase : IContactsManager
     public IEnumerable<PrivateInfo> GetAllPrivates()
     {
         return PrivateMapping.Values;
+    }
+
+    public virtual bool Supports(MessageContext messageContext)
+    {
+        return string.Equals(messageContext.PlatformId, PlatformId, StringComparison.OrdinalIgnoreCase);
     }
 
     protected abstract bool GetContactsUpdateInfo(MessageContext messageContext, out ContactsUpdateInfo? updateInfo);

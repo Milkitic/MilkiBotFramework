@@ -11,13 +11,21 @@ namespace MilkiBotFramework.Platforms.Discord.Dispatching;
 
 public class DiscordDispatcher : DispatcherBase<DiscordMessageContext>
 {
-    public DiscordDispatcher(IConnector connector,
-        IMessageContextEnricher messageContextEnricher,
+    public override string PlatformId => PlatformIds.Discord;
+
+    public DiscordDispatcher(IMessageContextEnricher messageContextEnricher,
         MessageDispatchCoordinator messageDispatchCoordinator,
         ILogger<DiscordDispatcher> logger,
         IServiceProvider serviceProvider)
-        : base(connector, messageContextEnricher, messageDispatchCoordinator, logger, serviceProvider)
+        : base(messageContextEnricher, messageDispatchCoordinator, logger, serviceProvider)
     {
+    }
+
+    public override bool CanDispatch(InboundMessage inboundMessage)
+    {
+        return string.Equals(inboundMessage.Transport, PlatformId, StringComparison.OrdinalIgnoreCase)
+               || inboundMessage.GetPayload<SocketMessage>() != null
+               || inboundMessage.GetPayload<DiscordContactEvent>() != null;
     }
 
     protected override bool TryPopulateMessageContext(DiscordMessageContext messageContext,

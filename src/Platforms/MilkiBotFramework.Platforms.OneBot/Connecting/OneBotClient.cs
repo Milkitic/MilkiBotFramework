@@ -5,8 +5,10 @@ using MilkiBotFramework.Platforms.OneBot.Connecting.ResponseModel;
 
 namespace MilkiBotFramework.Platforms.OneBot.Connecting;
 
-public sealed class OneBotClient : WebSocketClientConnector, IOneBotConnector
+public sealed class OneBotClient : WebSocketClientConnector, IOneBotConnector, IPlatformConnector
 {
+    public string PlatformId => PlatformIds.OneBot;
+
     public OneBotClient(ILogger<OneBotClient> logger) : base(logger)
     {
     }

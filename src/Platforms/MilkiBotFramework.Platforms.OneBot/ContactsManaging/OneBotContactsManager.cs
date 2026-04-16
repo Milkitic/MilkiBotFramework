@@ -12,6 +12,8 @@ namespace MilkiBotFramework.Platforms.OneBot.ContactsManaging;
 
 public sealed class OneBotContactsManager : ContactsManagerBase
 {
+    public override string PlatformId => PlatformIds.OneBot;
+
     private readonly OneBotApi _oneBotApi;
     private readonly ILogger<OneBotContactsManager> _logger;
 
@@ -95,7 +97,6 @@ public sealed class OneBotContactsManager : ContactsManagerBase
             {
                 "owner" => MemberRole.Owner,
                 "admin" => MemberRole.Admin,
-                "member" => MemberRole.Member,
                 _ => MemberRole.Member
             }
         };
@@ -177,7 +178,6 @@ public sealed class OneBotContactsManager : ContactsManagerBase
                     {
                         "owner" => MemberRole.Owner,
                         "admin" => MemberRole.Admin,
-                        "member" => MemberRole.Member,
                         _ => MemberRole.Member
                     },
                     Nickname = groupMember.Nickname

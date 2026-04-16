@@ -11,23 +11,18 @@ using MilkiBotFramework.Platforms.Discord.Messaging;
 
 namespace MilkiBotFramework.Platforms.Discord.Connecting;
 
-public class DiscordConnector : IConnector
+public class DiscordConnector : IPlatformConnector
 {
     private readonly DiscordSocketClient _client;
     private readonly ILogger<DiscordConnector> _logger;
     private readonly DiscordBotOptions _options;
 
-    public DiscordConnector(BotOptions options, ILogger<DiscordConnector> logger)
+    public DiscordConnector(DiscordBotOptions options, ILogger<DiscordConnector> logger)
     {
-        if (options is not DiscordBotOptions discordOptions)
-        {
-            throw new ArgumentException("Options must be of type DiscordBotOptions", nameof(options));
-        }
-
-        _options = discordOptions;
+        _options = options;
         _logger = logger;
 
-        var gatewayIntents = discordOptions.GatewayIntents
+        var gatewayIntents = options.GatewayIntents
                              ?? (GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent);
 
         var config = new DiscordSocketConfig
@@ -35,7 +30,7 @@ public class DiscordConnector : IConnector
             GatewayIntents = gatewayIntents
         };
 
-        var proxy = CreateProxy(discordOptions);
+        var proxy = CreateProxy(options);
         if (proxy != null)
         {
             config.RestClientProvider = DefaultRestClientProvider.Create(true, proxy);
@@ -59,6 +54,7 @@ public class DiscordConnector : IConnector
     }
 
     public DiscordSocketClient Client => _client;
+    public string PlatformId => PlatformIds.Discord;
 
     public event Func<InboundMessage, Task>? MessageReceived;
 

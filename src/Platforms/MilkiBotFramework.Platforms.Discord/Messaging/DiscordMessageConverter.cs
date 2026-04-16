@@ -5,16 +5,18 @@ using MilkiBotFramework.Messaging.RichMessages;
 
 namespace MilkiBotFramework.Platforms.Discord.Messaging;
 
-public class DiscordMessageConverter : IRichMessageConverter
+public class DiscordMessageConverter : IPlatformRichMessageConverter
 {
+    public string PlatformId => PlatformIds.Discord;
+
     // 匹配 Discord 用户提及格式: <@userId> 或 <@!userId>
-    private static readonly Regex AtPattern = new(@"<@!?(\d+)>", RegexOptions.Compiled);
+    private static readonly Regex s_atPattern = new(@"<@!?(\d+)>", RegexOptions.Compiled);
 
     // 匹配 Discord 频道引用格式: <#channelId>
-    private static readonly Regex ChannelPattern = new(@"<#(\d+)>", RegexOptions.Compiled);
+    private static readonly Regex s_channelPattern = new(@"<#(\d+)>", RegexOptions.Compiled);
 
     // 匹配 Discord 角色提及格式: <@&roleId>
-    private static readonly Regex RolePattern = new(@"<@&(\d+)>", RegexOptions.Compiled);
+    private static readonly Regex s_rolePattern = new(@"<@&(\d+)>", RegexOptions.Compiled);
 
     public async ValueTask<string> EncodeAsync(IRichMessage message)
     {
@@ -60,7 +62,7 @@ public class DiscordMessageConverter : IRichMessageConverter
             var matchValue = match.Value;
 
             // 解析用户提及 <@userId> 或 <@!userId>
-            var atMatch = AtPattern.Match(matchValue);
+            var atMatch = s_atPattern.Match(matchValue);
             if (atMatch.Success)
             {
                 richMessages.Add(new At(atMatch.Groups[1].Value));
@@ -69,7 +71,7 @@ public class DiscordMessageConverter : IRichMessageConverter
             }
 
             // 解析频道引用 <#channelId> - 替换为文本表示（框架无 ChannelReference 类型）
-            var channelMatch = ChannelPattern.Match(matchValue);
+            var channelMatch = s_channelPattern.Match(matchValue);
             if (channelMatch.Success)
             {
                 richMessages.Add(new Text($"#{channelMatch.Groups[1].Value}"));
@@ -78,12 +80,11 @@ public class DiscordMessageConverter : IRichMessageConverter
             }
 
             // 解析角色提及 <@&roleId> - 替换为文本表示
-            var roleMatch = RolePattern.Match(matchValue);
+            var roleMatch = s_rolePattern.Match(matchValue);
             if (roleMatch.Success)
             {
                 richMessages.Add(new Text($"@&{roleMatch.Groups[1].Value}"));
                 lastIndex = match.Index + match.Length;
-                continue;
             }
         }
 

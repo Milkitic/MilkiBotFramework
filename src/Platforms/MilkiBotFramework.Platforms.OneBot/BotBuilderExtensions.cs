@@ -13,7 +13,8 @@ namespace MilkiBotFramework.Platforms.OneBot;
 public static class BotBuilderExtensions
 {
     public static TBuilder UseOneBot<TBot, TBuilder>(this BotBuilderBase<TBot, TBuilder> builder,
-        OneBotConnection? connection = null)
+        OneBotConnection? connection = null,
+        string? optionPath = null)
         where TBot : Bot where TBuilder : BotBuilderBase<TBot, TBuilder>
     {
         builder
@@ -22,7 +23,7 @@ public static class BotBuilderExtensions
             .UseContactsManager<OneBotContactsManager>()
             .UseDispatcher<OneBotDispatcher>()
             .UseMessageApi<OneBotApi>()
-            .UseOptions<OneBotOptions>(null)
+            .UseOptions<OneBotOptions>(optionPath)
             .UseRichMessageConverter<OneBotMessageConverter>();
 
         connection ??= ((OneBotOptions)builder.GetOptionInstance()).Connection;
@@ -77,13 +78,13 @@ public static class BotBuilderExtensions
         builder.ConfigureServices(k =>
         {
             if (connection.ConnectionType == ConnectionType.WebSocket)
+            {
                 k.AddSingleton(typeof(IWebSocketConnector),
                     s => new OneBotClient(s.GetService<ILogger<OneBotClient>>()!)
                     {
                         TargetUri = connection.TargetUri
                     });
-            else
-                k.AddSingleton(typeof(IWebSocketConnector), _ => null!);
+            }
         });
     }
 }

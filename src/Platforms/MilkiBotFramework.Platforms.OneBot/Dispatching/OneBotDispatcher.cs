@@ -10,13 +10,25 @@ namespace MilkiBotFramework.Platforms.OneBot.Dispatching
 {
     public class OneBotDispatcher : DispatcherBase<OneBotMessageContext>
     {
-        public OneBotDispatcher(IConnector connector,
-            IMessageContextEnricher messageContextEnricher,
+        public override string PlatformId => PlatformIds.OneBot;
+
+        public OneBotDispatcher(IMessageContextEnricher messageContextEnricher,
             MessageDispatchCoordinator messageDispatchCoordinator,
             ILogger<OneBotDispatcher> logger,
             IServiceProvider serviceProvider)
-            : base(connector, messageContextEnricher, messageDispatchCoordinator, logger, serviceProvider)
+            : base(messageContextEnricher, messageDispatchCoordinator, logger, serviceProvider)
         {
+        }
+
+        public override bool CanDispatch(InboundMessage inboundMessage)
+        {
+            if (string.Equals(inboundMessage.Transport, PlatformId, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var rawJson = inboundMessage.RawText;
+            return !string.IsNullOrWhiteSpace(rawJson) && rawJson.Contains("\"post_type\"", StringComparison.Ordinal);
         }
 
         protected override bool TryPopulateMessageContext(OneBotMessageContext messageContext,

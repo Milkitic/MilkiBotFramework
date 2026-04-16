@@ -28,7 +28,9 @@ public sealed class AsyncMessageSessionManager
         asyncMessage.SetMessage(new AsyncMessageResponse(messageContext.MessageId!,
             messageContext.TextMessage!,
             messageContext.ReceivedTime,
-            s => _richMessageConverter.Decode(s.AsMemory()),
+            s => _richMessageConverter is IPlatformRichMessageConverterRouter router
+                ? router.Decode(messageContext, s.AsMemory())
+                : _richMessageConverter.Decode(s.AsMemory()),
             s =>
             {
                 _commandLineAnalyzer.TryAnalyze(s, out var result, out var ex);

@@ -9,20 +9,14 @@ using SixLabors.ImageSharp;
 
 namespace MilkiBotFramework.Platforms.Discord.Connecting;
 
-public class DiscordMessageApi : IMessageApi
+public class DiscordMessageApi : IPlatformMessageApi
 {
     private readonly DiscordConnector _connector;
+    public string PlatformId => PlatformIds.Discord;
 
-    public DiscordMessageApi(IConnector connector)
+    public DiscordMessageApi(DiscordConnector connector)
     {
-        if (connector is DiscordConnector discordConnector)
-        {
-            _connector = discordConnector;
-        }
-        else
-        {
-            throw new ArgumentException("Connector must be DiscordConnector");
-        }
+        _connector = connector;
     }
 
     public bool Supports(MessageContext messageContext)
@@ -185,7 +179,7 @@ public class DiscordMessageApi : IMessageApi
         if (message is MemoryImage memImg)
         {
             var ms = new MemoryStream();
-            var (ext, mime) = GetImageFormat(memImg.ImageEncodingOptions.ImageType);
+            var (ext, _) = GetImageFormat(memImg.ImageEncodingOptions.ImageType);
             await SaveMemoryImageAsync(memImg, ms);
             ms.Position = 0;
             attachments.Add(new FileAttachment(ms, $"image.{ext}"));

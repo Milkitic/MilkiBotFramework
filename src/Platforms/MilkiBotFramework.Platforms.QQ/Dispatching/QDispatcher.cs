@@ -9,13 +9,28 @@ namespace MilkiBotFramework.Platforms.QQ.Dispatching;
 
 public class QDispatcher : DispatcherBase<QMessageContext>
 {
-    public QDispatcher(IConnector connector,
-        IMessageContextEnricher messageContextEnricher,
+    public override string PlatformId => PlatformIds.Qq;
+
+    public QDispatcher(IMessageContextEnricher messageContextEnricher,
         MessageDispatchCoordinator messageDispatchCoordinator,
         ILogger<QDispatcher> logger,
         IServiceProvider serviceProvider)
-        : base(connector, messageContextEnricher, messageDispatchCoordinator, logger, serviceProvider)
+        : base(messageContextEnricher, messageDispatchCoordinator, logger, serviceProvider)
     {
+    }
+
+    public override bool CanDispatch(InboundMessage inboundMessage)
+    {
+        var transport = inboundMessage.Transport;
+        if (!string.IsNullOrWhiteSpace(transport) && transport.StartsWith("qq", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var rawJson = inboundMessage.RawText;
+        return !string.IsNullOrWhiteSpace(rawJson)
+               && (rawJson.Contains("GROUP_AT_MESSAGE_CREATE", StringComparison.Ordinal)
+                   || rawJson.Contains("C2C_MESSAGE_CREATE", StringComparison.Ordinal));
     }
 
     protected override bool TryPopulateMessageContext(QMessageContext messageContext,

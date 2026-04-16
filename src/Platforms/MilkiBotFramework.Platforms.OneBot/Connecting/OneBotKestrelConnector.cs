@@ -7,9 +7,10 @@ using MilkiBotFramework.Platforms.OneBot.Connecting.ResponseModel;
 
 namespace MilkiBotFramework.Platforms.OneBot.Connecting;
 
-public sealed class OneBotKestrelConnector : AspnetcoreConnector, IOneBotConnector
+public sealed class OneBotKestrelConnector : AspnetcoreConnector, IOneBotConnector, IPlatformConnector
 {
     private readonly LightHttpClient _lightHttpClient;
+    public string PlatformId => PlatformIds.OneBot;
 
     public Task<OneBotApiResponse<object>> SendMessageAsync(string action, IDictionary<string, object>? @params)
     {
@@ -32,10 +33,10 @@ public sealed class OneBotKestrelConnector : AspnetcoreConnector, IOneBotConnect
         return OneBotWebSocketHelper.TryGetStateByMessage(this, msg, out state);
     }
 
-    public OneBotKestrelConnector(IWebSocketConnector? webSocketConnector,
-        ILogger<OneBotKestrelConnector> logger,
+    public OneBotKestrelConnector(ILogger<OneBotKestrelConnector> logger,
         LightHttpClient lightHttpClient,
-        WebApplication webApplication)
+        WebApplication webApplication,
+        IWebSocketConnector? webSocketConnector = null)
         : base(webSocketConnector, logger, webApplication)
     {
         _lightHttpClient = lightHttpClient;

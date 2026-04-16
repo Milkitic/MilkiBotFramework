@@ -11,8 +11,10 @@ using SixLabors.ImageSharp.Formats.Png;
 
 namespace MilkiBotFramework.Platforms.OneBot.Messaging;
 
-public class OneBotMessageConverter : IRichMessageConverter
+public class OneBotMessageConverter : IPlatformRichMessageConverter
 {
+    public string PlatformId => PlatformIds.OneBot;
+
     public async ValueTask<string> EncodeAsync(IRichMessage message)
     {
         if (message is RichMessage rich)

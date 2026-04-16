@@ -8,24 +8,18 @@ using MilkiBotFramework.Platforms.OneBot.Messaging;
 
 namespace MilkiBotFramework.Platforms.OneBot.Connecting;
 
-public class OneBotApi : IMessageApi
+public class OneBotApi : IPlatformMessageApi
 {
     private readonly IOneBotConnector _oneBotConnector;
+    public string PlatformId => PlatformIds.OneBot;
 
-    public OneBotApi(IConnector connector)
+    public OneBotApi(IOneBotConnector connector)
     {
-        if (connector is IOneBotConnector oneBotConnector)
-        {
-            Connector = connector;
-            _oneBotConnector = oneBotConnector;
-        }
-        else
-        {
-            throw new Exception($"Except for {typeof(IOneBotConnector)}, but actual is {connector.GetType()}");
-        }
+        Connector = connector;
+        _oneBotConnector = connector;
     }
 
-    public IConnector Connector { get; }
+    public IOneBotConnector Connector { get; }
 
     public bool Supports(MessageContext messageContext)
     {

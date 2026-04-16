@@ -11,35 +11,38 @@ namespace MilkiBotFramework.Dispatching;
 /// <para>该类负责将平台入站消息标准化为 <see cref="MessageContext"/>，并交由消息编排器继续处理。</para>
 /// </summary>
 /// <typeparam name="TMessageContext"><see cref="MessageContext"/>类型</typeparam>
-public abstract class DispatcherBase<TMessageContext> : IDispatcher
+public abstract class DispatcherBase<TMessageContext> : IPlatformDispatcher
     where TMessageContext : MessageContext
 {
-    private readonly IConnector _connector;
     private readonly IMessageContextEnricher _messageContextEnricher;
     private readonly MessageDispatchCoordinator _messageDispatchCoordinator;
     private readonly ILogger _logger;
     private readonly IServiceProvider _serviceProvider;
 
-    public DispatcherBase(IConnector connector,
-        IMessageContextEnricher messageContextEnricher,
+    public abstract string PlatformId { get; }
+
+    public DispatcherBase(IMessageContextEnricher messageContextEnricher,
         MessageDispatchCoordinator messageDispatchCoordinator,
         ILogger logger,
         IServiceProvider serviceProvider)
     {
-        _connector = connector;
         _messageContextEnricher = messageContextEnricher;
         _messageDispatchCoordinator = messageDispatchCoordinator;
         _logger = logger;
         _serviceProvider = serviceProvider;
-        _connector.MessageReceived += Connector_MessageReceived;
+    }
+
+    public virtual bool CanDispatch(InboundMessage inboundMessage)
+    {
+        return string.Equals(inboundMessage.Transport, PlatformId, StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task InvokeMessageReceived(InboundMessage inboundMessage)
     {
-        await Connector_MessageReceived(inboundMessage);
+        await DispatchCoreAsync(inboundMessage);
     }
 
-    private async Task Connector_MessageReceived(InboundMessage inboundMessage)
+    private async Task DispatchCoreAsync(InboundMessage inboundMessage)
     {
         try
         {
@@ -47,6 +50,7 @@ public abstract class DispatcherBase<TMessageContext> : IDispatcher
             using var scope = _serviceProvider.CreateScope();
             var messageContext = (TMessageContext)scope.ServiceProvider.GetService(typeof(TMessageContext))!;
             messageContext.InboundMessage = inboundMessage;
+            messageContext.PlatformId = PlatformId;
             if (await HandleMessageCore(messageContext, inboundMessage))
             {
                 _logger.LogDebug($"Total dispatching elapsed: {sw.Elapsed.TotalMilliseconds:N1}ms");

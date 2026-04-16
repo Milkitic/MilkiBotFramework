@@ -8,14 +8,17 @@ namespace MilkiBotFramework.Dispatching;
 public sealed class MessageContextEnricher : IMessageContextEnricher
 {
     private readonly IContactsManager _contactsManager;
+    private readonly IPlatformContactsManagerRouter? _contactsManagerRouter;
     private readonly BotOptions _botOptions;
     private readonly ILogger<MessageContextEnricher> _logger;
 
     public MessageContextEnricher(IContactsManager contactsManager,
         BotOptions botOptions,
-        ILogger<MessageContextEnricher> logger)
+        ILogger<MessageContextEnricher> logger,
+        IPlatformContactsManagerRouter? contactsManagerRouter = null)
     {
         _contactsManager = contactsManager;
+        _contactsManagerRouter = contactsManagerRouter;
         _botOptions = botOptions;
         _logger = logger;
     }
@@ -46,7 +49,8 @@ public sealed class MessageContextEnricher : IMessageContextEnricher
         if (messageIdentity.Id == null)
             throw new ArgumentNullException(nameof(messageIdentity.Id));
 
-        var privateResult = await _contactsManager.TryGetOrAddPrivateInfo(messageIdentity.Id);
+        var contactsManager = ResolveContactsManager(messageContext);
+        var privateResult = await contactsManager.TryGetOrAddPrivateInfo(messageIdentity.Id);
         if (privateResult.IsSuccess)
         {
             messageContext.Authority = _botOptions.RootAccounts.Contains(messageIdentity.Id)
@@ -68,8 +72,9 @@ public sealed class MessageContextEnricher : IMessageContextEnricher
         if (userId == null)
             throw new ArgumentNullException(nameof(MessageUserIdentity.UserId));
 
-        var channelResult = await _contactsManager.TryGetOrAddChannelInfo(messageIdentity.Id, messageIdentity.SubId);
-        var memberResult = await _contactsManager.TryGetOrAddMemberInfo(messageIdentity.Id, userId, messageIdentity.SubId);
+        var contactsManager = ResolveContactsManager(messageContext);
+        var channelResult = await contactsManager.TryGetOrAddChannelInfo(messageIdentity.Id, messageIdentity.SubId);
+        var memberResult = await contactsManager.TryGetOrAddMemberInfo(messageIdentity.Id, userId, messageIdentity.SubId);
 
         if (channelResult.IsSuccess)
             messageContext.ChannelInfo = channelResult.ChannelInfo;
@@ -97,5 +102,10 @@ public sealed class MessageContextEnricher : IMessageContextEnricher
             MemberRole.SubAdmin => MessageAuthority.SubAdmin,
             _ => MessageAuthority.Public
         };
+    }
+
+    private IContactsManager ResolveContactsManager(MessageContext messageContext)
+    {
+        return _contactsManagerRouter?.ResolveRequired(messageContext) ?? _contactsManager;
     }
 }

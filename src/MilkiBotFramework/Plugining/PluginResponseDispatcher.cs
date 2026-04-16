@@ -26,7 +26,9 @@ public sealed class PluginResponseDispatcher
     public async Task DispatchAsync(MessageContext messageContext, IResponse response)
     {
         var outgoingMessage = PrepareOutgoingMessage(messageContext, response);
-        var plainMessage = await _richMessageConverter.EncodeAsync(outgoingMessage);
+        var plainMessage = _richMessageConverter is IPlatformRichMessageConverterRouter router
+            ? await router.EncodeAsync(messageContext, outgoingMessage)
+            : await _richMessageConverter.EncodeAsync(outgoingMessage);
 
         if (response.Id == null)
         {
