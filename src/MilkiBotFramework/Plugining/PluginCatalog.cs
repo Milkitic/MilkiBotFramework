@@ -14,7 +14,7 @@ using MilkiBotFramework.Utils;
 
 namespace MilkiBotFramework.Plugining;
 
-public partial class PluginCatalog
+public class PluginCatalog
 {
     private readonly ILogger<PluginCatalog> _logger;
     private readonly IServiceProvider _serviceProvider;
@@ -495,9 +495,8 @@ public partial class PluginCatalog
             var parameters = methodInfo.GetParameters();
             foreach (var parameter in parameters)
             {
-                var targetType = parameter.ParameterType;
-                var attrs = parameter.GetCustomAttributes(false);
-                var parameterInfo = GetParameterInfo(attrs, targetType, parameter);
+                var parameterInfo = CommandParameterInfoFactory.CreateForMethodParameter(parameter,
+                    DefaultParameterConverter.Instance);
                 parameterInfos.Add(parameterInfo);
             }
 
@@ -544,59 +543,6 @@ public partial class PluginCatalog
 
         return new PluginInfo(metadata, type, baseType, lifetime, new ReadOnlyDictionary<string, CommandInfo>(commands),
             index, pluginHome, allowDisable, serviceType);
-    }
-
-    private CommandParameterInfo GetParameterInfo(object[] attrs, Type targetType,
-        ParameterInfo parameter)
-    {
-        var parameterInfo = new CommandParameterInfo
-        {
-            ParameterName = parameter.Name!,
-            ParameterType = targetType,
-        };
-
-        var isReady = false;
-        foreach (var attr in attrs)
-        {
-            switch (attr)
-            {
-                case OptionAttribute optionAttribute:
-                    parameterInfo.Authority = optionAttribute.Authority;
-                    parameterInfo.Abbr = optionAttribute.Abbreviate == '\0' ? null : optionAttribute.Abbreviate;
-                    parameterInfo.DefaultValue = optionAttribute.DefaultValue;
-                    parameterInfo.Name = optionAttribute.Name;
-                    parameterInfo.ValueConverter = CreateParameterConverter(optionAttribute.Converter);
-                    isReady = true;
-                    break;
-                case ArgumentAttribute argumentAttribute:
-                    parameterInfo.Authority = argumentAttribute.Authority;
-                    parameterInfo.DefaultValue = argumentAttribute.DefaultValue;
-                    parameterInfo.ValueConverter = CreateParameterConverter(argumentAttribute.Converter);
-                    parameterInfo.IsArgument = true;
-                    isReady = true;
-                    break;
-                case DescriptionAttribute descriptionAttribute:
-                    parameterInfo.Description = descriptionAttribute.Description;
-                    break;
-            }
-        }
-
-        if (!isReady)
-        {
-            parameterInfo.IsServiceArgument = true;
-        }
-
-        return parameterInfo;
-    }
-
-    private static IParameterConverter CreateParameterConverter(Type? converterType)
-    {
-        if (converterType == null)
-        {
-            return DefaultParameterConverter.Instance;
-        }
-
-        return (IParameterConverter)Activator.CreateInstance(converterType)!;
     }
 
     private string? ReplaceVariable(string? text)

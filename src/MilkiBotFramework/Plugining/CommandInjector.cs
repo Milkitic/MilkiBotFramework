@@ -1,8 +1,6 @@
-using System.ComponentModel;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Messaging;
-using MilkiBotFramework.Plugining.Attributes;
 using MilkiBotFramework.Plugining.CommandLine;
 using MilkiBotFramework.Plugining.Loading;
 
@@ -214,9 +212,8 @@ public class CommandInjector
             var parameterInfos = new List<CommandParameterInfo>();
             foreach (var propertyInfo in props)
             {
-                var targetType = propertyInfo.PropertyType;
-                var attrs = propertyInfo.GetCustomAttributes(false);
-                var parameterInfo = GetParameterInfo(attrs, targetType, propertyInfo);
+                var parameterInfo = CommandParameterInfoFactory.CreateForModelProperty(propertyInfo,
+                    _commandLineAnalyzer.DefaultParameterConverter);
                 if (parameterInfo != null) parameterInfos.Add(parameterInfo);
             }
 
@@ -245,45 +242,6 @@ public class CommandInjector
         }
 
         return instance;
-    }
-
-    private CommandParameterInfo? GetParameterInfo(object[] attrs,
-        Type targetType,
-        PropertyInfo property)
-    {
-        var parameterInfo = new CommandParameterInfo
-        {
-            ParameterName = property.Name,
-            ParameterType = targetType,
-            PropertyInfo = property
-        };
-
-        bool isReady = false;
-        foreach (var attr in attrs)
-        {
-            if (attr is OptionAttribute option)
-            {
-                parameterInfo.Abbr = option.Abbreviate == '\0' ? null : option.Abbreviate;
-                parameterInfo.DefaultValue = option.DefaultValue;
-                parameterInfo.Name = option.Name;
-                parameterInfo.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
-                isReady = true;
-            }
-            else if (attr is ArgumentAttribute argument)
-            {
-                parameterInfo.DefaultValue = argument.DefaultValue;
-                parameterInfo.IsArgument = true;
-                parameterInfo.ValueConverter = _commandLineAnalyzer.DefaultParameterConverter;
-                isReady = true;
-            }
-            else if (attr is DescriptionAttribute description)
-            {
-                parameterInfo.Description = description.Description;
-                //parameterInfo.HelpAuthority = help.Authority;
-            }
-        }
-
-        return isReady ? parameterInfo : null;
     }
 
     private static object? GetArgumentValue(CommandInfo commandInfo,
