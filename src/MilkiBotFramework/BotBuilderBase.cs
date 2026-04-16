@@ -1,3 +1,5 @@
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
@@ -147,10 +149,7 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
     {
         var serviceCollection = GetServiceCollection();
         ConfigServices(serviceCollection);
-        IServiceProvider? serviceProvider = null;
-        // ReSharper disable once AccessToModifiedClosure
-        serviceCollection.AddSingleton(typeof(IServiceProvider), _ => serviceProvider!);
-        serviceProvider = BuildCore(serviceCollection);
+        var serviceProvider = BuildCore(serviceCollection);
         ConfigureApp(serviceProvider);
 
         // Bot
@@ -160,8 +159,10 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
 
     protected virtual IServiceProvider BuildCore(IServiceCollection services)
     {
-        var serviceProvider = services.BuildServiceProvider();
-        return serviceProvider;
+        var builder = new ContainerBuilder();
+        builder.Populate(services);
+        var container = builder.Build();
+        return new AutofacServiceProvider(container);
     }
 
     protected virtual void ConfigureApp(IServiceProvider serviceProvider)
@@ -210,7 +211,6 @@ public abstract class BotBuilderBase<TBot, TBuilder> where TBot : Bot where TBui
                 _richMessageConverterType ?? typeof(DefaultRichMessageConverter))
             .AddSingleton(typeof(ConfigurationFactory))
             .AddSingleton(typeof(IConfiguration<>), typeof(Configuration<>))
-            .AddTransient(typeof(LoaderContext), _ => null!)
             .AddSingleton(typeof(Bot), typeof(TBot));
             
         // Dispatcher

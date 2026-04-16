@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Loader;
+using Autofac;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -16,28 +17,27 @@ namespace MilkiBotFramework.Plugining;
 
 public class PluginCatalog
 {
+    private readonly ILifetimeScope _rootLifetimeScope;
     private readonly ILogger<PluginCatalog> _logger;
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IServiceCollection _serviceCollection;
     private readonly BotOptions _botOptions;
 
+    private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
     private readonly Dictionary<string, LoaderContext> _loaderContexts = new();
     private readonly HashSet<PluginInfo> _plugins = new();
 
     private PluginDescriptor[] _executionPlan = Array.Empty<PluginDescriptor>();
+    private bool _disposed;
 
-    public bool IsInitialized { get; private set; }
-
-    public PluginCatalog(ILogger<PluginCatalog> logger,
-        IServiceProvider serviceProvider,
-        IServiceCollection serviceCollection,
+    public PluginCatalog(ILifetimeScope rootLifetimeScope,
+        ILogger<PluginCatalog> logger,
         BotOptions botOptions)
     {
-        _serviceProvider = serviceProvider;
-        _serviceCollection = serviceCollection;
+        _rootLifetimeScope = rootLifetimeScope;
         _botOptions = botOptions;
         _logger = logger;
     }
+
+    public bool IsInitialized { get; private set; }
 
     public IReadOnlyList<PluginInfo> GetAllPlugins()
     {
@@ -45,6 +45,71 @@ public class PluginCatalog
     }
 
     public async Task InitializeAllPlugins()
+    {
+        await _lifecycleLock.WaitAsync();
+        try
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            await DisposeLoaderContextsCoreAsync();
+            await InitializeAllPluginsCoreAsync();
+        }
+        finally
+        {
+            _lifecycleLock.Release();
+        }
+    }
+
+    public async Task ReloadAllPluginsAsync()
+    {
+        await InitializeAllPlugins();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _lifecycleLock.WaitAsync();
+        try
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            await DisposeLoaderContextsCoreAsync();
+            _disposed = true;
+        }
+        finally
+        {
+            _lifecycleLock.Release();
+        }
+    }
+
+    internal event Action? ExecutionPlanChanged;
+
+    internal IReadOnlyList<PluginDescriptor> GetExecutionPlan()
+    {
+        return _executionPlan;
+    }
+
+    internal async Task InitializePluginAsync(PluginBase instance, PluginInfo pluginInfo)
+    {
+        instance.Metadata = pluginInfo.Metadata;
+        instance.PluginHome = pluginInfo.PluginHome;
+        instance.IsInitialized = true;
+        await instance.OnInitialized();
+    }
+
+    private void RebuildExecutionPlan()
+    {
+        _executionPlan = _loaderContexts.Values
+            .SelectMany(loaderContext => loaderContext.AssemblyContexts.Values
+                .SelectMany(assemblyContext => assemblyContext.PluginInfos
+                    .Select(pluginInfo => new PluginDescriptor(loaderContext, pluginInfo))))
+            .OrderBy(descriptor => descriptor.PluginInfo.Index)
+            .ToArray();
+        ExecutionPlanChanged?.Invoke();
+    }
+
+    private async Task InitializeAllPluginsCoreAsync()
     {
         IsInitialized = false;
         var sw = Stopwatch.StartNew();
@@ -85,7 +150,7 @@ public class PluginCatalog
                 {
                     try
                     {
-                        var instance = (PluginBase?)serviceProvider.GetService(pluginInfo.Type);
+                        var instance = ResolvePluginInstance(serviceProvider, pluginInfo);
                         if (instance != null) await InitializePluginAsync(instance, pluginInfo);
                     }
                     catch (Exception ex)
@@ -104,27 +169,66 @@ public class PluginCatalog
         _logger.LogInformation($"Plugin initialization done in {sw.Elapsed.TotalSeconds:N3}s!");
     }
 
-    internal IReadOnlyList<PluginDescriptor> GetExecutionPlan()
+    private async Task DisposeLoaderContextsCoreAsync()
     {
-        return _executionPlan;
+        IsInitialized = false;
+
+        var executionPlan = _executionPlan;
+        var loaderContexts = _loaderContexts.Values.ToArray();
+
+        _executionPlan = Array.Empty<PluginDescriptor>();
+        _plugins.Clear();
+        _loaderContexts.Clear();
+        ExecutionPlanChanged?.Invoke();
+
+        await UninitializeSingletonPluginsAsync(executionPlan);
+
+        foreach (var loaderContext in loaderContexts)
+        {
+            await loaderContext.DisposeAsync();
+        }
     }
 
-    internal async Task InitializePluginAsync(PluginBase instance, PluginInfo pluginInfo)
+    private async Task UninitializeSingletonPluginsAsync(IEnumerable<PluginDescriptor> executionPlan)
     {
-        instance.Metadata = pluginInfo.Metadata;
-        instance.PluginHome = pluginInfo.PluginHome;
-        instance.IsInitialized = true;
-        await instance.OnInitialized();
+        foreach (var descriptor in executionPlan)
+        {
+            var pluginInfo = descriptor.PluginInfo;
+            if (pluginInfo.Lifetime != PluginLifetime.Singleton || pluginInfo.InitializationFailed)
+            {
+                continue;
+            }
+
+            try
+            {
+                var serviceProvider = descriptor.LoaderContext.BuildServiceProvider();
+                var instance = ResolvePluginInstance(serviceProvider, pluginInfo);
+                if (instance is not { IsInitialized: true })
+                {
+                    continue;
+                }
+
+                await instance.OnUninitialized();
+                instance.IsInitialized = false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while uninitializing plugin " + pluginInfo.Metadata.Name);
+            }
+        }
     }
 
-    private void RebuildExecutionPlan()
+    private static PluginBase? ResolvePluginInstance(IServiceProvider serviceProvider, PluginInfo pluginInfo)
     {
-        _executionPlan = _loaderContexts.Values
-            .SelectMany(loaderContext => loaderContext.AssemblyContexts.Values
-                .SelectMany(assemblyContext => assemblyContext.PluginInfos
-                    .Select(pluginInfo => new PluginDescriptor(loaderContext, pluginInfo))))
-            .OrderBy(descriptor => descriptor.PluginInfo.Index)
-            .ToArray();
+        var instance = serviceProvider.GetService(pluginInfo.Type) as PluginBase;
+        if (instance != null)
+        {
+            return instance;
+        }
+
+        return pluginInfo.ServiceType == null
+            ? null
+            : serviceProvider.GetService(pluginInfo.ServiceType) as PluginBase;
     }
 
     private async Task CreateContextAndAddPlugins(string? contextName, IEnumerable<string> files)
@@ -144,6 +248,7 @@ public class PluginCatalog
         {
             AssemblyLoadContext = ctx,
             ServiceCollection = new ServiceCollection(),
+            HostLifetimeScope = _rootLifetimeScope,
             Name = contextName ?? "Host",
             IsRuntimeContext = isRuntimeContext,
             AssemblyContexts = new ReadOnlyDictionary<string, AssemblyContext>(dict)
@@ -291,74 +396,7 @@ public class PluginCatalog
 
     private async Task InitializeLoaderContext(LoaderContext loaderContext)
     {
-        var allTypes = _serviceCollection;
-        foreach (var serviceDescriptor in allTypes)
-        {
-            var ns = serviceDescriptor.ServiceType.Namespace!;
-            var fullName = serviceDescriptor.ServiceType.FullName!;
-            if (serviceDescriptor.ImplementationType == serviceDescriptor.ServiceType)
-            {
-                if (ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
-                    ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
-                    continue;
-                if (fullName.Contains("IConfiguration`1"))
-                    continue;
-                if (serviceDescriptor.Lifetime == ServiceLifetime.Singleton)
-                {
-                    var instance = _serviceProvider.GetService(serviceDescriptor.ImplementationType);
-                    if (instance == null)
-                        loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ImplementationType, _ => null!);
-                    else
-                        loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ImplementationType, instance);
-                }
-                else if (serviceDescriptor.Lifetime == ServiceLifetime.Scoped)
-                {
-                    if (ns.StartsWith("Microsoft.AspNetCore")) continue;
-                    loaderContext.ServiceCollection.AddScoped(serviceDescriptor.ImplementationType);
-                }
-                else if (serviceDescriptor.Lifetime == ServiceLifetime.Transient)
-                {
-                    if (ns.StartsWith("Microsoft.AspNetCore")) continue;
-                    loaderContext.ServiceCollection.AddTransient(serviceDescriptor.ImplementationType);
-                }
-            }
-            else
-            {
-                if (ns.StartsWith("Microsoft.Extensions.Options", StringComparison.Ordinal) ||
-                    ns.StartsWith("Microsoft.Extensions.Logging", StringComparison.Ordinal))
-                    continue;
-                if (fullName.Contains("IConfiguration`1"))
-                    continue;
-                if (serviceDescriptor.Lifetime == ServiceLifetime.Singleton)
-                {
-                    var instance = _serviceProvider.GetService(serviceDescriptor.ServiceType);
-                    if (instance == null)
-                        loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ServiceType, _ => null!);
-                    else
-                        loaderContext.ServiceCollection.AddSingleton(serviceDescriptor.ServiceType, instance);
-                }
-                else if (serviceDescriptor.Lifetime == ServiceLifetime.Scoped)
-                {
-                    if (ns.StartsWith("Microsoft.AspNetCore")) continue;
-                    if (serviceDescriptor.ImplementationType == null) continue;
-                    loaderContext.ServiceCollection.AddScoped(serviceDescriptor.ServiceType,
-                        serviceDescriptor.ImplementationType);
-                }
-                else if (serviceDescriptor.Lifetime == ServiceLifetime.Transient)
-                {
-                    if (ns.StartsWith("Microsoft.AspNetCore")) continue;
-                    if (serviceDescriptor.ImplementationType == null) continue;
-                    loaderContext.ServiceCollection.AddTransient(serviceDescriptor.ServiceType,
-                        serviceDescriptor.ImplementationType);
-                }
-            }
-        }
-
-        var configLoggerProvider = _serviceProvider.GetService<ConfigLoggerProvider>();
-        if (configLoggerProvider != null)
-            loaderContext.ServiceCollection.AddLogging(o => configLoggerProvider.ConfigureLogger(o));
-
-        loaderContext.ServiceCollection.AddSingleton(typeof(IConfiguration<>), typeof(Configuration<>));
+        loaderContext.ServiceCollection.AddSingleton(typeof(IConfiguration<>), typeof(PluginConfiguration<>));
         loaderContext.ServiceCollection.AddSingleton(loaderContext);
         foreach (var assemblyContext in loaderContext.AssemblyContexts)
         {

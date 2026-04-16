@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Autofac.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,6 +21,7 @@ namespace MilkiBotFramework.Aspnetcore
 #endif
             _builder = WebApplication.CreateBuilder();
             _builder.Logging.ClearProviders();
+            _builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
         }
 
         public AspnetcoreBotBuilder(string[] args, params string[] bindUrls)
@@ -30,6 +32,7 @@ namespace MilkiBotFramework.Aspnetcore
 #endif
             _builder = WebApplication.CreateBuilder(args);
             _builder.Logging.ClearProviders();
+            _builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
         }
 
         public WebApplication WebApp { get; private set; } = null!;
@@ -67,7 +70,7 @@ namespace MilkiBotFramework.Aspnetcore
 
         protected override IServiceProvider BuildCore(IServiceCollection services)
         {
-            services.AddSingleton(typeof(WebApplication), _ => WebApp!);
+            services.AddSingleton(typeof(WebApplication), _ => WebApp);
             WebApp = _builder.Build();
             return WebApp.Services;
         }
@@ -75,8 +78,6 @@ namespace MilkiBotFramework.Aspnetcore
         protected override void ConfigureApp(IServiceProvider serviceProvider)
         {
             base.ConfigureApp(serviceProvider);
-
-            if (WebApp == null) return;
             //if (_app.Environment.IsDevelopment())
             //{
             //    _app.UseSwagger();
@@ -93,8 +94,6 @@ namespace MilkiBotFramework.Aspnetcore
 
         protected virtual void ConfigureMiddleware(IServiceProvider serviceProvider)
         {
-            if (WebApp == null) return;
-
             var connector = serviceProvider.GetService<IConnector>()!;
             if (connector.ConnectionType == ConnectionType.ReverseWebSocket)
             {

@@ -8,7 +8,7 @@ internal sealed class PluginAssemblyLoadContext : AssemblyLoadContext
     private readonly IReadOnlyDictionary<string, string> _assemblyPaths;
 
     public PluginAssemblyLoadContext(string name, IEnumerable<string> assemblyFiles)
-        : base(name)
+        : base(name, isCollectible: true)
     {
         _assemblyPaths = assemblyFiles
             .GroupBy(Path.GetFileNameWithoutExtension, StringComparer.OrdinalIgnoreCase)

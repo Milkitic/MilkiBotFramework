@@ -57,40 +57,6 @@ public class Bot
     public LightHttpClient LightHttpClient { get; }
     public PluginCatalog PluginCatalog { get; }
 
-    public int Run()
-    {
-        if (_connectionTcs != null) throw new InvalidOperationException();
-        _connectionTcs = new TaskCompletionSource();
-        try
-        {
-            _exitCode = 0;
-            try
-            {
-                Connector.ConnectAsync(CancellationToken.None).Wait(3000);
-            }
-            catch (Exception ex)
-            {
-                if (ex is not TaskCanceledException &&
-                    ex.InnerException is not TaskCanceledException)
-                {
-                    throw;
-                }
-                // ignored
-            }
-
-            PluginCatalog.InitializeAllPlugins().Wait();
-            ContactsManager.InitializeTasks();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogCritical(ex, "Error occurs while running");
-            return ex.HResult;
-        }
-
-        _connectionTcs.Task.Wait();
-        return _exitCode;
-    }
-
     public async Task<int> RunAsync()
     {
         if (_connectionTcs != null) throw new InvalidOperationException();
@@ -126,21 +92,23 @@ public class Bot
         return _exitCode;
     }
 
-    public int Stop(int exitCode = 0)
+    public async Task<int> StopAsync(int exitCode = 0)
     {
         _exitCode = exitCode;
-        Connector.DisconnectAsync().Wait();
+        await Connector.DisconnectAsync();
+        await PluginCatalog.DisposeAsync();
         _connectionTcs?.SetResult();
         _connectionTcs = null;
         return exitCode;
     }
 
-    public async Task<int> StopAsync(int exitCode = 0)
+    public void ReloadPlugins()
     {
-        _exitCode = exitCode;
-        await Connector.DisconnectAsync();
-        _connectionTcs?.SetResult();
-        _connectionTcs = null;
-        return exitCode;
+        PluginCatalog.ReloadAllPluginsAsync().Wait();
+    }
+
+    public Task ReloadPluginsAsync()
+    {
+        return PluginCatalog.ReloadAllPluginsAsync();
     }
 }

@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Autofac" Version="9.1.0" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="11.0.0" />
     <PackageReference Include="dnlib" Version="4.5.0" />
     <PackageReference Include="Fleck" Version="1.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.6" />

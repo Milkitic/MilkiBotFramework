@@ -5,7 +5,7 @@ namespace MilkiBotFramework.Plugining.Configuration
 {
     public class ConfigurationFactory
     {
-        private readonly Dictionary<Type, ConfigurationBase> _cachedDict = new();
+        private readonly Dictionary<(string ContextName, Type Type), ConfigurationBase> _cachedDict = new();
 
         private readonly BotOptions _botOptions;
         private readonly ILogger<ConfigLoggerProvider> _logger;
@@ -20,8 +20,9 @@ namespace MilkiBotFramework.Plugining.Configuration
         public T GetConfiguration<T>(string contextName, YamlConverter? converter = null) where T : ConfigurationBase
         {
             var t = typeof(T);
+            var cacheKey = (contextName, t);
 
-            if (_cachedDict.TryGetValue(t, out var val))
+            if (_cachedDict.TryGetValue(cacheKey, out var val))
                 return (T)val;
 
             var filename = $"{contextName}.{t.FullName}.yaml";
@@ -35,11 +36,11 @@ namespace MilkiBotFramework.Plugining.Configuration
                 SaveConfig(config, path, converter);
                 return Task.CompletedTask;
             };
-            config!.SaveAction = () =>
+            config.SaveAction = () =>
             {
                 SaveConfig(config, path, converter);
             };
-            _cachedDict.Add(t, config);
+            _cachedDict.Add(cacheKey, config);
             return config;
         }
 

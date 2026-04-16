@@ -4,9 +4,19 @@ namespace MilkiBotFramework.Plugining.Configuration;
 
 internal class Configuration<T> : IConfiguration<T> where T : ConfigurationBase
 {
-    public Configuration(LoaderContext? loaderContext, ConfigurationFactory configurationFactory)
+    public Configuration(ConfigurationFactory configurationFactory)
     {
-        Instance = configurationFactory.GetConfiguration<T>(loaderContext?.Name ?? "Host");
+        Instance = configurationFactory.GetConfiguration<T>("Host");
+    }
+
+    public T Instance { get; }
+}
+
+internal class PluginConfiguration<T> : IConfiguration<T> where T : ConfigurationBase
+{
+    public PluginConfiguration(LoaderContext loaderContext, ConfigurationFactory configurationFactory)
+    {
+        Instance = configurationFactory.GetConfiguration<T>(loaderContext.Name);
     }
 
     public T Instance { get; }
