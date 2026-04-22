@@ -361,7 +361,7 @@ public sealed partial class OneBotContactsManager : ContactsManagerBase
             UserId = selfInfo.UserId.ToString()
         };
 
-        var friends = await _oneBotApi.GetFriends(accountId);
+        var friends = await _oneBotApi.GetFriends(accountId) ?? [];
         foreach (var friend in friends)
         {
             snapshot.PrivateMapping[friend.UserId] = new PrivateInfo(friend.UserId)
@@ -371,7 +371,7 @@ public sealed partial class OneBotContactsManager : ContactsManagerBase
             };
         }
 
-        var groups = await _oneBotApi.GetGroups(accountId);
+        var groups = await _oneBotApi.GetGroups(accountId) ?? [];
         foreach (var group in groups)
         {
             token.ThrowIfCancellationRequested();
@@ -381,7 +381,7 @@ public sealed partial class OneBotContactsManager : ContactsManagerBase
                 Name = string.IsNullOrWhiteSpace(group.GroupName) ? null : group.GroupName
             };
 
-            var members = await _oneBotApi.GetFuzzyGroupMembers(long.Parse(group.GroupId), accountId);
+            var members = await _oneBotApi.GetFuzzyGroupMembers(long.Parse(group.GroupId), accountId) ?? [];
             foreach (var member in members)
             {
                 channelInfo.Members[member.UserId] = CreateGroupMemberInfo(group.GroupId, member.UserId, null, member);
@@ -392,7 +392,7 @@ public sealed partial class OneBotContactsManager : ContactsManagerBase
 
         try
         {
-            var guilds = await _oneBotApi.GetGuilds(accountId);
+            var guilds = await _oneBotApi.GetGuilds(accountId) ?? [];
             foreach (var guild in guilds)
             {
                 token.ThrowIfCancellationRequested();
@@ -404,7 +404,7 @@ public sealed partial class OneBotContactsManager : ContactsManagerBase
                     Name = string.IsNullOrWhiteSpace(guild.GuildName) ? null : guild.GuildName
                 };
 
-                var channels = await _oneBotApi.GetGuildChannelList(guild.GuildId, accountId);
+                var channels = await _oneBotApi.GetGuildChannelList(guild.GuildId, accountId) ?? [];
                 var subChannelMap = new ConcurrentDictionary<string, ChannelInfo>(StringComparer.OrdinalIgnoreCase);
                 foreach (var channel in channels.Where(channel => channel.ChannelType == ChannelType.Text))
                 {

@@ -224,6 +224,62 @@ public class OneBotMultiAccountContactsTests
         Assert.Contains(harness.Manager.GetAllChannels(), info => info.ChannelId == "6001");
     }
 
+    [Fact]
+    public async Task InitializeTasks_AllowsNullGuildListResponses()
+    {
+        await using var harness = CreateHarness((selfId, action, parameters) => action switch
+        {
+            "get_login_info" => new LoginInfo
+            {
+                UserId = 9002,
+                Nickname = "RefreshBot"
+            },
+            "get_friend_list" => new List<FriendInfo>
+            {
+                new()
+                {
+                    UserId = "3101",
+                    Nickname = "Friend",
+                    Remark = "BestFriend"
+                }
+            },
+            "get_group_list" => new List<GroupInfo>
+            {
+                new()
+                {
+                    GroupId = "4101",
+                    GroupName = "Refresh Group"
+                }
+            },
+            "get_group_member_list" => new List<GroupMember>
+            {
+                new()
+                {
+                    GroupId = "4101",
+                    UserId = "5101",
+                    Nickname = "Member",
+                    Card = "M",
+                    Role = "member"
+                }
+            },
+            "get_guild_list" => null!,
+            _ => throw new InvalidOperationException($"Unexpected action: {action}")
+        });
+
+        var context = CreateContext("9002");
+        await harness.Manager.TryGetOrUpdateSelfInfo(context);
+        harness.Manager.InitializeTasks();
+
+        await WaitUntilAsync(() =>
+            harness.Manager.GetAllPrivates().Any(info => info.UserId == "3101") &&
+            harness.Manager.GetAllChannels().Any(info => info.ChannelId == "4101") &&
+            harness.Manager.GetAllMembers("4101").Any(member => member.UserId == "5101"));
+
+        Assert.Contains(harness.Manager.GetAllPrivates(), info => info.UserId == "3101");
+        Assert.Contains(harness.Manager.GetAllChannels(), info => info.ChannelId == "4101");
+        Assert.DoesNotContain(harness.Manager.GetAllChannels(), info => info.ChannelId == "6001");
+    }
+
     private static MessageContext CreateContext(string selfId)
     {
         return new MessageContext(new DefaultRichMessageConverter())
