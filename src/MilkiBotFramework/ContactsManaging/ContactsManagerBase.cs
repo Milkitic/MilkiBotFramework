@@ -174,7 +174,7 @@ public abstract class ContactsManagerBase : IPlatformContactsManager, IContextua
             .Do(RefreshContacts));
     }
 
-    public async Task HandleMessageAsync(MessageContext messageContext)
+    public virtual async Task HandleMessageAsync(MessageContext messageContext)
     {
         if (messageContext.MessageIdentity?.MessageType != MessageType.Notice) return;
 
@@ -396,7 +396,7 @@ public abstract class ContactsManagerBase : IPlatformContactsManager, IContextua
 
     }
 
-    private Task NotifyContactsUpdatedAsync(ContactsUpdateEvent updateEvent)
+    protected Task NotifyContactsUpdatedAsync(ContactsUpdateEvent updateEvent)
     {
         var handlers = ContactsUpdated;
         if (handlers == null)
