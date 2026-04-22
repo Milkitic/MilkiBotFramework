@@ -62,6 +62,16 @@ namespace MilkiBotFramework.Platforms.OneBot.Dispatching
             }
 
             messageContext.RawJsonDocument = jDoc;
+            if (jDoc.RootElement.TryGetProperty("self_id", out var selfIdElement))
+            {
+                messageContext.SelfId = selfIdElement.ValueKind switch
+                {
+                    JsonValueKind.String => selfIdElement.GetString(),
+                    JsonValueKind.Number => selfIdElement.GetInt64().ToString(),
+                    _ => null
+                };
+            }
+
             var postType = postTypeElement.GetString();
 
             if (postType == "meta_event")

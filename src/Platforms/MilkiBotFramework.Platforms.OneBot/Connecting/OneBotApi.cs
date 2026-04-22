@@ -60,58 +60,41 @@ public class OneBotApi : IPlatformMessageApi
 
     #region Bot auth
 
-    public async Task<LoginInfo> GetLoginInfo()
+    public async Task<LoginInfo> GetLoginInfo(string selfId)
     {
-        return await RequestAsync<LoginInfo>(Actions.GetLoginInfo, null).ConfigureAwait(false);
+        return await RequestAsync<LoginInfo>(Actions.GetLoginInfo, null, selfId).ConfigureAwait(false);
     }
 
-    public async Task<GuildServiceProfile> GetGuildServiceProfile()
+    public async Task<GuildServiceProfile> GetGuildServiceProfile(string selfId)
     {
-        return await RequestAsync<GuildServiceProfile>(Actions.GetGuildServiceProfile, null).ConfigureAwait(false);
+        return await RequestAsync<GuildServiceProfile>(Actions.GetGuildServiceProfile, null, selfId).ConfigureAwait(false);
     }
 
     #endregion
 
     #region Messaging
 
-    /// <summary>
-    /// 获取消息
-    /// </summary>
-    /// <param name="messageId">onebot消息Id</param>
-    /// <returns>MessageId</returns>
-    public async Task<GetMsgResponse> GetMessage(long messageId)
+    public async Task<GetMsgResponse> GetMessage(long messageId, string selfId)
     {
         var parameters = new Dictionary<string, object>
         {
             { "message_id", messageId },
         };
-        var response = await RequestAsync<GetMsgResponse>(Actions.GetMsg, parameters).ConfigureAwait(false);
-        return response;
+        return await RequestAsync<GetMsgResponse>(Actions.GetMsg, parameters, selfId).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// 撤回消息
-    /// </summary>
-    /// <param name="messageId"></param>
-    public async Task DeleteMessage(int messageId)
+    public async Task DeleteMessage(int messageId, string selfId)
     {
         var parameters = new Dictionary<string, object>
         {
             { "message_id", messageId }
         };
-        await RequestAsync(Actions.DeleteMsg, parameters).ConfigureAwait(false);
+        await RequestAsync(Actions.DeleteMsg, parameters, selfId).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// 发送私聊消息
-    /// </summary>
-    /// <param name="userId">对方 QQ 号</param>
-    /// <param name="message">要发送的内容</param>
-    /// <param name="groupId">主动发起临时会话群号(机器人本身必须是管理员/群主)</param>
-    /// <param name="autoEscape">消息内容是否作为纯文本发送 ( 即不解析 CQ 码 ) , 只在 message 字段是字符串时有效</param>
-    /// <returns>MessageId</returns>
     public async Task<string> SendPrivateMessageAsync(long userId,
         string message,
+        string selfId,
         long? groupId = null,
         bool autoEscape = false)
     {
@@ -122,28 +105,22 @@ public class OneBotApi : IPlatformMessageApi
             { "auto_escape", autoEscape }
         };
         if (groupId != null) parameters.Add("group_id", groupId);
-        var response = await RequestAsync<MsgResponse>(Actions.SendPrivateMsg, parameters).ConfigureAwait(false);
+        var response = await RequestAsync<MsgResponse>(Actions.SendPrivateMsg, parameters, selfId).ConfigureAwait(false);
         return response.MessageId;
     }
 
-    /// <summary>
-    /// 发送群聊消息
-    /// </summary>
-    /// <param name="messageId">群号</param>
-    /// <param name="message">要发送的内容</param>
-    /// <returns>MessageId</returns>
-    public async Task<string> SendGroupMessageAsync(long messageId, string message)
+    public async Task<string> SendGroupMessageAsync(long messageId, string message, string selfId)
     {
         var parameters = new Dictionary<string, object>
         {
             { "group_id", messageId },
             { "message", message }
         };
-        var response = await RequestAsync<MsgResponse>(Actions.SendGroupMsg, parameters).ConfigureAwait(false);
+        var response = await RequestAsync<MsgResponse>(Actions.SendGroupMsg, parameters, selfId).ConfigureAwait(false);
         return response.MessageId;
     }
 
-    public async Task<string> SendGuildChannelMessageAsync(long guildId, long subChannelId, string message)
+    public async Task<string> SendGuildChannelMessageAsync(long guildId, long subChannelId, string message, string selfId)
     {
         var parameters = new Dictionary<string, object>
         {
@@ -151,52 +128,52 @@ public class OneBotApi : IPlatformMessageApi
             { "channel_id", subChannelId },
             { "message", message },
         };
-        return (await RequestAsync<MsgResponse>(Actions.SendGuildChannelMsg, parameters).ConfigureAwait(false)).MessageId;
+        return (await RequestAsync<MsgResponse>(Actions.SendGuildChannelMsg, parameters, selfId).ConfigureAwait(false)).MessageId;
     }
 
     #endregion
 
     #region Contacts info
 
-    public async Task<StrangerInfo> GetStrangerInfo(long userId, bool noCache = false)
+    public async Task<StrangerInfo> GetStrangerInfo(long userId, string selfId, bool noCache = false)
     {
         var parameters = new Dictionary<string, object>
         {
             { "user_id", userId },
             { "no_cache", noCache }
         };
-        return await RequestAsync<StrangerInfo>(Actions.GetStrangerInfo, parameters).ConfigureAwait(false);
+        return await RequestAsync<StrangerInfo>(Actions.GetStrangerInfo, parameters, selfId).ConfigureAwait(false);
     }
 
-    public async Task<List<FriendInfo>> GetFriends()
+    public async Task<List<FriendInfo>> GetFriends(string selfId)
     {
-        return await RequestAsync<List<FriendInfo>>(Actions.GetFriendList, null).ConfigureAwait(false);
+        return await RequestAsync<List<FriendInfo>>(Actions.GetFriendList, null, selfId).ConfigureAwait(false);
     }
 
-    public async Task<List<GroupInfo>> GetGroups()
+    public async Task<List<GroupInfo>> GetGroups(string selfId)
     {
-        return await RequestAsync<List<GroupInfo>>(Actions.GetGroupList, null).ConfigureAwait(false);
+        return await RequestAsync<List<GroupInfo>>(Actions.GetGroupList, null, selfId).ConfigureAwait(false);
     }
 
-    public async Task<GroupInfo> GetGroupInfo(long groupId)
-    {
-        var parameters = new Dictionary<string, object>
-        {
-            { "group_id", groupId }
-        };
-        return await RequestAsync<GroupInfo>(Actions.GetGroupInfo, parameters).ConfigureAwait(false);
-    }
-
-    public async Task<List<GroupMember>> GetFuzzyGroupMembers(long groupId)
+    public async Task<GroupInfo> GetGroupInfo(long groupId, string selfId)
     {
         var parameters = new Dictionary<string, object>
         {
             { "group_id", groupId }
         };
-        return await RequestAsync<List<GroupMember>>(Actions.GetGroupMemberList, parameters).ConfigureAwait(false);
+        return await RequestAsync<GroupInfo>(Actions.GetGroupInfo, parameters, selfId).ConfigureAwait(false);
     }
 
-    public async Task<GroupMember> GetGroupMemberDetail(long groupId, long userId, bool noCache = false)
+    public async Task<List<GroupMember>> GetFuzzyGroupMembers(long groupId, string selfId)
+    {
+        var parameters = new Dictionary<string, object>
+        {
+            { "group_id", groupId }
+        };
+        return await RequestAsync<List<GroupMember>>(Actions.GetGroupMemberList, parameters, selfId).ConfigureAwait(false);
+    }
+
+    public async Task<GroupMember> GetGroupMemberDetail(long groupId, long userId, string selfId, bool noCache = false)
     {
         var parameters = new Dictionary<string, object>
         {
@@ -205,46 +182,46 @@ public class OneBotApi : IPlatformMessageApi
             { "no_cache", noCache }
         };
 
-        return await RequestAsync<GroupMember>(Actions.GetGroupMemberInfo, parameters).ConfigureAwait(false);
+        return await RequestAsync<GroupMember>(Actions.GetGroupMemberInfo, parameters, selfId).ConfigureAwait(false);
     }
 
-    public async Task<List<GuildBrief>> GetGuilds()
+    public async Task<List<GuildBrief>> GetGuilds(string selfId)
     {
-        return await RequestAsync<List<GuildBrief>>(Actions.GetGuildList, null).ConfigureAwait(false);
+        return await RequestAsync<List<GuildBrief>>(Actions.GetGuildList, null, selfId).ConfigureAwait(false);
     }
 
-    public async Task<GuildInfo> GetGuildMetaByGuest(long guildId)
-    {
-        var parameters = new Dictionary<string, object>
-        {
-            { "guild_id", guildId.ToString() } // temporary str
-        };
-        return await RequestAsync<GuildInfo>(Actions.GetGuildMetaByGuest, parameters).ConfigureAwait(false);
-    }
-
-    public async Task<List<SubChannelInfo>> GetGuildChannelList(long guildId)
+    public async Task<GuildInfo> GetGuildMetaByGuest(long guildId, string selfId)
     {
         var parameters = new Dictionary<string, object>
         {
-            { "guild_id", guildId.ToString() } // temporary str
+            { "guild_id", guildId.ToString() }
         };
-        return await RequestAsync<List<SubChannelInfo>>(Actions.GetGuildChannelList, parameters).ConfigureAwait(false);
+        return await RequestAsync<GuildInfo>(Actions.GetGuildMetaByGuest, parameters, selfId).ConfigureAwait(false);
     }
 
-    public async Task<GetGuildMembersResponse> GetGuildMembers(long guildId)
+    public async Task<List<SubChannelInfo>> GetGuildChannelList(long guildId, string selfId)
     {
         var parameters = new Dictionary<string, object>
         {
-            { "guild_id", guildId.ToString() } // temporary str
+            { "guild_id", guildId.ToString() }
         };
-        return await RequestAsync<GetGuildMembersResponse>(Actions.GetGuildMembers, parameters).ConfigureAwait(false);
+        return await RequestAsync<List<SubChannelInfo>>(Actions.GetGuildChannelList, parameters, selfId).ConfigureAwait(false);
+    }
+
+    public async Task<GetGuildMembersResponse> GetGuildMembers(long guildId, string selfId)
+    {
+        var parameters = new Dictionary<string, object>
+        {
+            { "guild_id", guildId.ToString() }
+        };
+        return await RequestAsync<GetGuildMembersResponse>(Actions.GetGuildMembers, parameters, selfId).ConfigureAwait(false);
     }
 
     #endregion
 
     #region Operations
 
-    public async Task SetGroupBan(long groupId, long userId, TimeSpan duration)
+    public async Task SetGroupBan(long groupId, long userId, TimeSpan duration, string selfId)
     {
         var parameters = new Dictionary<string, object>
         {
@@ -252,10 +229,10 @@ public class OneBotApi : IPlatformMessageApi
             {"user_id", userId},
             {"duration", (int)duration.TotalSeconds}
         };
-        await RequestAsync(Actions.SetGroupBan, parameters).ConfigureAwait(false);
+        await RequestAsync(Actions.SetGroupBan, parameters, selfId).ConfigureAwait(false);
     }
 
-    public async Task SetFriendAddRequest(FriendAddRequest request)
+    public async Task SetFriendAddRequest(FriendAddRequest request, string selfId)
     {
         var parameters = new Dictionary<string, object>
         {
@@ -264,10 +241,10 @@ public class OneBotApi : IPlatformMessageApi
             {"remark", request.Remark}
         };
 
-        await RequestAsync(Actions.SetFriendAddRequest, parameters).ConfigureAwait(false);
+        await RequestAsync(Actions.SetFriendAddRequest, parameters, selfId).ConfigureAwait(false);
     }
 
-    public async Task SetGroupAddRequest(GroupAddRequest request)
+    public async Task SetGroupAddRequest(GroupAddRequest request, string selfId)
     {
         var parameters = new Dictionary<string, object>
         {
@@ -278,14 +255,14 @@ public class OneBotApi : IPlatformMessageApi
             {"reason", request.Reason}
         };
 
-        await RequestAsync(Actions.SetGroupAddRequest, parameters).ConfigureAwait(false);
+        await RequestAsync(Actions.SetGroupAddRequest, parameters, selfId).ConfigureAwait(false);
     }
 
     #endregion
 
-    private async Task RequestAsync(string url, IDictionary<string, object>? parameters)
+    private async Task RequestAsync(string url, IDictionary<string, object>? parameters, string selfId)
     {
-        var response = await _oneBotConnector.SendMessageAsync(url, parameters).ConfigureAwait(false);
+        var response = await _oneBotConnector.SendMessageAsync(url, parameters, selfId).ConfigureAwait(false);
         if (response == null)
             throw new Exception("未知错误，请检查连接是否正常");
 
@@ -297,9 +274,9 @@ public class OneBotApi : IPlatformMessageApi
         }
     }
 
-    private async Task<T> RequestAsync<T>(string url, IDictionary<string, object>? parameters)
+    private async Task<T> RequestAsync<T>(string url, IDictionary<string, object>? parameters, string selfId)
     {
-        var response = await _oneBotConnector.SendMessageAsync<T>(url, parameters).ConfigureAwait(false);
+        var response = await _oneBotConnector.SendMessageAsync<T>(url, parameters, selfId).ConfigureAwait(false);
         if (response == null)
             throw new Exception("未知错误，请检查连接是否正常");
 
@@ -313,15 +290,22 @@ public class OneBotApi : IPlatformMessageApi
         return response.Data;
     }
 
+    private static string ResolveRequiredSelfId(MessageContext messageContext)
+    {
+        return messageContext.SelfId
+               ?? throw new InvalidOperationException("OneBot message context requires self_id in multi-account mode.");
+    }
+
     Task<string> IMessageApi.SendPrivateMessageAsync(string userId, string message, IRichMessage? richMessage, MessageContext messageContext)
     {
-        return SendPrivateMessageAsync(long.Parse(userId), message);
+        return SendPrivateMessageAsync(long.Parse(userId), message, ResolveRequiredSelfId(messageContext));
     }
 
     Task<string> IMessageApi.SendChannelMessageAsync(string channelId, string message, IRichMessage? richMessage, MessageContext messageContext,
         string? subChannelId)
     {
-        if (subChannelId == null) return SendGroupMessageAsync(long.Parse(channelId), message);
-        return SendGuildChannelMessageAsync(long.Parse(channelId), long.Parse(subChannelId), message);
+        var selfId = ResolveRequiredSelfId(messageContext);
+        if (subChannelId == null) return SendGroupMessageAsync(long.Parse(channelId), message, selfId);
+        return SendGuildChannelMessageAsync(long.Parse(channelId), long.Parse(subChannelId), message, selfId);
     }
 }

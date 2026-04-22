@@ -50,7 +50,7 @@ public sealed class MessageContextEnricher : IMessageContextEnricher
             throw new ArgumentNullException(nameof(messageIdentity.Id));
 
         var contactsManager = ResolveContactsManager(messageContext);
-        var privateResult = await contactsManager.TryGetOrAddPrivateInfo(messageIdentity.Id);
+        var privateResult = await contactsManager.TryGetOrAddPrivateInfoSafe(messageContext, messageIdentity.Id);
         if (privateResult.IsSuccess)
         {
             messageContext.Authority = _botOptions.RootAccounts.Contains(messageIdentity.Id)
@@ -73,8 +73,8 @@ public sealed class MessageContextEnricher : IMessageContextEnricher
             throw new ArgumentNullException(nameof(MessageUserIdentity.UserId));
 
         var contactsManager = ResolveContactsManager(messageContext);
-        var channelResult = await contactsManager.TryGetOrAddChannelInfo(messageIdentity.Id, messageIdentity.SubId);
-        var memberResult = await contactsManager.TryGetOrAddMemberInfo(messageIdentity.Id, userId, messageIdentity.SubId);
+        var channelResult = await contactsManager.TryGetOrAddChannelInfoSafe(messageContext, messageIdentity.Id, messageIdentity.SubId);
+        var memberResult = await contactsManager.TryGetOrAddMemberInfoSafe(messageContext, messageIdentity.Id, userId, messageIdentity.SubId);
 
         if (channelResult.IsSuccess)
             messageContext.ChannelInfo = channelResult.ChannelInfo;

@@ -13,12 +13,12 @@ public sealed class OneBotServer : WebSocketServerConnector, IOneBotConnector, I
     {
     }
 
-    public Task<OneBotApiResponse<object>> SendMessageAsync(string action, IDictionary<string, object>? @params)
+    public Task<OneBotApiResponse<object>> SendMessageAsync(string action, IDictionary<string, object>? @params, string selfId)
     {
-        return SendMessageAsync<object>(action, @params);
+        return SendMessageAsync<object>(action, @params, selfId);
     }
 
-    public Task<OneBotApiResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params)
+    public Task<OneBotApiResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params, string selfId)
     {
         return OneBotWebSocketHelper.SendMessageAsync<T>(this, action, @params);
     }

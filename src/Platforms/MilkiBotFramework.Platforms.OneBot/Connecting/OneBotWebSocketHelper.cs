@@ -8,7 +8,8 @@ namespace MilkiBotFramework.Platforms.OneBot.Connecting;
 
 internal static class OneBotWebSocketHelper
 {
-    public static async Task<OneBotApiResponse<T>> SendMessageAsync<T>(IConnector connector,
+    public static async Task<OneBotApiResponse<T>> SendMessageAsync<T>(
+        Func<string, string, Task<string>> sendMessageAsync,
         string action,
         IDictionary<string, object>? @params)
     {
@@ -20,8 +21,15 @@ internal static class OneBotWebSocketHelper
             State = state
         };
         var reqJson = JsonSerializer.Serialize(req);
-        var str = await connector.SendMessageAsync(reqJson, state);
+        var str = await sendMessageAsync(reqJson, state);
         return JsonSerializer.Deserialize<OneBotApiResponse<T>>(str)!;
+    }
+
+    public static async Task<OneBotApiResponse<T>> SendMessageAsync<T>(IConnector connector,
+        string action,
+        IDictionary<string, object>? @params)
+    {
+        return await SendMessageAsync<T>((message, state) => connector.SendMessageAsync(message, state), action, @params);
     }
 
     public static bool TryGetStateByMessage(IConnector connector,

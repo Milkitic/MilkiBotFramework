@@ -20,6 +20,7 @@ public class MessageContext
     public InboundMessage InboundMessage { get; internal set; } = null!;
     public string? RawTextMessage => InboundMessage.RawText;
     public string? PlatformId { get; set; }
+    public string? SelfId { get; set; }
 
     public string? MessageId { get; set; }
     public virtual string? TextMessage { get; set; }
