@@ -11,15 +11,13 @@ public class DiscordMessageContext : MessageContext
     {
     }
 
-    /// <summary>
-    ///     Discord 原始消息对象，由 <see cref="Dispatching.DiscordDispatcher" /> 在分发时赋值。
-    /// </summary>
     public SocketMessage? SocketMessage { get; internal set; }
 
-    /// <summary>
-    ///     Discord 联系人变更事件，由 <see cref="Dispatching.DiscordDispatcher" /> 在分发 Notice 时赋值。
-    /// </summary>
+    public SocketSlashCommand? SlashCommand { get; internal set; }
+
     public DiscordContactEvent? ContactEvent { get; internal set; }
+
+    public bool InteractionResponseSent { get; internal set; }
 }
 
 public abstract record DiscordContactEvent;

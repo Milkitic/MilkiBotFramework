@@ -27,6 +27,11 @@ public class DiscordMessageApi : IPlatformMessageApi
     public async Task<string> SendChannelMessageAsync(string channelId, string message, IRichMessage? richMessage,
         MessageContext messageContext, string? subChannelId)
     {
+        if (messageContext is DiscordMessageContext { SlashCommand: not null } discordMessageContext)
+        {
+            return await SendInteractionResponseAsync(discordMessageContext, message, richMessage);
+        }
+
         var targetId = subChannelId ?? channelId;
         if (!ulong.TryParse(targetId, out var id))
             return string.Empty;
@@ -62,6 +67,11 @@ public class DiscordMessageApi : IPlatformMessageApi
     public async Task<string> SendPrivateMessageAsync(string userId, string message, IRichMessage? richMessage,
         MessageContext messageContext)
     {
+        if (messageContext is DiscordMessageContext { SlashCommand: not null } discordMessageContext)
+        {
+            return await SendInteractionResponseAsync(discordMessageContext, message, richMessage);
+        }
+
         if (!ulong.TryParse(userId, out var id))
             return string.Empty;
 
@@ -111,6 +121,48 @@ public class DiscordMessageApi : IPlatformMessageApi
         }
 
         return null;
+    }
+
+    private static async Task<string> SendInteractionResponseAsync(DiscordMessageContext messageContext,
+        string message,
+        IRichMessage? richMessage)
+    {
+        var interaction = messageContext.SlashCommand!;
+        var (text, attachments) = await PrepareMessageAsync(message, richMessage);
+
+        try
+        {
+            if (!messageContext.InteractionResponseSent)
+            {
+                if (attachments.Count > 0)
+                {
+                    await interaction.RespondWithFilesAsync(attachments, text);
+                }
+                else
+                {
+                    await interaction.RespondAsync(text);
+                }
+
+                messageContext.InteractionResponseSent = true;
+                return interaction.Id.ToString();
+            }
+
+            if (attachments.Count > 0)
+            {
+                var followup = await interaction.FollowupWithFilesAsync(attachments, text);
+                return followup.Id.ToString();
+            }
+
+            var messageResponse = await interaction.FollowupAsync(text);
+            return messageResponse.Id.ToString();
+        }
+        finally
+        {
+            foreach (var attachment in attachments)
+            {
+                await attachment.Stream.DisposeAsync();
+            }
+        }
     }
 
     private static async Task<(string Text, List<FileAttachment> Attachments)> PrepareMessageAsync(string message,

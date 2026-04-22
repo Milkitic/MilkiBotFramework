@@ -74,10 +74,15 @@ public sealed class PluginRuntime
         await using var executionContext = await CreateExecutionContextAsync(includeBasicPlugins: true);
 
         var message = messageContext.TextMessage;
-        string? commandName = null;
-        CommandLineResult? commandLineResult = null;
-        if (message != null)
+        string? commandName;
+        CommandLineResult? commandLineResult = messageContext.CommandLineResult;
+        if (commandLineResult != null)
         {
+            commandName = commandLineResult.Command?.ToString();
+        }
+        else if (message != null)
+        {
+            commandName = null;
             var success = _commandLineAnalyzer.TryAnalyze(message, out commandLineResult, out var exception);
             if (success)
             {
@@ -88,6 +93,10 @@ public sealed class PluginRuntime
             {
                 _logger.LogWarning("Error occurs while analyzing command: " + exception.Message);
             }
+        }
+        else
+        {
+            commandName = null;
         }
 
         var remainingPlugins = executionContext.BasicPlugins

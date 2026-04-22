@@ -16,6 +16,7 @@ public class DiscordConnector : IPlatformConnector
     private readonly DiscordSocketClient _client;
     private readonly ILogger<DiscordConnector> _logger;
     private readonly DiscordBotOptions _options;
+    private readonly TaskCompletionSource _readyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public DiscordConnector(DiscordBotOptions options, ILogger<DiscordConnector> logger)
     {
@@ -41,6 +42,7 @@ public class DiscordConnector : IPlatformConnector
 
         _client.Log += LogAsync;
         _client.MessageReceived += Client_MessageReceived;
+        _client.SlashCommandExecuted += Client_SlashCommandExecuted;
         _client.ChannelCreated += Client_ChannelCreated;
         _client.ChannelDestroyed += Client_ChannelDestroyed;
         _client.UserJoined += Client_UserJoined;
@@ -48,6 +50,7 @@ public class DiscordConnector : IPlatformConnector
         _client.GuildMemberUpdated += Client_GuildMemberUpdated;
         _client.Ready += () =>
         {
+            _readyTcs.TrySetResult();
             _logger.LogInformation("Discord Bot is Ready!");
             return Task.CompletedTask;
         };
@@ -94,6 +97,11 @@ public class DiscordConnector : IPlatformConnector
         await _client.LogoutAsync();
     }
 
+    public Task WaitForReadyAsync(CancellationToken cancellationToken = default)
+    {
+        return _readyTcs.Task.WaitAsync(cancellationToken);
+    }
+
     public async Task<string> SendMessageAsync(string message, string state)
     {
         // 这个方法通常用于底层 WebSocket 发送字符串，对于 Discord SDK 并不适用
@@ -110,6 +118,12 @@ public class DiscordConnector : IPlatformConnector
         {
             await MessageReceived.Invoke(InboundMessage.FromPayload(arg, arg.Content, "discord"));
         }
+    }
+
+    private Task Client_SlashCommandExecuted(SocketSlashCommand command)
+    {
+        return MessageReceived?.Invoke(InboundMessage.FromPayload(command, transport: "discord"))
+               ?? Task.CompletedTask;
     }
 
     private Task Client_ChannelCreated(SocketChannel channel)

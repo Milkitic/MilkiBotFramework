@@ -33,7 +33,7 @@ public class MessageContext
     public MessageAuthority Authority { get; set; }
     public DateTimeOffset ReceivedTime { get; set; }
 
-    public CommandLineResult? CommandLineResult { get; internal set; }
+    public CommandLineResult? CommandLineResult { get; set; }
 
     public RichMessage GetRichMessage()
     {
