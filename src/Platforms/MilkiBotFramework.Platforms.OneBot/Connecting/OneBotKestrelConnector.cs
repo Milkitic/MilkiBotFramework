@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -54,25 +53,7 @@ public sealed class OneBotKestrelConnector : AspnetcoreConnector, IOneBotConnect
 
     protected override string? ResolveReverseWebSocketAccountId(string message)
     {
-        try
-        {
-            using var jsonDocument = JsonDocument.Parse(message);
-            if (!jsonDocument.RootElement.TryGetProperty("self_id", out var selfIdElement))
-            {
-                return null;
-            }
-
-            return selfIdElement.ValueKind switch
-            {
-                JsonValueKind.String => selfIdElement.GetString(),
-                JsonValueKind.Number => selfIdElement.GetInt64().ToString(),
-                _ => null
-            };
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
+        return OneBotWebSocketHelper.ResolveSelfId(message);
     }
 
     public OneBotKestrelConnector(ILogger<OneBotKestrelConnector> logger,

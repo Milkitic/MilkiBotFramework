@@ -20,6 +20,8 @@ public sealed class OneBotClient : WebSocketClientConnector, IOneBotConnector, I
 
     public Task<OneBotApiResponse<T>> SendMessageAsync<T>(string action, IDictionary<string, object>? @params, string selfId)
     {
+        // WebSocket client mode owns a single outbound connection, so selfId is accepted only
+        // to satisfy the multi-account connector contract.
         return OneBotWebSocketHelper.SendMessageAsync<T>(this, action, @params);
     }
 

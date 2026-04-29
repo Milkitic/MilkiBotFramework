@@ -47,4 +47,27 @@ internal static class OneBotWebSocketHelper
         state = echoElement.GetString();
         return !string.IsNullOrEmpty(state);
     }
+
+    public static string? ResolveSelfId(string message)
+    {
+        try
+        {
+            using var jsonDocument = JsonDocument.Parse(message);
+            if (!jsonDocument.RootElement.TryGetProperty("self_id", out var selfIdElement))
+            {
+                return null;
+            }
+
+            return selfIdElement.ValueKind switch
+            {
+                JsonValueKind.String => selfIdElement.GetString(),
+                JsonValueKind.Number => selfIdElement.GetInt64().ToString(),
+                _ => null
+            };
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 }
