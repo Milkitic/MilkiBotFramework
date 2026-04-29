@@ -46,6 +46,7 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
         var arguments = new List<ReadOnlyMemory<char>>();
 
         ReadOnlyMemory<char>? currentOption = null;
+        bool optionsEnded = false;
 
         foreach (var c in memory.Span)
         {
@@ -83,12 +84,33 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
             }
         }
 
+        if (currentQuote != null)
+        {
+            result = null;
+            exception = new CommandLineException("Unclosed quote in command line.");
+            return false;
+        }
+
         if (count > 0)
         {
             var currentWord = memory.Slice(index, count);
             try
             {
                 AddOperation(currentWord, true);
+            }
+            catch (CommandLineException ex)
+            {
+                exception = ex;
+                result = null;
+                return false;
+            }
+        }
+
+        if (currentOption != null)
+        {
+            try
+            {
+                AddOption(currentOption.Value, null);
             }
             catch (CommandLineException ex)
             {
@@ -114,7 +136,7 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
 
         void AddOperation(ReadOnlyMemory<char> currentWord, bool isEnd = false)
         {
-            var containsOptionFlag = OptionFlags.Contains(currentWord.Span[0]);
+            var containsOptionFlag = !optionsEnded && OptionFlags.Contains(currentWord.Span[0]);
             if (containsOptionFlag &&
                 currentWord.Length > 1 && !IsNumber(currentWord.Span[1])) // Option key
             {
@@ -127,18 +149,28 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
                     throw new CommandLineException("Command should be declared before any options.");
 
                 if (currentOption != null) // Previous is a switch
-                    options.Add(currentOption.Value, null);
-
-                // 解析选项名称（支持 --option、-o 和 -abc 格式）
-                var parsedOptions = ParseOptionName(currentWord);
-                
-                // 处理解析出的选项
-                foreach (var optionName in parsedOptions)
                 {
-                    if (isEnd || parsedOptions.Count > 1) // 如果是结尾或者是组合选项，直接添加为开关选项
-                        options.Add(optionName, null);
-                    else
-                        currentOption = optionName; // 单个选项可能有值
+                    AddOption(currentOption.Value, null);
+                    currentOption = null;
+                }
+
+                if (currentWord.Span.SequenceEqual("--"))
+                {
+                    optionsEnded = true;
+                    return;
+                }
+
+                var optionName = ParseOptionName(currentWord);
+                if (optionName.Length == 0)
+                    throw new CommandLineException("Option name cannot be empty.");
+
+                if (isEnd || IsShortOptionGroup(currentWord))
+                {
+                    AddOption(optionName, null);
+                }
+                else
+                {
+                    currentOption = optionName; // Single short or long options may have a value.
                 }
             }
             else if (!containsOptionFlag && command == null)
@@ -152,7 +184,7 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
             }
             else if (currentOption != null) // Option value
             {
-                options.Add(currentOption.Value, currentWord);
+                AddOption(currentOption.Value, currentWord);
                 currentOption = null;
             }
             else // Argument
@@ -161,43 +193,35 @@ public class CommandLineAnalyzer : ICommandLineAnalyzer
                 simpleArgStart ??= index;
             }
         }
+
+        void AddOption(ReadOnlyMemory<char> name, ReadOnlyMemory<char>? value)
+        {
+            if (options.Keys.Any(k => k.Span.SequenceEqual(name.Span)))
+                throw new CommandLineException($"Duplicate option: {name}");
+
+            options.Add(name, value);
+        }
     }
 
     /// <summary>
-    /// 解析选项名称，支持双横杠（--option）、单横杠单字符（-o）和单横杠多字符组合（-abc）格式
+    /// 解析选项名称，支持双横杠长选项（--option）和单横杠短选项（-o）。
+    /// 单横杠多字符（-abc）先保留为一个候选项，由绑定阶段根据命令参数定义决定是否拆分。
     /// </summary>
     /// <param name="optionWord">包含选项标识的完整单词</param>
-    /// <returns>解析后的选项名称列表</returns>
-    protected virtual List<ReadOnlyMemory<char>> ParseOptionName(ReadOnlyMemory<char> optionWord)
+    /// <returns>解析后的选项名称</returns>
+    protected virtual ReadOnlyMemory<char> ParseOptionName(ReadOnlyMemory<char> optionWord)
     {
-        var result = new List<ReadOnlyMemory<char>>();
-        
         if (optionWord.Length > 2 && optionWord.Span[1] == '-')
         {
-            // 双横杠选项 --option (完整名称)
-            result.Add(optionWord[2..]);
+            return optionWord[2..];
         }
-        else if (optionWord.Length == 2)
-        {
-            // 单横杠单字符选项 -o (简写形式)
-            result.Add(optionWord[1..]);
-        }
-        else if (optionWord.Length > 2)
-        {
-            // 单横杠多字符选项 -abc (组合简写形式，每个字符都是一个独立的bool选项)
-            var chars = optionWord[1..];
-            for (int i = 0; i < chars.Length; i++)
-            {
-                result.Add(chars.Slice(i, 1));
-            }
-        }
-        else
-        {
-            // 单横杠选项 - (无效格式)
-            result.Add(optionWord[1..]);
-        }
-        
-        return result;
+
+        return optionWord[1..];
+    }
+
+    private static bool IsShortOptionGroup(ReadOnlyMemory<char> optionWord)
+    {
+        return optionWord.Length > 2 && optionWord.Span[1] != '-';
     }
 
     protected virtual char GetCommandFlag()

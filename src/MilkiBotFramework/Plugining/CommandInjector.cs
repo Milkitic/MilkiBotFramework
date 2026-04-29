@@ -67,9 +67,7 @@ public class CommandInjector
             parameters[i] = DBNull.Value;
         }
 
-        var options = commandLineResult.Options
-            .DistinctBy(k => k.Key.ToString())
-            .ToDictionary(k => k.Key.ToString(), k => k.Value);
+        var options = CreateOptionDictionary(commandInfo, commandLineResult.Options, parameterInfos);
 
         bool modelBind = false;
         bool paramBind = false;
@@ -98,7 +96,7 @@ public class CommandInjector
                     modelBind = true;
 
                     // model binding
-                    var model = GetBindingModel(paramDef.ParameterType, messageContext, commandInfo, options, commandLineResult.Arguments);
+                    var model = GetBindingModel(paramDef.ParameterType, messageContext, commandInfo, commandLineResult.Options, commandLineResult.Arguments);
                     parameters[i] = model;
                 }
                 else
@@ -180,7 +178,7 @@ public class CommandInjector
                 }
             case CommandReturnType.ValueTask_:
                 {
-                    var valueTask = (dynamic)method.Invoke(obj, parameters)!; // Will lead to performance issue!!
+                    dynamic valueTask = method.Invoke(obj, parameters)!; // Will lead to performance issue!!
                     await valueTask.ConfigureAwait(false);
                     _logger.LogWarning($"No response will generated because the command \"" + commandInfo.Command +
                                        "\" was defined as an unknown return type: " + commandInfo.MethodInfo.ReturnType);
@@ -200,7 +198,7 @@ public class CommandInjector
     private object? GetBindingModel(Type parameterType,
         MessageContext messageContext,
         CommandInfo commandInfo,
-        Dictionary<string, ReadOnlyMemory<char>?> options,
+        IReadOnlyDictionary<ReadOnlyMemory<char>, ReadOnlyMemory<char>?> rawOptions,
         List<ReadOnlyMemory<char>> arguments)
     {
         ModelBindingInfo modelBindingInfo;
@@ -226,6 +224,7 @@ public class CommandInjector
         }
 
         var instance = Activator.CreateInstance(parameterType);
+        var options = CreateOptionDictionary(commandInfo, rawOptions, modelBindingInfo.ParameterInfos);
         int argIndex = 0;
         foreach (var paramDef in modelBindingInfo.ParameterInfos)
         {
@@ -242,6 +241,72 @@ public class CommandInjector
         }
 
         return instance;
+    }
+
+    private static Dictionary<string, ReadOnlyMemory<char>?> CreateOptionDictionary(CommandInfo commandInfo,
+        IReadOnlyDictionary<ReadOnlyMemory<char>, ReadOnlyMemory<char>?> rawOptions,
+        IReadOnlyList<CommandParameterInfo> parameterInfos)
+    {
+        var options = new Dictionary<string, ReadOnlyMemory<char>?>(StringComparer.Ordinal);
+        foreach (var (keyMemory, value) in rawOptions)
+        {
+            var key = keyMemory.ToString();
+            if (ShouldExpandShortOptionGroup(key, value, parameterInfos))
+            {
+                foreach (var c in key)
+                {
+                    AddOption(commandInfo, options, c.ToString(), null);
+                }
+            }
+            else
+            {
+                AddOption(commandInfo, options, key, value);
+            }
+        }
+
+        return options;
+    }
+
+    private static void AddOption(CommandInfo commandInfo,
+        Dictionary<string, ReadOnlyMemory<char>?> options,
+        string key,
+        ReadOnlyMemory<char>? value)
+    {
+        if (options.ContainsKey(key))
+        {
+            throw new BindingException($"Duplicate option: {key}",
+                new BindingSource(commandInfo, null), BindingFailureType.Mismatch);
+        }
+
+        options.Add(key, value);
+    }
+
+    private static bool ShouldExpandShortOptionGroup(string key,
+        ReadOnlyMemory<char>? value,
+        IReadOnlyList<CommandParameterInfo> parameterInfos)
+    {
+        if (key.Length <= 1 || value != null)
+            return false;
+
+        if (parameterInfos.Any(k => IsBindableOption(k) && string.Equals(k.Name, key, StringComparison.Ordinal)))
+            return false;
+
+        return key.All(c => parameterInfos.Any(k => IsBooleanShortOption(k, c)));
+    }
+
+    private static bool IsBooleanShortOption(CommandParameterInfo parameterInfo, char option)
+    {
+        return IsBindableOption(parameterInfo) &&
+               parameterInfo.ParameterType == StaticTypes.Boolean &&
+               (parameterInfo.Abbr == option ||
+                string.Equals(parameterInfo.Name, option.ToString(), StringComparison.Ordinal));
+    }
+
+    private static bool IsBindableOption(CommandParameterInfo parameterInfo)
+    {
+        return !parameterInfo.IsArgument &&
+               !parameterInfo.IsServiceArgument &&
+               parameterInfo.Name != null;
     }
 
     private static object? GetArgumentValue(CommandInfo commandInfo,

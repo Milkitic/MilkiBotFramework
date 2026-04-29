@@ -5,9 +5,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using MilkiBotFramework;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Plugining.CommandLine;
+using MilkiBotFramework.Plugining;
+using MilkiBotFramework.Plugining.Loading;
+using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Utils;
 using Xunit;
 using Xunit.Abstractions;
@@ -57,47 +62,190 @@ namespace UnitTests
         }
 
         [Theory]
-        [InlineData("/test")]
-        [InlineData("/test asdf asffghd")]
-        [InlineData("/test asdf")]
-        [InlineData("/test -o  -a asdf")]
-        [InlineData("/test  -a asdf")]
-        [InlineData("/recent:3 30")]
-        [InlineData(" /test:1 -option   [2]  -wow -what  234 -hehe \"tt:t ttadfv\"  125 fdgdsahf \"114514 191980:\" -heihei:3 -sbsb ")]
-        [Obsolete("Obsolete")]
-        public void Test1(string command)
+        [InlineData("/help -app")]
+        [InlineData("/help --app")]
+        public void LongOptionCanBeReadAndIsRenderedWithDoubleDash(string command)
         {
-            var b = new CommandLineAnalyzer(new BotOptions());
-            b.TryAnalyze(command, out var result2, out _);
-            var a = new StreamCommandLineAnalyzer();
-            a.TryAnalyze(command, out var result, out _);
+            var result = Analyze(command);
+            var options = GetOptions(result);
 
-            var json1 = result.ToString();
-            var json2 = result2.ToString();
-
-            _outputHelper.WriteLine("result1: " + json1);
-            _outputHelper.WriteLine("result2: " + json2);
-
-            Assert.Equal(json1, json2);
+            Assert.Equal("help", result.Command.Value.ToString());
+            Assert.True(options.ContainsKey("app"));
+            Assert.Equal("help --app", result.ToString());
         }
 
-        [Theory]
-        [InlineData("/test -test -3+-3 asdf 24123 -haha")]
-        [Obsolete("Obsolete")]
-        public void TestNe(string command)
+        [Fact]
+        public void ShortOptionCanReadValue()
         {
-            var a = new StreamCommandLineAnalyzer();
-            a.TryAnalyze(command, out var result, out _);
-            var b = new CommandLineAnalyzer(new BotOptions());
-            b.TryAnalyze(command, out var result2, out _);
+            var result = Analyze("/test -o value");
+            var options = GetOptions(result);
 
-            var json1 = result.ToString();
-            var json2 = result2.ToString();
+            Assert.Equal("value", options["o"]);
+            Assert.Empty(result.Arguments);
+        }
 
-            _outputHelper.WriteLine("result1: " + json1);
-            _outputHelper.WriteLine("result2: " + json2);
+        [Fact]
+        public void ShortOptionGroupIsKeptRawByAnalyzer()
+        {
+            var result = Analyze("/test -abc next");
+            var options = GetOptions(result);
 
-            Assert.NotEqual(json1, json2);
+            Assert.True(options.ContainsKey("abc"));
+            Assert.Contains("next", result.Arguments.Select(k => k.ToString()));
+        }
+
+        [Fact]
+        public void ShortOptionGroupExpandsOnlyWhenEveryItemIsBoolShortOption()
+        {
+            var options = NormalizeOptions(
+                RawOptions(("abc", null)),
+                Option("a", typeof(bool), false),
+                Option("b", typeof(bool), false),
+                Option("c", typeof(bool), false));
+
+            Assert.Equal(new[] { "a", "b", "c" }, options.Keys.OrderBy(k => k).ToArray());
+        }
+
+        [Fact]
+        public void ShortOptionGroupDoesNotExpandWhenAnyItemIsNotBoolShortOption()
+        {
+            var options = NormalizeOptions(
+                RawOptions(("abc", null)),
+                Option("a", typeof(bool), false),
+                Option("b", typeof(string), null),
+                Option("c", typeof(bool), false));
+
+            Assert.Equal(new[] { "abc" }, options.Keys.ToArray());
+        }
+
+        [Fact]
+        public void NegativeNumbersAreArgumentsOrOptionValues()
+        {
+            var result = Analyze("/test -1 -2 -o -3");
+            var options = GetOptions(result);
+
+            Assert.Equal(new[] { "-1", "-2" }, result.Arguments.Select(k => k.ToString()).ToArray());
+            Assert.Equal("-3", options["o"]);
+        }
+
+        [Fact]
+        public void QuotedArgumentKeepsSpaces()
+        {
+            var result = Analyze("/test \"hello world\" 'osu mania'");
+
+            Assert.Equal(new[] { "hello world", "osu mania" }, result.Arguments.Select(k => k.ToString()).ToArray());
+        }
+
+        [Fact]
+        public void UnclosedQuoteReturnsCommandLineException()
+        {
+            var analyzer = new CommandLineAnalyzer(new BotOptions());
+
+            var success = analyzer.TryAnalyze("/test \"hello", out var result, out var exception);
+
+            Assert.False(success);
+            Assert.Null(result);
+            Assert.NotNull(exception);
+            Assert.Contains("Unclosed quote", exception.Message);
+        }
+
+        [Fact]
+        public void DuplicateOptionReturnsCommandLineException()
+        {
+            var analyzer = new CommandLineAnalyzer(new BotOptions());
+
+            var success = analyzer.TryAnalyze("/help --app --app", out var result, out var exception);
+
+            Assert.False(success);
+            Assert.Null(result);
+            Assert.NotNull(exception);
+            Assert.Contains("Duplicate option", exception.Message);
+        }
+
+        [Fact]
+        public void TerminatorStopsOptionParsing()
+        {
+            var result = Analyze("/test -- -abc --name");
+
+            Assert.Empty(result.Options);
+            Assert.Equal(new[] { "-abc", "--name" }, result.Arguments.Select(k => k.ToString()).ToArray());
+        }
+
+        [Fact]
+        public void RecentColonSyntaxRemainsPartOfCommandName()
+        {
+            var result = Analyze("/recent:3 30");
+
+            Assert.Equal("recent:3", result.Command.Value.ToString());
+            Assert.Equal(new[] { "30" }, result.Arguments.Select(k => k.ToString()).ToArray());
+        }
+
+        private static CommandLineResult Analyze(string command)
+        {
+            var analyzer = new CommandLineAnalyzer(new BotOptions());
+            var success = analyzer.TryAnalyze(command, out var result, out var exception);
+            Assert.True(success, exception?.Message);
+            Assert.NotNull(result);
+            return result;
+        }
+
+        private static Dictionary<string, string> GetOptions(CommandLineResult result)
+        {
+            return result.Options.ToDictionary(k => k.Key.ToString(), k => k.Value?.ToString());
+        }
+
+        private static Dictionary<ReadOnlyMemory<char>, ReadOnlyMemory<char>?> RawOptions(
+            params (string Key, string Value)[] options)
+        {
+            return options.ToDictionary(k => k.Key.AsMemory(), k => k.Value?.AsMemory());
+        }
+
+        private static Dictionary<string, ReadOnlyMemory<char>?> NormalizeOptions(
+            Dictionary<ReadOnlyMemory<char>, ReadOnlyMemory<char>?> rawOptions,
+            params CommandParameterInfo[] parameterInfos)
+        {
+            var method = typeof(CommandInjector).GetMethod("CreateOptionDictionary",
+                BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            var commandInfo = new CommandInfo("test",
+                "",
+                typeof(CommandLineTests).GetMethod(nameof(DummyCommand), BindingFlags.NonPublic | BindingFlags.Static),
+                CommandReturnType.Void,
+                MessageAuthority.Public,
+                MessageType.Private | MessageType.Channel,
+                parameterInfos);
+
+            try
+            {
+                return (Dictionary<string, ReadOnlyMemory<char>?>)method.Invoke(null, new object[] { commandInfo, rawOptions, parameterInfos });
+            }
+            catch (TargetInvocationException ex)
+            {
+                throw ex.InnerException ?? ex;
+            }
+        }
+
+        private static CommandParameterInfo Option(string name, Type type, object defaultValue)
+        {
+            var parameterInfo = new CommandParameterInfo();
+            Set(parameterInfo, nameof(CommandParameterInfo.Name), name);
+            Set(parameterInfo, nameof(CommandParameterInfo.ParameterName), name);
+            Set(parameterInfo, nameof(CommandParameterInfo.ParameterType), type);
+            Set(parameterInfo, nameof(CommandParameterInfo.DefaultValue), defaultValue);
+            Set(parameterInfo, nameof(CommandParameterInfo.IsArgument), false);
+            Set(parameterInfo, nameof(CommandParameterInfo.IsServiceArgument), false);
+            Set(parameterInfo, nameof(CommandParameterInfo.ValueConverter), DefaultParameterConverter.Instance);
+            return parameterInfo;
+        }
+
+        private static void Set(CommandParameterInfo parameterInfo, string name, object value)
+        {
+            typeof(CommandParameterInfo).GetProperty(name)!.SetValue(parameterInfo, value);
+        }
+
+        private static void DummyCommand()
+        {
         }
     }
 }

@@ -42,9 +42,10 @@ public sealed class CommandLineResult
                 .OrderBy(k => k.Key.ToString())
                 .Select(k =>
                 {
+                    var option = GetOptionString(k.Key);
                     return k.Value == null
-                        ? $"-{GetArgumentString(k.Key)}"
-                        : $"-{GetArgumentString(k.Key)} {GetArgumentString(k.Value)}";
+                        ? option
+                        : $"{option} {GetArgumentString(k.Value)}";
                 })
             ));
 
@@ -60,5 +61,11 @@ public sealed class CommandLineResult
     {
         if (k == null) return "";
         return (k.Value.Span.Contains(' ') || k.Value.Span.Contains(':')) ? $"\"{k}\"" : k.Value.ToString();
+    }
+
+    private static string GetOptionString(ReadOnlyMemory<char> option)
+    {
+        var prefix = option.Length == 1 ? "-" : "--";
+        return prefix + GetArgumentString(option);
     }
 }
