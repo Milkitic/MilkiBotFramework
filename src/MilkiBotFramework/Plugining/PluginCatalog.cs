@@ -233,7 +233,9 @@ public class PluginCatalog
 
     private async Task CreateContextAndAddPlugins(string? contextName, IEnumerable<string> files)
     {
-        var assemblyFiles = files as string[] ?? files.ToArray();
+        var assemblyFiles = files
+            .Select(Path.GetFullPath)
+            .ToArray();
         var assemblyResults = AssemblyHelper.AnalyzePluginsInAssemblyFilesByDnlib(_logger, assemblyFiles);
         if (assemblyResults.Count <= 0 || assemblyResults.All(k => k.TypeResults.Length == 0))
             return;
