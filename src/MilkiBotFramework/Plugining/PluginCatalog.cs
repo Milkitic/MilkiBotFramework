@@ -468,6 +468,7 @@ public class PluginCatalog
         var index = identifierAttribute.Index;
         var name = ReplaceVariable(identifierAttribute.Name) ?? type.Name;
         var allowDisable = identifierAttribute.AllowDisable;
+        var defaultEnabled = identifierAttribute.DefaultEnabled;
         var serviceType = identifierAttribute.ServiceType;
         var description = ReplaceVariable(type.GetCustomAttribute<DescriptionAttribute>()?.Description);
         var scope = identifierAttribute.Scope ?? type.Assembly.GetName().Name ?? "DynamicScope";
@@ -548,7 +549,7 @@ public class PluginCatalog
         }
 
         return new PluginInfo(metadata, type, baseType, lifetime, new ReadOnlyDictionary<string, CommandInfo>(commands),
-            index, pluginHome, allowDisable, serviceType);
+            index, pluginHome, allowDisable, defaultEnabled, serviceType);
     }
 
     private string? ReplaceVariable(string? text)

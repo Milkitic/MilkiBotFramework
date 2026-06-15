@@ -12,6 +12,7 @@ public sealed class PluginInfo
         int index,
         string pluginHome,
         bool allowDisable,
+        bool defaultEnabled,
         Type? serviceType)
     {
         Metadata = metadata;
@@ -22,6 +23,7 @@ public sealed class PluginInfo
         Index = index;
         PluginHome = pluginHome;
         AllowDisable = allowDisable;
+        DefaultEnabled = defaultEnabled;
         ServiceType = serviceType;
         if (baseType == StaticTypes.BasicPlugin || baseType == StaticTypes.BasicPlugin_)
             PluginType = PluginType.Basic;
@@ -41,6 +43,7 @@ public sealed class PluginInfo
     public int Index { get; }
     public string PluginHome { get; }
     public bool AllowDisable { get; }
+    public bool DefaultEnabled { get; }
     public Type? ServiceType { get; }
     public PluginType PluginType { get; }
 }
