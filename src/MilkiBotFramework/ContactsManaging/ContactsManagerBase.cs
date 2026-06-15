@@ -13,7 +13,7 @@ namespace MilkiBotFramework.ContactsManaging;
 /// 表示一个类，用以自动管理联系簿信息。
 /// <para>在MilkiBotFramework中，联系簿支持3种联系人类型，其中包括私聊、主频道与子频道。</para>
 /// </summary>
-public abstract class ContactsManagerBase : IPlatformContactsManager
+public abstract class ContactsManagerBase : IPlatformContactsManager, IContextualContactsManager
 {
     private readonly BotTaskScheduler _botTaskScheduler;
     private readonly ILogger _logger;
@@ -54,6 +54,11 @@ public abstract class ContactsManagerBase : IPlatformContactsManager
         return Task.FromResult(new SelfInfoResult { IsSuccess = true, SelfInfo = SelfInfo });
     }
 
+    public virtual Task<SelfInfoResult> TryGetOrUpdateSelfInfo(MessageContext messageContext)
+    {
+        return TryGetOrUpdateSelfInfo();
+    }
+
     public virtual Task<MemberInfoResult> TryGetOrAddMemberInfo(string channelId, string userId,
         string? subChannelId = null)
     {
@@ -86,6 +91,12 @@ public abstract class ContactsManagerBase : IPlatformContactsManager
         return Task.FromResult(MemberInfoResult.Fail);
     }
 
+    public virtual Task<MemberInfoResult> TryGetOrAddMemberInfo(MessageContext messageContext, string channelId,
+        string userId, string? subChannelId = null)
+    {
+        return TryGetOrAddMemberInfo(channelId, userId, subChannelId);
+    }
+
     public virtual Task<ChannelInfoResult> TryGetOrAddChannelInfo(string channelId, string? subChannelId = null)
     {
         return GetChannelOrSubChannel(channelId, subChannelId, out var channelInfo)
@@ -95,6 +106,12 @@ public abstract class ContactsManagerBase : IPlatformContactsManager
                 ChannelInfo = channelInfo
             })
             : Task.FromResult(ChannelInfoResult.Fail);
+    }
+
+    public virtual Task<ChannelInfoResult> TryGetOrAddChannelInfo(MessageContext messageContext, string channelId,
+        string? subChannelId = null)
+    {
+        return TryGetOrAddChannelInfo(channelId, subChannelId);
     }
 
     public virtual Task<PrivateInfoResult> TryGetOrAddPrivateInfo(string userId)
@@ -111,19 +128,24 @@ public abstract class ContactsManagerBase : IPlatformContactsManager
         return Task.FromResult(PrivateInfoResult.Fail);
     }
 
-    public IEnumerable<ChannelInfo> GetAllChannels()
+    public virtual Task<PrivateInfoResult> TryGetOrAddPrivateInfo(MessageContext messageContext, string userId)
+    {
+        return TryGetOrAddPrivateInfo(userId);
+    }
+
+    public virtual IEnumerable<ChannelInfo> GetAllChannels()
     {
         return ChannelMapping.Values;
     }
 
-    public IEnumerable<MemberInfo> GetAllMembers(string channelId, string? subChannelId = null)
+    public virtual IEnumerable<MemberInfo> GetAllMembers(string channelId, string? subChannelId = null)
     {
         return GetChannelOrSubChannel(channelId, subChannelId, out var channelInfo)
             ? channelInfo.Members.Values
             : Array.Empty<MemberInfo>();
     }
 
-    public IEnumerable<PrivateInfo> GetAllPrivates()
+    public virtual IEnumerable<PrivateInfo> GetAllPrivates()
     {
         return PrivateMapping.Values;
     }
@@ -152,7 +174,7 @@ public abstract class ContactsManagerBase : IPlatformContactsManager
             .Do(RefreshContacts));
     }
 
-    public async Task HandleMessageAsync(MessageContext messageContext)
+    public virtual async Task HandleMessageAsync(MessageContext messageContext)
     {
         if (messageContext.MessageIdentity?.MessageType != MessageType.Notice) return;
 
@@ -374,7 +396,7 @@ public abstract class ContactsManagerBase : IPlatformContactsManager
 
     }
 
-    private Task NotifyContactsUpdatedAsync(ContactsUpdateEvent updateEvent)
+    protected Task NotifyContactsUpdatedAsync(ContactsUpdateEvent updateEvent)
     {
         var handlers = ContactsUpdated;
         if (handlers == null)

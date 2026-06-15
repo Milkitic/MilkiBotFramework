@@ -144,7 +144,7 @@ namespace MilkiBotFramework.Aspnetcore
                         }
 
                         var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                        await connector.OnWebSocketOpen(webSocket);
+                        await connector.OnWebSocketOpen(webSocket, context.Request.Headers);
                     });
                     continue;
                 }

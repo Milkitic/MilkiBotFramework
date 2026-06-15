@@ -23,7 +23,7 @@ public class ReverseWebSocketMiddleware
                 if (context.WebSockets.IsWebSocketRequest)
                 {
                     var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                    await _connector.OnWebSocketOpen(webSocket);
+                    await _connector.OnWebSocketOpen(webSocket, context.Request.Headers);
                 }
                 else
                 {
