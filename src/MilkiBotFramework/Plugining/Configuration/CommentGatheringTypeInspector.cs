@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.TypeInspectors;
@@ -22,6 +22,16 @@ public class CommentGatheringTypeInspector : TypeInspectorSkeleton
     public override string GetEnumValue(object enumValue)
     {
         return _innerTypeDescriptor.GetEnumValue(enumValue);
+    }
+
+    public override bool HasParseMethod(Type type)
+    {
+        return _innerTypeDescriptor.HasParseMethod(type);
+    }
+
+    public override object? Parse(string value, Type expectedType)
+    {
+        return _innerTypeDescriptor.Parse(value, expectedType);
     }
 
     public override IEnumerable<IPropertyDescriptor> GetProperties(Type type, object? container)
