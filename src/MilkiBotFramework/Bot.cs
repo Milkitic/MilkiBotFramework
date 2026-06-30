@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
 using MilkiBotFramework.Dispatching;
@@ -10,6 +10,8 @@ namespace MilkiBotFramework;
 
 public class Bot
 {
+    private static readonly TimeSpan ConnectorStartupTimeout = TimeSpan.FromSeconds(30);
+
     public event Func<MessageContext, Task>? OnMessageReceived;
 
     private int _exitCode;
@@ -67,13 +69,14 @@ public class Bot
             _exitCode = 0;
             try
             {
-                using var cts = new CancellationTokenSource(3000);
+                // Connector startup may include remote auth calls before the local server starts.
+                using var cts = new CancellationTokenSource(ConnectorStartupTimeout);
                 await Connector.ConnectAsync(cts.Token);
             }
             catch (Exception ex)
             {
-                if (ex is not TaskCanceledException &&
-                    ex.InnerException is not TaskCanceledException)
+                if (ex is not OperationCanceledException &&
+                    ex.InnerException is not OperationCanceledException)
                 {
                     throw;
                 }

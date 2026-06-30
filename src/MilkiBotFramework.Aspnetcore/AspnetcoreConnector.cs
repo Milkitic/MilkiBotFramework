@@ -264,8 +264,8 @@ public class AspnetcoreConnector : IConnector
         }
         catch (Exception ex)
         {
-            if (ex is not TaskCanceledException &&
-                ex.InnerException is not TaskCanceledException)
+            if (ex is not OperationCanceledException &&
+                ex.InnerException is not OperationCanceledException)
             {
                 throw;
             }
