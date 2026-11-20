@@ -13,8 +13,8 @@ public class QApiConnector : AspnetcoreConnector, IPlatformConnector
 
     private readonly ILogger<QApiConnector> _logger;
 
-    private DateTime _tokenExpireTime;
-    private string? _accessToken;
+    private readonly SemaphoreSlim _tokenLock = new(1, 1);
+    private volatile AccessToken? _cachedToken;
     private int _lastSequence;
     private ConcurrentDictionary<string, DateTimeOffset> _cachedMessages = new();
 
@@ -48,7 +48,7 @@ public class QApiConnector : AspnetcoreConnector, IPlatformConnector
     public override async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
-        await UpdateAccessTokenAsync();
+        await GetAuthorizationAsync(cancellationToken);
         await base.ConnectAsync(cancellationToken);
     }
 
@@ -63,23 +63,39 @@ public class QApiConnector : AspnetcoreConnector, IPlatformConnector
         }
     }
 
-    public async ValueTask<string> GetAuthorizationAsync()
+    public ValueTask<string> GetAuthorizationAsync()
     {
-        if (DateTime.Now >= _tokenExpireTime.AddSeconds(-60))
+        return GetAuthorizationAsync(CancellationToken.None);
+    }
+
+    internal async ValueTask<string> GetAuthorizationAsync(CancellationToken cancellationToken)
+    {
+        if (_cachedToken is { } cached && cached.ExpireTime > DateTime.Now.AddMinutes(1))
         {
-            _logger.LogInformation("Token expired, refreshing..");
-            await UpdateAccessTokenAsync();
+            return cached.Authorization;
         }
 
-        return $"QQBot {_accessToken}";
+        await _tokenLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (_cachedToken is { } current && current.ExpireTime > DateTime.Now.AddMinutes(1))
+            {
+                return current.Authorization;
+            }
+
+            _logger.LogInformation("Refreshing QQ bot access token.");
+            var (accessToken, expireTime) = await QApiTokenHelper.RequestAccessTokenAsync(_httpClient, Connection);
+            var refreshed = new AccessToken($"QQBot {accessToken}", expireTime);
+            _cachedToken = refreshed;
+            return refreshed.Authorization;
+        }
+        finally
+        {
+            _tokenLock.Release();
+        }
     }
 
-    private async Task UpdateAccessTokenAsync()
-    {
-        var (accessToken, expireTime) = await QApiTokenHelper.RequestAccessTokenAsync(_httpClient, Connection);
-        _accessToken = accessToken;
-        _tokenExpireTime = expireTime;
-    }
+    private sealed record AccessToken(string Authorization, DateTime ExpireTime);
 }
 
 internal static class QApiTokenHelper

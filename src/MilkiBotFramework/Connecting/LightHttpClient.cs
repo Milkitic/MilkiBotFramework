@@ -137,10 +137,19 @@ public class LightHttpClient
     public async Task<T> HttpPost<T>(string url, object? obj,
         IReadOnlyDictionary<string, string>? headers = null) where T : class
     {
-        var serialize = JsonSerializer.Serialize(obj);
-        HttpContent content = new StringContent(serialize);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-        return await SendAsync<T>(url, null, content, headers, RequestMethod.Post);
+        return await SendAsync<T>(url, null, CreateJsonContent(obj), headers, RequestMethod.Post);
+    }
+
+    /// <summary>
+    /// 发送一次 JSON POST 并返回状态码和响应正文，供发消息等非幂等操作使用。
+    /// </summary>
+    public async Task<(HttpStatusCode StatusCode, string Body)> HttpPostOnceAsync(string url, object? body,
+        IReadOnlyDictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = CreateJsonContent(body) };
+        AddHeaders(request, headers);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return (response.StatusCode, await response.Content.ReadAsStringAsync(cancellationToken));
     }
 
     /// <summary>
@@ -238,13 +247,7 @@ public class LightHttpClient
                 request.Content = content;
             }
 
-            if (argsHeader != null)
-            {
-                foreach (var (key, value) in argsHeader)
-                {
-                    request.Headers.TryAddWithoutValidation(key, value);
-                }
-            }
+            AddHeaders(request, argsHeader);
 
             HttpResponseMessage response;
             using (var cts = new CancellationTokenSource(_clientCreationOptions.Timeout))
@@ -287,6 +290,23 @@ public class LightHttpClient
                 response.Dispose();
             }
         });
+    }
+
+    private static HttpContent CreateJsonContent(object? body)
+    {
+        var content = new StringContent(JsonSerializer.Serialize(body));
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        return content;
+    }
+
+    private static void AddHeaders(HttpRequestMessage request, IReadOnlyDictionary<string, string>? headers)
+    {
+        if (headers == null) return;
+
+        foreach (var (key, value) in headers)
+        {
+            request.Headers.TryAddWithoutValidation(key, value);
+        }
     }
 
     private async Task<object> RunWithRetry<T>(RequestContext context, Func<Task<T>> func)

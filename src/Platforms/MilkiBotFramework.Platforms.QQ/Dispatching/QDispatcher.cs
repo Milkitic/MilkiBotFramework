@@ -57,7 +57,20 @@ public class QDispatcher : DispatcherBase<QMessageContext>
                 {
                     var messageId = dProp.GetProperty("id").GetString()!;
                     var memberId = dProp.GetProperty("author").GetProperty("member_openid").GetString()!;
-                    var groupId = dProp.GetProperty("group_id").GetString()!;
+                    var groupId = dProp.TryGetProperty("group_openid", out var groupOpenId)
+                        ? groupOpenId.GetString()
+                        : null;
+                    if (string.IsNullOrWhiteSpace(groupId) && dProp.TryGetProperty("group_id", out var legacyGroupId))
+                    {
+                        groupId = legacyGroupId.GetString();
+                    }
+
+                    if (string.IsNullOrWhiteSpace(groupId))
+                    {
+                        failureReason = "missing-group-openid";
+                        return false;
+                    }
+
                     var content = dProp.GetProperty("content").GetString()!.Trim();
                     var timestamp = DateTimeOffset.Parse(dProp.GetProperty("timestamp").GetString()!);
 
