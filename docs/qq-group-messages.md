@@ -1,5 +1,7 @@
 # QQ 群消息发送
 
+单聊、富媒体分片、撤回和事件接入见 [QQ 官方 OpenAPI 接入](qq-openapi.md)。
+
 QQ 群聊消息分为**主动消息**与**被动回复**两种模式，底层均调用 [`POST /v2/groups/{group_openid}/messages`](https://bot.qq.com/wiki/develop/api-v2/autogen/api/v2_groups_group_openid_messages.post.html) 接口，区别在于是否携带入站上下文 ID。
 
 ## 主动消息

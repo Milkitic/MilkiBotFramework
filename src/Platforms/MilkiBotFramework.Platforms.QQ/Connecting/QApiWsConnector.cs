@@ -1,5 +1,5 @@
 ﻿﻿using System.Text.Json;
-using System.Text.Json.Nodes;
+using System.Net;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
@@ -9,6 +9,7 @@ using Websocket.Client;
 
 namespace MilkiBotFramework.Platforms.QQ.Connecting;
 
+/// <summary>保留用于兼容既有集成的 QQ WebSocket 网关连接器。</summary>
 [Obsolete]
 public class QApiWsConnector : WebSocketClientConnector
 {
@@ -16,7 +17,7 @@ public class QApiWsConnector : WebSocketClientConnector
     private readonly QContactsManager? _contactsManager;
     private readonly ILogger<QApiWsConnector> _logger;
 
-    private DateTime _tokenExpireTime;
+    private DateTimeOffset _tokenExpireTime;
     private string? _accessToken;
 
     private string? _wsUrl;
@@ -28,6 +29,10 @@ public class QApiWsConnector : WebSocketClientConnector
 
     private bool _isDropped;
 
+    /// <summary>创建旧版 QQ 网关连接器。</summary>
+    /// <param name="httpClient">用于查询网关和访问凭证的 HTTP 客户端。</param>
+    /// <param name="contactsManager">用于保存机器人自身信息的联系人管理器。</param>
+    /// <param name="logger">网关连接日志。</param>
     public QApiWsConnector(LightHttpClient httpClient, IContactsManager contactsManager, ILogger<QApiWsConnector> logger) : base(logger)
     {
         _httpClient = httpClient;
@@ -36,7 +41,9 @@ public class QApiWsConnector : WebSocketClientConnector
         MessageReceived += QApiConnector_MessageReceived;
     }
 
+    /// <summary>当前 QQ 网关会话的鉴权值。</summary>
     public string Authorization => $"QQBot {_accessToken}";
+    /// <summary>最近收到的网关事件序号。</summary>
     public int MessageSequence => _lastSequence;
 
     private Task QApiConnector_MessageReceived(InboundMessage inboundMessage)
@@ -76,8 +83,10 @@ public class QApiWsConnector : WebSocketClientConnector
         return Task.CompletedTask;
     }
 
+    /// <summary>旧版网关的机器人接入配置。</summary>
     public QConnection? Connection { get; internal set; }
 
+    /// <summary>查询 WebSocket 入口时使用的 QQ OpenAPI 主机名。</summary>
     public string Host
     {
         get
@@ -87,6 +96,8 @@ public class QApiWsConnector : WebSocketClientConnector
         }
     }
 
+    /// <summary>请求 QQ 网关地址并连接 WebSocket。</summary>
+    /// <param name="cancellationToken">取消连接的令牌。</param>
     public override async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
@@ -99,6 +110,8 @@ public class QApiWsConnector : WebSocketClientConnector
         await base.ConnectAsync(cancellationToken);
     }
 
+    /// <summary>重新连接时恢复或建立网关会话。</summary>
+    /// <param name="reconnectionInfo">网关库报告的重连信息。</param>
     protected override async ValueTask OnReconnectionHappened(ReconnectionInfo reconnectionInfo)
     {
         if (reconnectionInfo.Type != ReconnectionType.Initial)
@@ -113,7 +126,7 @@ public class QApiWsConnector : WebSocketClientConnector
             isResume = false;
         }
 
-        if (isResume == false || DateTime.Now >= _tokenExpireTime)
+        if (isResume == false || DateTimeOffset.UtcNow >= _tokenExpireTime)
         {
             await UpdateAccessTokenAsync();
         }
@@ -130,6 +143,8 @@ public class QApiWsConnector : WebSocketClientConnector
         }
     }
 
+    /// <summary>连接断开时停止发送网关心跳。</summary>
+    /// <param name="disconnectionInfo">网关库报告的断开信息。</param>
     protected override async ValueTask OnDisconnectionHappened(DisconnectionInfo disconnectionInfo)
     {
         _logger.LogError(disconnectionInfo.Exception, "OnDisconnectionHappened");
@@ -154,8 +169,7 @@ public class QApiWsConnector : WebSocketClientConnector
             {
                 ["Authorization"] = Authorization
             });
-        var jsonNode2 = JsonNode.Parse(response2)!;
-        QApiTokenHelper.ValidateResult(jsonNode2);
+        var jsonNode2 = QOpenApiResponse.Read(response2, HttpStatusCode.OK)!;
         _wsUrl = jsonNode2["url"]!.GetValue<string>();
     }
 

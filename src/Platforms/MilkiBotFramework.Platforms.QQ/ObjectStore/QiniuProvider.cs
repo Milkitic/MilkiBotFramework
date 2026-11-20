@@ -13,6 +13,7 @@ using SixLabors.ImageSharp.Processing.Processors.Quantization;
 
 namespace MilkiBotFramework.Platforms.QQ.ObjectStore;
 
+/// <summary>将待发送的图片上传到七牛云对象存储。</summary>
 public class QiniuProvider : IObjectStorageProvider
 {
     private static readonly Dictionary<ImageType, string> ImageTypeToExtension = new()
@@ -71,6 +72,9 @@ public class QiniuProvider : IObjectStorageProvider
     private readonly OssOptions _options;
     private readonly Mac _mac;
 
+    /// <summary>读取 QQ 图片存储配置并创建七牛云上传器。</summary>
+    /// <param name="logger">存储操作日志。</param>
+    /// <param name="botOptions">包含七牛云配置的 QQ 机器人配置。</param>
     public QiniuProvider(ILogger<QiniuProvider> logger, BotOptions botOptions)
     {
         _logger = logger;
@@ -79,6 +83,9 @@ public class QiniuProvider : IObjectStorageProvider
         _mac = new Mac(_options.AccessKey, _options.SecretKey);
     }
 
+    /// <summary>上传本地图片文件并签发临时下载地址。</summary>
+    /// <param name="path">待读取的图片路径。</param>
+    /// <returns>七牛云临时下载 URL。</returns>
     public async Task<string> UploadImage(string path)
     {
         var objectName = Path.GetFileName(path);
@@ -90,6 +97,10 @@ public class QiniuProvider : IObjectStorageProvider
         return await UploadImage(objectName, contentType, memoryStream);
     }
 
+    /// <summary>按给定选项编码内存图片并上传。</summary>
+    /// <param name="image">待上传的内存图片。</param>
+    /// <param name="encodingOptions">输出图片格式和质量等编码参数。</param>
+    /// <returns>七牛云临时下载 URL。</returns>
     public async Task<string> UploadImage(Image image, ImageEncodingOptions encodingOptions)
     {
         var imageType = encodingOptions.ImageType;

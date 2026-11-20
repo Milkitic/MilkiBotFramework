@@ -1,13 +1,8 @@
-﻿using Microsoft.AspNetCore.Builder;
-using MilkiBotFramework.Aspnetcore;
-using MilkiBotFramework.Platforms.QQ.Connecting;
+﻿using MilkiBotFramework.Aspnetcore;
 
 namespace MilkiBotFramework.Platforms.QQ;
 
+/// <summary>构建可通过 ASP.NET Core 接收 QQ 机器人回调的应用。</summary>
 public class QBotBuilder : AspnetcoreBotBuilder
 {
-    protected override void ConfigureMiddleware(IServiceProvider serviceProvider)
-    {
-        WebApp.UseMiddleware<QApiHttpMiddleware>();
-    }
 }

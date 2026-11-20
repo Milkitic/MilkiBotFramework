@@ -1,4 +1,5 @@
-﻿using System.Text;
+using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -7,171 +8,164 @@ using NSec.Cryptography;
 
 namespace MilkiBotFramework.Platforms.QQ.Connecting;
 
+/// <summary>处理 QQ 官方 Webhook 的地址验证、事件验签和回执。</summary>
 public class QApiHttpMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<QApiHttpMiddleware> _logger;
-    private readonly QApiConnector _qApiConnector;
-    private readonly QConnection _connection;
+    private readonly QApiConnector _connector;
 
+    /// <summary>创建使用 QQ 连接器配置的回调中间件。</summary>
+    /// <param name="next">处理非 QQ 回调的后续中间件。</param>
+    /// <param name="botOptions">保留的框架配置参数。Webhook 凭证取自连接器的配置。</param>
+    /// <param name="connector">对应 QQ 机器人的连接器。</param>
+    /// <param name="logger">用于记录回调失败的日志对象。</param>
     public QApiHttpMiddleware(RequestDelegate next, BotOptions botOptions,
         IConnector connector, ILogger<QApiHttpMiddleware> logger)
     {
         _next = next;
         _logger = logger;
-        _qApiConnector = (QApiConnector)connector;
-        _connection = ((QQBotOptions)botOptions).Connection;
+        _connector = (QApiConnector)connector;
     }
 
+    /// <summary>处理配置路径上的 QQ 回调。其他路径交给应用的后续中间件。</summary>
+    /// <param name="context">当前 HTTP 请求及响应。</param>
     public async Task InvokeAsync(HttpContext context)
     {
-        if (context.Request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase))
+        var path = _connector.BindingPath;
+        if (string.IsNullOrWhiteSpace(path) || !context.Request.Path.Equals(path, StringComparison.OrdinalIgnoreCase))
         {
-            using var reader = new StreamReader(context.Request.Body, Encoding.UTF8, true, 1024, true);
-            var bodyStr = await reader.ReadToEndAsync();
-            var json = JsonNode.Parse(bodyStr);
-            if (json == null)
-            {
-                await _next(context);
-                return;
-            }
-
-            var dObject = json["d"];
-            if (dObject == null)
-            {
-                await _next(context);
-                return;
-            }
-
-            var op = (OpCode?)json["op"]?.GetValue<int>();
-            if (op == null)
-            {
-                await _next(context);
-                return;
-            }
-
-            var xSignature = context.Request.Headers["X-Signature-Ed25519"].FirstOrDefault();
-            var xTimestamp = context.Request.Headers["X-Signature-Timestamp"].FirstOrDefault();
-
-            // 验证签名
-            if (!VerifySignature(xSignature, xTimestamp, bodyStr))
-            {
-                _logger.LogWarning("Unauthorized: Invalid signature");
-                context.Response.StatusCode = 401;
-                await context.Response.WriteAsync("Unauthorized: Invalid signature");
-                return;
-            }
-
-            if (op == OpCode.Validate)
-            {
-                var plainToken = dObject["plain_token"]?.GetValue<string>() ?? bodyStr;
-                var eventTimespan = dObject["event_ts"]?.GetValue<string>();
-                // 生成签名
-                var generatedSignature = GenerateSignature(eventTimespan, plainToken);
-
-                await context.Response.WriteAsJsonAsync(new
-                {
-                    plain_token = plainToken,
-                    signature = generatedSignature
-                });
-            }
-
-            await _qApiConnector.HandleEventAsync(op.Value, json);
+            await _next(context);
             return;
         }
 
-        await _next(context);
-    }
-
-    private bool VerifySignature(string? signature, string? timestamp, string body)
-    {
-        if (string.IsNullOrEmpty(signature) ||
-            string.IsNullOrEmpty(timestamp) ||
-            string.IsNullOrEmpty(_connection.ClientSecret))
+        if (!HttpMethods.IsPost(context.Request.Method))
         {
-            return false;
+            context.Response.Headers.Allow = HttpMethods.Post;
+            context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+            return;
         }
 
+        using var buffer = new MemoryStream();
+        await context.Request.Body.CopyToAsync(buffer, context.RequestAborted);
+        var body = buffer.GetBuffer().AsMemory(0, (int)buffer.Length);
+        JsonObject? payload;
         try
         {
-            // 1. 根据Bot Secret生成公钥
-            var publicKey = GeneratePublicKey(_connection.ClientSecret);
+            payload = JsonNode.Parse(body.Span) as JsonObject;
+        }
+        catch (JsonException)
+        {
+            payload = null;
+        }
 
-            // 2. 解码签名
-            var sig = Convert.FromHexString(signature);
-            if (sig.Length != SignatureAlgorithm.Ed25519.SignatureSize || (sig[63] & 224) != 0)
+        if (payload?["op"] is not JsonValue op || !op.TryGetValue<int>(out var opCode))
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            return;
+        }
+
+        var secret = _connector.Connection.ClientSecret;
+        var appId = context.Request.Headers["X-Bot-Appid"].ToString();
+        if (string.IsNullOrEmpty(secret) || (appId.Length != 0 && appId != _connector.Connection.AppId))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        if (opCode == (int)OpCode.Validate)
+        {
+            await ReplyToValidationAsync(context, payload["d"] as JsonObject, secret);
+            return;
+        }
+
+        var signature = context.Request.Headers["X-Signature-Ed25519"].ToString();
+        var timestamp = context.Request.Headers["X-Signature-Timestamp"].ToString();
+        if (!VerifySignature(secret, timestamp, signature, body.Span))
+        {
+            _logger.LogWarning("QQ Webhook 请求签名无效。");
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        if (opCode == (int)OpCode.Dispatch &&
+            (payload["t"] is not JsonValue eventType || !eventType.TryGetValue<string>(out var type) ||
+             string.IsNullOrWhiteSpace(type) || payload["d"] is not JsonObject))
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            return;
+        }
+
+        await context.Response.WriteAsJsonAsync(new { op = (int)OpCode.HTTPCallbackACK, d = 0 }, context.RequestAborted);
+        await context.Response.CompleteAsync();
+
+        if (opCode == (int)OpCode.Dispatch)
+        {
+            try
             {
-                return false;
+                await _connector.HandleEventAsync(OpCode.Dispatch, payload);
             }
-
-            // 3. 构建签名体 (timestamp + body)
-            var message = Encoding.UTF8.GetBytes(timestamp + body);
-
-            // 4. 验证签名
-            return SignatureAlgorithm.Ed25519.Verify(publicKey, message, sig);
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "处理已接收的 QQ 回调时失败。");
+            }
         }
-        catch
+    }
+
+    private static async Task ReplyToValidationAsync(HttpContext context, JsonObject? data, string secret)
+    {
+        var timestamp = data?["event_ts"]?.ToString();
+        if (data?["plain_token"] is not JsonValue token || !token.TryGetValue<string>(out var plainToken) ||
+            string.IsNullOrWhiteSpace(plainToken) || !IsTimestamp(timestamp))
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            return;
+        }
+
+        // 地址验证只签发平台的普通挑战令牌，避免签发可作为事件正文的 JSON 数据。
+        if (plainToken.TrimStart().StartsWith('{'))
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            return;
+        }
+
+        using var key = CreateKey(secret);
+        var signature = SignatureAlgorithm.Ed25519.Sign(key, Encoding.UTF8.GetBytes(timestamp + plainToken));
+        await context.Response.WriteAsJsonAsync(new { plain_token = plainToken, signature = Convert.ToHexStringLower(signature) },
+            context.RequestAborted);
+    }
+
+    private static bool VerifySignature(string secret, string timestamp, string signature, ReadOnlySpan<byte> body)
+    {
+        if (!IsTimestamp(timestamp) || signature.Length != SignatureAlgorithm.Ed25519.SignatureSize * 2)
         {
             return false;
         }
+
+        Span<byte> signatureBytes = stackalloc byte[SignatureAlgorithm.Ed25519.SignatureSize];
+        if (Convert.FromHexString(signature, signatureBytes, out _, out _) != System.Buffers.OperationStatus.Done)
+        {
+            return false;
+        }
+
+        var signedData = new byte[timestamp.Length + body.Length];
+        Encoding.UTF8.GetBytes(timestamp, signedData);
+        body.CopyTo(signedData.AsSpan(timestamp.Length));
+        using var key = CreateKey(secret);
+        return SignatureAlgorithm.Ed25519.Verify(key.PublicKey, signedData, signatureBytes);
     }
 
-    private string GenerateSignature(string? timestamp, string content)
+    private static bool IsTimestamp(string? value) => !string.IsNullOrEmpty(value) && value.All(char.IsAsciiDigit);
+
+    private static Key CreateKey(string secret)
     {
-        if (string.IsNullOrEmpty(timestamp) || string.IsNullOrEmpty(_connection.ClientSecret))
+        var secretBytes = Encoding.UTF8.GetBytes(secret);
+        Span<byte> seed = stackalloc byte[32];
+        for (var i = 0; i < seed.Length; i++)
         {
-            return string.Empty;
+            seed[i] = secretBytes[i % secretBytes.Length];
         }
 
-        try
-        {
-            // 1. 根据Bot Secret生成私钥
-            var privateKey = GeneratePrivateKey(_connection.ClientSecret);
-
-            // 2. 构建签名体 (timestamp + content)
-            var message = Encoding.UTF8.GetBytes(timestamp + content);
-
-            // 3. 生成Ed25519签名
-            var signature = SignatureAlgorithm.Ed25519.Sign(privateKey, message);
-
-            // 4. 转换为十六进制字符串
-            return Convert.ToHexString(signature).ToLower();
-        }
-        catch
-        {
-            return string.Empty;
-        }
-    }
-
-    private static Key GeneratePrivateKey(string botSecret)
-    {
-        var seed = botSecret;
-        const int Ed25519SeedSize = 32;
-
-        while (seed.Length < Ed25519SeedSize)
-        {
-            seed += seed;
-        }
-
-        var seedString = seed.Substring(0, Ed25519SeedSize);
-        byte[] seedBytes = Encoding.UTF8.GetBytes(seedString);
-
-        return Key.Import(SignatureAlgorithm.Ed25519, seedBytes, KeyBlobFormat.RawPrivateKey);
-    }
-
-    private static PublicKey GeneratePublicKey(string botSecret)
-    {
-        var seed = botSecret;
-        const int Ed25519SeedSize = 32;
-
-        while (seed.Length < Ed25519SeedSize)
-        {
-            seed += seed;
-        }
-
-        var seedBytes = Encoding.UTF8.GetBytes(seed[..32]);
-
-        using var key = Key.Import(SignatureAlgorithm.Ed25519, seedBytes, KeyBlobFormat.RawPrivateKey);
-        return key.PublicKey;
+        return Key.Import(SignatureAlgorithm.Ed25519, seed, KeyBlobFormat.RawPrivateKey);
     }
 }

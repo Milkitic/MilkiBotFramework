@@ -4,11 +4,13 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\MilkiBotFramework.Aspnetcore\MilkiBotFramework.Aspnetcore.csproj" />
     <ProjectReference Include="..\..\MilkiBotFramework\MilkiBotFramework.csproj" />
+    <InternalsVisibleTo Include="UnitTests" />
   </ItemGroup>
 
   <ItemGroup>
