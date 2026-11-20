@@ -149,7 +149,7 @@ namespace MilkiBotFramework.Aspnetcore
                     continue;
                 }
 
-                if (connector.ConnectionType != ConnectionType.Http)
+                if (connector.ConnectionType != ConnectionType.Http || connector.TryConfigureHttpCallback(WebApp))
                 {
                     continue;
                 }

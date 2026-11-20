@@ -1,7 +1,4 @@
-﻿using System.Net;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using MilkiBotFramework.Platforms.QQ.Connecting;
 using MilkiBotFramework.Platforms.QQ.ContactsManaging;
 using MilkiBotFramework.Platforms.QQ.Dispatching;
@@ -29,18 +26,6 @@ public static class BotBuilderExtensions
             .ConfigureServices(k =>
             {
                 k.AddScoped(typeof(QMessageContext));
-                k.AddTransient<IStartupFilter, QWebhookStartupFilter>();
-                k.AddHttpClient(QApiConnector.OpenApiClientName, (services, client) =>
-                    client.Timeout = services.GetRequiredService<BotOptions>().HttpOptions.Timeout)
-                    .ConfigurePrimaryHttpMessageHandler(services =>
-                    {
-                        var proxy = services.GetRequiredService<BotOptions>().HttpOptions.ProxyUrl;
-                        return new SocketsHttpHandler
-                        {
-                            AutomaticDecompression = DecompressionMethods.GZip,
-                            Proxy = proxy == null ? null : new WebProxy(proxy)
-                        };
-                    });
             })
             .UseCommandLineAnalyzer<CommandLineAnalyzer>(new DefaultParameterConverter())
             .UseContactsManager<QContactsManager>()
@@ -72,18 +57,5 @@ public static class BotBuilderExtensions
             });
 
         return (TBuilder)builder;
-    }
-}
-
-internal sealed class QWebhookStartupFilter : IStartupFilter
-{
-    public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next)
-    {
-        return application =>
-        {
-            var connector = application.ApplicationServices.GetRequiredService<QApiConnector>();
-            application.UseMiddleware<QApiHttpMiddleware>(connector);
-            next(application);
-        };
     }
 }

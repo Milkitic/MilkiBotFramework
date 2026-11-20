@@ -42,16 +42,17 @@ public class MinIOProvider : IObjectStorageProvider
     public async Task<string> UploadImage(string path)
     {
         var bucketName = _options.BucketName;
-        var objectName = Path.GetFileName(path);
+        var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(path)}";
         var data = await File.ReadAllBytesAsync(path);
         var imageType = ImageHelper.GetKnownImageType(data);
         var contentType = imageType switch
         {
             ImageType.Unknown => "application/octet-stream",
-            ImageType.Jpeg => "image/jpg",
+            ImageType.Jpeg => "image/jpeg",
             ImageType.Bmp => "image/bmp",
             ImageType.Gif => "image/gif",
             ImageType.Png => "image/png",
+            ImageType.Webp => "image/webp",
             _ => throw new ArgumentOutOfRangeException()
         };
 
@@ -89,7 +90,6 @@ public class MinIOProvider : IObjectStorageProvider
             .WithExpiry(totalSeconds)
             .WithHeaders(reqParams);
         var presignedUrl = await _minio.PresignedGetObjectAsync(getArgs).ConfigureAwait(false);
-        _logger.LogDebug($"Successfully got temporary download link: {presignedUrl}");
         return presignedUrl;
     }
 
@@ -145,7 +145,6 @@ public class MinIOProvider : IObjectStorageProvider
             .WithExpiry(totalSeconds)
             .WithHeaders(reqParams);
         var presignedUrl = await _minio.PresignedGetObjectAsync(getArgs).ConfigureAwait(false);
-        _logger.LogDebug($"Successfully got temporary download link: {presignedUrl}");
         return presignedUrl;
     }
 }

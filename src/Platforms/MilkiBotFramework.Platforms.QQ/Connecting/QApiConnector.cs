@@ -1,11 +1,7 @@
 using System.Collections.Concurrent;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Aspnetcore;
 using MilkiBotFramework.Connecting;
@@ -15,11 +11,8 @@ namespace MilkiBotFramework.Platforms.QQ.Connecting;
 /// <summary>托管 QQ 官方 Webhook，并为当前机器人缓存和更新访问凭证。</summary>
 public class QApiConnector : AspnetcoreConnector, IPlatformConnector
 {
-    internal const string OpenApiClientName = "MilkiBotFramework.QQ.OpenApi";
-    private static readonly HttpClient DefaultOpenApiClient = new() { Timeout = new LightHttpClientCreationOptions().Timeout };
     private static readonly TimeSpan CallbackRetention = TimeSpan.FromHours(24);
     private readonly LightHttpClient _httpClient;
-    private readonly IHttpClientFactory? _openApiClientFactory;
     private readonly ILogger<QApiConnector> _logger;
     private readonly SemaphoreSlim _tokenLock = new(1, 1);
     private readonly ConcurrentDictionary<string, DateTimeOffset> _cachedMessages = new();
@@ -36,7 +29,6 @@ public class QApiConnector : AspnetcoreConnector, IPlatformConnector
     {
         _logger = logger;
         _httpClient = httpClient;
-        _openApiClientFactory = webApplication.Services.GetService<IHttpClientFactory>();
     }
 
     /// <summary>框架中 QQ 官方平台的标识。</summary>
@@ -60,6 +52,15 @@ public class QApiConnector : AspnetcoreConnector, IPlatformConnector
 
     /// <summary>最近收到的非空 QQ 事件序号。Webhook 未提供序号时保留当前值。</summary>
     public int MessageSequence => Volatile.Read(ref _lastSequence);
+
+    /// <summary>注册使用当前 QQ 连接器配置的 Webhook 中间件。</summary>
+    /// <param name="application">承载 QQ 回调的 Web 应用。</param>
+    /// <returns>中间件已注册时返回 <see langword="true"/>。</returns>
+    public override bool TryConfigureHttpCallback(WebApplication application)
+    {
+        application.UseMiddleware<QApiHttpMiddleware>(this);
+        return true;
+    }
 
     /// <summary>取得机器人访问凭证并启动 Webhook 宿主。</summary>
     /// <param name="cancellationToken">取消启动的令牌。</param>
@@ -150,20 +151,6 @@ public class QApiConnector : AspnetcoreConnector, IPlatformConnector
         }
     }
 
-    internal async Task<HttpResponseMessage> SendOpenApiRequestAsync(HttpMethod method, Uri uri, object? body,
-        CancellationToken cancellationToken)
-    {
-        var authorization = await GetAuthorizationAsync(cancellationToken);
-        using var client = _openApiClientFactory?.CreateClient(OpenApiClientName);
-        using var request = new HttpRequestMessage(method, uri)
-        {
-            Content = body == null ? null : body as HttpContent
-                ?? new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
-        };
-        request.Headers.Authorization = AuthenticationHeaderValue.Parse(authorization);
-        return await (client ?? DefaultOpenApiClient).SendAsync(request, cancellationToken);
-    }
-
     private sealed record AccessToken(string Authorization, DateTimeOffset ExpireTime);
 }
 
@@ -181,19 +168,20 @@ internal static class QApiTokenHelper
         LightHttpClient httpClient, QConnection connection, CancellationToken cancellationToken = default)
     {
         var requestedAt = DateTimeOffset.UtcNow;
-        var (statusCode, body) = await httpClient.HttpPostOnceAsync($"https://{ProductHost}/app/getAppAccessToken",
+        using var response = await httpClient.SendOnceAsync(HttpMethod.Post,
+            new Uri($"https://{ProductHost}/app/getAppAccessToken"),
             new
             {
                 appId = connection.AppId,
                 clientSecret = connection.ClientSecret
             }, cancellationToken: cancellationToken);
 
-        var data = QOpenApiResponse.Read(body, statusCode) as JsonObject;
+        var data = await QOpenApiResponse.ReadAsync(response, cancellationToken) as JsonObject;
         if (data?["access_token"] is not JsonValue token || !token.TryGetValue<string>(out var accessToken) ||
             string.IsNullOrWhiteSpace(accessToken) || !int.TryParse(data["expires_in"]?.ToString(), out var expiresIn) ||
             expiresIn <= 0)
         {
-            throw new QApiException("QQ 访问凭证响应缺少有效的 access_token 或 expires_in", null, statusCode);
+            throw new QApiException("QQ 访问凭证响应缺少有效的 access_token 或 expires_in", null, response.StatusCode);
         }
 
         return (accessToken, requestedAt.AddSeconds(expiresIn));

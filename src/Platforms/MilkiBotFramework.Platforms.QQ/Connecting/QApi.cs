@@ -13,15 +13,17 @@ namespace MilkiBotFramework.Platforms.QQ.Connecting;
 /// <summary>调用 QQ 机器人官方 OpenAPI，并将框架消息发送到 QQ 单聊和群聊。</summary>
 public class QApi : IPlatformMessageApi
 {
+    private readonly LightHttpClient _lightHttpClient;
     private readonly IObjectStorageProvider _objectStorageProvider;
     private readonly ConditionalWeakTable<MessageContext, ReplySequence> _replySequences = new();
 
     /// <summary>创建使用指定机器人凭证和对象存储的 QQ 接口客户端。</summary>
-    /// <param name="lightHttpClient">为现有构造调用保留的参数。OpenAPI 请求使用 QQ 连接器的 HTTP 客户端。</param>
+    /// <param name="lightHttpClient">底层 HTTP 客户端。</param>
     /// <param name="objectStorageProvider">将本地和内存图片转换为可供 QQ 访问的 URL 的存储服务。</param>
     /// <param name="connector">提供当前机器人凭证和 API 环境的连接器。</param>
     public QApi(LightHttpClient lightHttpClient, IObjectStorageProvider objectStorageProvider, QApiConnector connector)
     {
+        _lightHttpClient = lightHttpClient;
         _objectStorageProvider = objectStorageProvider;
         Connector = connector;
     }
@@ -248,7 +250,8 @@ public class QApi : IPlatformMessageApi
             throw new ArgumentException("请输入 QQ OpenAPI 的接口路径。", nameof(path));
         }
 
-        using var response = await Connector.SendOpenApiRequestAsync(method, uri, body, cancellationToken);
+        var headers = new Dictionary<string, string> { ["Authorization"] = await Connector.GetAuthorizationAsync(cancellationToken) };
+        using var response = await _lightHttpClient.SendOnceAsync(method, uri, body, headers, cancellationToken);
         return await QOpenApiResponse.ReadAsync(response, cancellationToken);
     }
 

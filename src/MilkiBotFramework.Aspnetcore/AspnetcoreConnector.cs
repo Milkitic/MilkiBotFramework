@@ -43,6 +43,11 @@ public class AspnetcoreConnector : IConnector
     public TimeSpan MessageTimeout { get; set; } = TimeSpan.FromSeconds(30);
     public Encoding? Encoding { get; set; }
 
+    /// <summary>在应用中注册平台专用的 HTTP 回调处理。</summary>
+    /// <param name="application">承载回调的 Web 应用。</param>
+    /// <returns>已注册平台专用处理时为 <see langword="true"/>，否则由构建器注册通用回调。</returns>
+    public virtual bool TryConfigureHttpCallback(WebApplication application) => false;
+
     public virtual async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (ConnectionType == ConnectionType.WebSocket && WebSocketConnector != null)

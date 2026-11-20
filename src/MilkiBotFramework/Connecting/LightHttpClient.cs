@@ -143,13 +143,39 @@ public class LightHttpClient
     /// <summary>
     /// 发送一次 JSON POST 并返回状态码和响应正文，供发消息等非幂等操作使用。
     /// </summary>
+    /// <param name="url">请求地址。</param>
+    /// <param name="body">要序列化为 JSON 的请求体。</param>
+    /// <param name="headers">附加的 HTTP 请求头。</param>
+    /// <param name="cancellationToken">取消请求的令牌。</param>
+    /// <returns>HTTP 状态码和原始响应正文。</returns>
     public async Task<(HttpStatusCode StatusCode, string Body)> HttpPostOnceAsync(string url, object? body,
         IReadOnlyDictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = CreateJsonContent(body) };
-        AddHeaders(request, headers);
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        using var response = await SendOnceAsync(HttpMethod.Post, new Uri(url),
+            body ?? JsonSerializer.SerializeToElement<object?>(null), headers, cancellationToken);
         return (response.StatusCode, await response.Content.ReadAsStringAsync(cancellationToken));
+    }
+
+    /// <summary>
+    /// 发送一次 HTTP 请求。普通对象按 JSON 序列化，也可直接提供 HTTP 请求内容。
+    /// </summary>
+    /// <param name="method">HTTP 方法。</param>
+    /// <param name="uri">请求地址。</param>
+    /// <param name="body">JSON 对象或 <see cref="HttpContent"/>。空值省略请求体，传入的 HTTP 内容随请求释放。</param>
+    /// <param name="headers">附加的 HTTP 请求头。</param>
+    /// <param name="cancellationToken">取消请求的令牌。</param>
+    /// <returns>未经状态码检查的 HTTP 响应，由调用方释放。</returns>
+    public async Task<HttpResponseMessage> SendOnceAsync(HttpMethod method, Uri uri, object? body = null,
+        IReadOnlyDictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(method, uri);
+        if (body != null)
+        {
+            request.Content = body as HttpContent ?? CreateJsonContent(body);
+        }
+
+        AddHeaders(request, headers);
+        return await _httpClient.SendAsync(request, cancellationToken);
     }
 
     /// <summary>

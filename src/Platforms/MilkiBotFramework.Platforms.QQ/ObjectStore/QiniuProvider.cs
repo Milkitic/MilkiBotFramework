@@ -29,7 +29,7 @@ public class QiniuProvider : IObjectStorageProvider
     private static readonly Dictionary<ImageType, string> ImageTypeToMimeType = new()
     {
         { ImageType.Unknown, "application/octet-stream" },
-        { ImageType.Jpeg, "image/jpg" },
+        { ImageType.Jpeg, "image/jpeg" },
         { ImageType.Bmp, "image/bmp" },
         { ImageType.Gif, "image/gif" },
         { ImageType.Png, "image/png" },
@@ -88,7 +88,7 @@ public class QiniuProvider : IObjectStorageProvider
     /// <returns>七牛云临时下载 URL。</returns>
     public async Task<string> UploadImage(string path)
     {
-        var objectName = Path.GetFileName(path);
+        var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(path)}";
         var data = await File.ReadAllBytesAsync(path);
         var imageType = ImageHelper.GetKnownImageType(data);
         using var memoryStream = new MemoryStream(data);
@@ -145,7 +145,7 @@ public class QiniuProvider : IObjectStorageProvider
 
         var target = new FormUploader(config); // 表单上传
         var result = await Task.Run(() => target.UploadStream(memoryStream, objectName, token, putExtra));
-        if (result.Code < 400)
+        if (result.Code is >= 200 and < 300)
         {
             _logger.LogDebug("Successfully uploaded {ObjectName} to {BucketName}", objectName, bucketName);
         }
@@ -162,7 +162,6 @@ public class QiniuProvider : IObjectStorageProvider
         string domain = $"{protocol}://{_options.CustomEndpoint}";
         string key = $"{objectName}";
         string privateUrl = DownloadManager.CreatePrivateUrl(_mac, domain, key, 3600);
-        _logger.LogDebug($"Successfully got temporary download link: {privateUrl}");
         return privateUrl;
     }
 }

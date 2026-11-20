@@ -32,14 +32,8 @@ public sealed class QContactsManager : ContactsManagerBase
     }
 
     /// <summary>从缓存读取机器人自身资料。</summary>
-    /// <returns>包含机器人资料的结果。资料尚未收到时可能为空。</returns>
-    public override async Task<SelfInfoResult> TryGetOrUpdateSelfInfo()
-    {
-        var baseResult = await base.TryGetOrUpdateSelfInfo();
-        if (baseResult.IsSuccess) return baseResult;
-
-        return new SelfInfoResult { IsSuccess = true, SelfInfo = SelfInfo };
-    }
+    /// <returns>已有资料时返回成功结果。</returns>
+    public override Task<SelfInfoResult> TryGetOrUpdateSelfInfo() => base.TryGetOrUpdateSelfInfo();
 
     /// <summary>查找或创建目标 QQ 群的本地资料。</summary>
     /// <param name="channelId">群 OpenID。</param>
@@ -50,8 +44,7 @@ public sealed class QContactsManager : ContactsManagerBase
         var baseResult = await base.TryGetOrAddChannelInfo(channelId, subChannelId);
         if (baseResult.IsSuccess) return baseResult;
 
-        var channelInfo = new ChannelInfo(channelId);
-        ChannelMapping.AddOrUpdate(channelInfo.ChannelId, channelInfo, (_, _) => channelInfo);
+        var channelInfo = ChannelMapping.GetOrAdd(channelId, static id => new ChannelInfo(id));
         return new ChannelInfoResult { IsSuccess = true, ChannelInfo = channelInfo };
     }
 
@@ -73,14 +66,12 @@ public sealed class QContactsManager : ContactsManagerBase
             channelInfo = channelResult.ChannelInfo;
         }
 
-        var memberInfo = new MemberInfo(channelId, userId, subChannelId)
-        {
-            MemberRole = MemberRole.Member
-        };
-
         if (success && channelInfo != null)
         {
-            channelInfo.Members.AddOrUpdate(userId, memberInfo, (_, _) => memberInfo);
+            var memberInfo = channelInfo.Members.GetOrAdd(userId, id => new MemberInfo(channelId, id, subChannelId)
+            {
+                MemberRole = MemberRole.Member
+            });
             return new MemberInfoResult { IsSuccess = true, MemberInfo = memberInfo };
         }
 
@@ -95,8 +86,7 @@ public sealed class QContactsManager : ContactsManagerBase
         var baseResult = await base.TryGetOrAddPrivateInfo(userId);
         if (baseResult.IsSuccess) return baseResult;
 
-        var privateInfo = new PrivateInfo(userId);
-        PrivateMapping.AddOrUpdate(privateInfo.UserId, privateInfo, (_, _) => privateInfo);
+        var privateInfo = PrivateMapping.GetOrAdd(userId, static id => new PrivateInfo(id));
         return new PrivateInfoResult { IsSuccess = true, PrivateInfo = privateInfo };
     }
 
@@ -111,10 +101,10 @@ public sealed class QContactsManager : ContactsManagerBase
         return false;
     }
 
-    /// <summary>查询平台联系人全量列表。当前适配器按需建立本地缓存。</summary>
-    /// <param name="channels">群列表。</param>
-    /// <param name="subChannels">子频道列表。</param>
-    /// <param name="privates">单聊用户列表。</param>
+    /// <summary>说明此适配器的联系人按事件按需建立缓存，无全量同步。</summary>
+    /// <param name="channels">未同步的群列表。</param>
+    /// <param name="subChannels">未同步的子频道列表。</param>
+    /// <param name="privates">未同步的单聊用户列表。</param>
     /// <returns>当前实现始终返回 <see langword="false"/>。</returns>
     protected override bool GetContactsCore(
         [NotNullWhen(true)] out Dictionary<string, ChannelInfo>? channels,

@@ -1,5 +1,5 @@
 ﻿﻿using System.Text.Json;
-using System.Net;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.ContactsManaging;
@@ -9,8 +9,8 @@ using Websocket.Client;
 
 namespace MilkiBotFramework.Platforms.QQ.Connecting;
 
-/// <summary>保留用于兼容既有集成的 QQ WebSocket 网关连接器。</summary>
-[Obsolete]
+/// <summary>旧版 QQ WebSocket 网关连接器，保留以兼容已有集成。</summary>
+[Obsolete("推荐使用 UseQQ 注册的 QQ Webhook 连接器。")]
 public class QApiWsConnector : WebSocketClientConnector
 {
     private readonly LightHttpClient _httpClient;
@@ -23,7 +23,7 @@ public class QApiWsConnector : WebSocketClientConnector
     private string? _wsUrl;
     private TimeSpan _heartBeatInterval = Timeout.InfiniteTimeSpan;
     private int _lastSequence;
-    private Guid _lastSessionId;
+    private string? _lastSessionId;
 
     private CancellationTokenSource? _cts;
 
@@ -36,15 +36,16 @@ public class QApiWsConnector : WebSocketClientConnector
     public QApiWsConnector(LightHttpClient httpClient, IContactsManager contactsManager, ILogger<QApiWsConnector> logger) : base(logger)
     {
         _httpClient = httpClient;
-        _contactsManager = (QContactsManager?)contactsManager;
+        _contactsManager = contactsManager as QContactsManager;
         _logger = logger;
         MessageReceived += QApiConnector_MessageReceived;
     }
 
-    /// <summary>当前 QQ 网关会话的鉴权值。</summary>
+    /// <summary>当前分配给 QQ 网关的鉴权值。</summary>
     public string Authorization => $"QQBot {_accessToken}";
-    /// <summary>最近收到的网关事件序号。</summary>
-    public int MessageSequence => _lastSequence;
+
+    /// <summary>最近收到的非空网关事件序号。</summary>
+    public int MessageSequence => Volatile.Read(ref _lastSequence);
 
     private Task QApiConnector_MessageReceived(InboundMessage inboundMessage)
     {
@@ -52,7 +53,7 @@ public class QApiWsConnector : WebSocketClientConnector
         if (string.IsNullOrWhiteSpace(message))
             return Task.CompletedTask;
 
-        var jsonDocument = JsonDocument.Parse(message);
+        using var jsonDocument = JsonDocument.Parse(message);
         var rootElement = jsonDocument.RootElement;
         var opProp = rootElement.GetProperty("op");
         var opCode = (OpCode)opProp.GetInt32();
@@ -67,17 +68,18 @@ public class QApiWsConnector : WebSocketClientConnector
                 _heartBeatInterval = heartBeatInterval;
             }
         }
-        else if (opCode == OpCode.Dispatch)
+        else if (opCode == OpCode.Dispatch && rootElement.GetProperty("t").GetString() == "READY")
         {
             if (rootElement.GetProperty("d").TryGetProperty("session_id", out var sessionProp))
             {
-                _lastSessionId = Guid.Parse(sessionProp.GetString()!);
+                _lastSessionId = sessionProp.GetString();
             }
         }
 
-        if (rootElement.TryGetProperty("s", out var sProp))
+        if (rootElement.TryGetProperty("s", out var sProp) &&
+            sProp.ValueKind == JsonValueKind.Number && sProp.TryGetInt32(out var sequence))
         {
-            _lastSequence = sProp.GetInt32();
+            Volatile.Write(ref _lastSequence, sequence);
         }
 
         return Task.CompletedTask;
@@ -101,40 +103,32 @@ public class QApiWsConnector : WebSocketClientConnector
     public override async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
-        await UpdateAccessTokenAsync();
-        await RequestEndpointAsync();
+        await UpdateAccessTokenAsync(cancellationToken);
+        await RequestEndpointAsync(cancellationToken);
 
         TargetUri = _wsUrl;
 
-        //var s = JsonSerializer.Deserialize<resp_getAppAccessToken>(response);
         await base.ConnectAsync(cancellationToken);
     }
 
-    /// <summary>重新连接时恢复或建立网关会话。</summary>
-    /// <param name="reconnectionInfo">网关库报告的重连信息。</param>
+    /// <summary>在网关重连后恢复或重新建立会话，然后启动心跳。</summary>
+    /// <param name="reconnectionInfo">网关库报告的重连原因。</param>
     protected override async ValueTask OnReconnectionHappened(ReconnectionInfo reconnectionInfo)
     {
         if (reconnectionInfo.Type != ReconnectionType.Initial)
             _logger.LogError("OnReconnectionHappened: " + reconnectionInfo.Type);
-        bool? isResume;
-        if (_isDropped && _lastSessionId != default)
-        {
-            isResume = await TryResumeSessionAsync();
-        }
-        else
-        {
-            isResume = false;
-        }
-
-        if (isResume == false || DateTimeOffset.UtcNow >= _tokenExpireTime)
+        await StopHeartbeatAsync();
+        if (DateTimeOffset.UtcNow >= _tokenExpireTime)
         {
             await UpdateAccessTokenAsync();
         }
 
-        if (isResume == true || await TryIdentifyAsync() == true)
+        var resumed = _isDropped && _lastSessionId is { } sessionId && await TryResumeSessionAsync(sessionId) == true;
+        if (resumed || await TryIdentifyAsync() == true)
         {
-            _cts = new CancellationTokenSource();
-            _ = Task.Factory.StartNew(async () => { await KeepSendHeartbeat(_cts.Token); });
+            var heartbeat = new CancellationTokenSource();
+            _cts = heartbeat;
+            _ = KeepSendHeartbeat(heartbeat.Token);
         }
         else
         {
@@ -143,34 +137,45 @@ public class QApiWsConnector : WebSocketClientConnector
         }
     }
 
-    /// <summary>连接断开时停止发送网关心跳。</summary>
-    /// <param name="disconnectionInfo">网关库报告的断开信息。</param>
+    /// <summary>停止当前网关会话的心跳，并记录是否可尝试恢复会话。</summary>
+    /// <param name="disconnectionInfo">网关库报告的断开原因。</param>
     protected override async ValueTask OnDisconnectionHappened(DisconnectionInfo disconnectionInfo)
     {
         _logger.LogError(disconnectionInfo.Exception, "OnDisconnectionHappened");
         _isDropped = disconnectionInfo.Type != DisconnectionType.ByServer;
-        if (_cts == null) return;
-        await _cts.CancelAsync();
-        _cts.Dispose();
-        _cts = null;
+        await StopHeartbeatAsync();
     }
 
-    private async Task UpdateAccessTokenAsync()
+    private async Task StopHeartbeatAsync()
     {
-        var (accessToken, expireTime) = await QApiTokenHelper.RequestAccessTokenAsync(_httpClient, Connection!);
+        using var heartbeat = Interlocked.Exchange(ref _cts, null);
+        if (heartbeat != null)
+        {
+            await heartbeat.CancelAsync();
+        }
+    }
+
+    private async Task UpdateAccessTokenAsync(CancellationToken cancellationToken = default)
+    {
+        var (accessToken, expireTime) = await QApiTokenHelper.RequestAccessTokenAsync(_httpClient, Connection!, cancellationToken);
         _accessToken = accessToken;
         _tokenExpireTime = expireTime;
     }
 
-    private async Task RequestEndpointAsync()
+    private async Task RequestEndpointAsync(CancellationToken cancellationToken)
     {
-        var response2 = await _httpClient.HttpGet<string>(
-            $"https://{Host}/gateway", headers: new Dictionary<string, string>()
+        using var response = await _httpClient.SendOnceAsync(HttpMethod.Get, new Uri($"https://{Host}/gateway"),
+            headers: new Dictionary<string, string>
             {
                 ["Authorization"] = Authorization
-            });
-        var jsonNode2 = QOpenApiResponse.Read(response2, HttpStatusCode.OK)!;
-        _wsUrl = jsonNode2["url"]!.GetValue<string>();
+            }, cancellationToken: cancellationToken);
+        var result = await QOpenApiResponse.ReadAsync(response, cancellationToken) as JsonObject;
+        if (!Uri.TryCreate(result?["url"]?.ToString(), UriKind.Absolute, out var gateway) || gateway.Scheme != "wss")
+        {
+            throw new QApiException("QQ 网关响应缺少有效的 WSS 地址", null, response.StatusCode);
+        }
+
+        _wsUrl = gateway.AbsoluteUri;
     }
 
     private async Task<bool?> TryIdentifyAsync()
@@ -194,21 +199,21 @@ public class QApiWsConnector : WebSocketClientConnector
         _logger.LogDebug($"[QAPI] Verifying bot with {intents}");
         var identifyResult = await filter.FilterMessageAsync<bool?>(asyncWsMessage =>
         {
-            var jsonDocument = JsonDocument.Parse(asyncWsMessage.Message);
+            using var jsonDocument = JsonDocument.Parse(asyncWsMessage.Message);
             var rootElement = jsonDocument.RootElement;
             var opProp = rootElement.GetProperty("op");
             var opCode = (OpCode)opProp.GetInt32();
             if (opCode == OpCode.Dispatch)
             {
-                asyncWsMessage.IsHandled = true;
                 var t = rootElement.GetProperty("t").GetString();
                 var result = t == "READY";
                 if (!result)
                 {
-                    _logger.LogWarning($"[QAPI] {opCode}: {t}");
+                    return null;
                 }
                 else
                 {
+                    asyncWsMessage.IsHandled = true;
                     var dProp = rootElement.GetProperty("d").GetProperty("user");
                     var id = dProp.GetProperty("id").GetString()!;
                     var username = dProp.GetProperty("username").GetString();
@@ -237,7 +242,7 @@ public class QApiWsConnector : WebSocketClientConnector
         return identifyResult;
     }
 
-    private async Task<bool?> TryResumeSessionAsync()
+    private async Task<bool?> TryResumeSessionAsync(string sessionId)
     {
         var resume = JsonSerializer.Serialize(new
         {
@@ -245,8 +250,8 @@ public class QApiWsConnector : WebSocketClientConnector
             d = new
             {
                 token = Authorization,
-                session_id = _lastSessionId,
-                seq = _lastSequence
+                session_id = sessionId,
+                seq = MessageSequence
             }
         });
 
@@ -254,28 +259,28 @@ public class QApiWsConnector : WebSocketClientConnector
         _logger.LogDebug($"[QAPI] Trying resume session");
         var resumeStatus = await filter.FilterMessageAsync<bool?>(asyncWsMessage =>
         {
-            var jsonDocument = JsonDocument.Parse(asyncWsMessage.Message);
+            using var jsonDocument = JsonDocument.Parse(asyncWsMessage.Message);
             var rootElement = jsonDocument.RootElement;
             var opProp = rootElement.GetProperty("op");
             var opCode = (OpCode)opProp.GetInt32();
-            asyncWsMessage.IsHandled = true;
             if (opCode == OpCode.Dispatch)
             {
                 var t = rootElement.GetProperty("t").GetString();
                 var result = t == "RESUMED";
                 if (!result)
                 {
-                    _logger.LogWarning($"[QAPI] {opCode}: {t}");
-                    return false;
+                    return null;
                 }
                 else
                 {
-                    _logger.LogDebug($"[QAPI] Session resumed");
+                    asyncWsMessage.IsHandled = true;
+                    _logger.LogDebug("[QAPI] Session resumed");
                     return true;
                 }
             }
             else if (opCode == OpCode.InvalidSession)
             {
+                asyncWsMessage.IsHandled = true;
                 _logger.LogWarning($"[QAPI] {opCode}");
                 return false;
             }
@@ -289,54 +294,26 @@ public class QApiWsConnector : WebSocketClientConnector
 
     private async Task KeepSendHeartbeat(CancellationToken token)
     {
-        var lastSequence = default(int?);
-        while (!token.IsCancellationRequested)
+        try
         {
-            var ack = JsonSerializer.Serialize(new
+            while (!token.IsCancellationRequested)
             {
-                op = 1,
-                d = lastSequence
-            });
-            lastSequence = _lastSequence;
-            using (var filter = SendMessage(ack))
-            {
-                _logger.LogDebug($"[QAPI] Sent heartbeat");
-                await filter.FilterMessageAsync(asyncWsMessage =>
+                var sequence = MessageSequence;
+                Client!.Send(JsonSerializer.Serialize(new
                 {
-                    asyncWsMessage.IsHandled = true;
-                    var jsonDocument = JsonDocument.Parse(asyncWsMessage.Message);
-                    var rootElement = jsonDocument.RootElement;
-                    var opProp = rootElement.GetProperty("op");
-                    var opCode = (OpCode)opProp.GetInt32();
-                    if (opCode == OpCode.HeartbeatACK)
-                    {
-                        _logger.LogDebug($"[QAPI] Received heartbeat");
-                        return true;
-                    }
-
-                    _logger.LogWarning($"QApi {opCode}");
-                    return false;
-                });
+                    op = (int)OpCode.Heartbeat,
+                    d = sequence == 0 ? (int?)null : sequence
+                }));
+                await Task.Delay(_heartBeatInterval, token);
             }
-
-            await Task.Delay(_heartBeatInterval, token);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            // 当前网关会话已关闭。
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(exception, "QQ 网关心跳发送失败。");
         }
     }
-
-    //public Task ConnectAsync()
-    //{
-    //    if (Connection == null) throw new ArgumentNullException(nameof(Connection), default(string));
-
-    //    throw new NotImplementedException();
-    //}
-
-    //public Task DisconnectAsync()
-    //{
-    //    throw new NotImplementedException();
-    //}
-
-    //public Task<string> SendMessageAsync(string message, string state)
-    //{
-    //    throw new NotImplementedException();
-    //}
 }
