@@ -51,6 +51,22 @@ public class QApi : IPlatformMessageApi
     }
 
     /// <summary>
+    /// 向已授权接收主动消息的 QQ 群发送文本（通过统一频道接口调用）。
+    /// </summary>
+    public Task<string> SendChannelMessageAsync(string channelId, string content, CancellationToken cancellationToken = default)
+    {
+        return SendGroupMessageAsync(channelId, content, cancellationToken);
+    }
+
+    /// <summary>
+    /// 向已授权接收主动消息的 QQ 群发送文本及图片（通过统一频道接口调用）。
+    /// </summary>
+    public Task<string> SendChannelMessageAsync(string channelId, IRichMessage message, CancellationToken cancellationToken = default)
+    {
+        return SendGroupMessageAsync(channelId, message, cancellationToken);
+    }
+
+    /// <summary>
     /// 向已授权接收主动消息的 QQ 群发送文本。使用该机器人的群 OpenID。
     /// </summary>
     public Task<string> SendGroupMessageAsync(string groupOpenId, string content, CancellationToken cancellationToken = default)

@@ -30,9 +30,30 @@ public sealed class PlatformMessageApiRouter : IMessageApi
             subChannelId);
     }
 
+    public Task<string> SendChannelMessageAsync(string channelId, string content, CancellationToken cancellationToken = default)
+    {
+        return ResolveSingle().SendChannelMessageAsync(channelId, content, cancellationToken);
+    }
+
+    public Task<string> SendChannelMessageAsync(string channelId, IRichMessage message, CancellationToken cancellationToken = default)
+    {
+        return ResolveSingle().SendChannelMessageAsync(channelId, message, cancellationToken);
+    }
+
     private IPlatformMessageApi Resolve(MessageContext messageContext)
     {
         return _messageApis.FirstOrDefault(api => api.Supports(messageContext))
                ?? throw new InvalidOperationException($"No message api registered for platform '{messageContext.PlatformId ?? "unknown"}'.");
+    }
+
+    private IPlatformMessageApi ResolveSingle()
+    {
+        if (_messageApis.Length == 1)
+        {
+            return _messageApis[0];
+        }
+
+        throw new NotSupportedException(
+            "Proactive channel message routing requires a single registered platform or an explicit platform API.");
     }
 }

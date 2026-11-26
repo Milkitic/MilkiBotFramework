@@ -56,6 +56,28 @@ public class MockMessageApi : IMessageApi
         return SendMessagesAsync(isGroupMessage: true, identityId: channelId, message, richMessage);
     }
 
+    /// <summary>
+    ///     异步发送主动群聊文本消息。
+    /// </summary>
+    public Task<string> SendChannelMessageAsync(string channelId, string content, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(channelId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(content);
+        cancellationToken.ThrowIfCancellationRequested();
+        return SendMessagesAsync(isGroupMessage: true, identityId: channelId, plainText: content, richMessage: null);
+    }
+
+    /// <summary>
+    ///     异步发送主动群聊富文本消息。
+    /// </summary>
+    public Task<string> SendChannelMessageAsync(string channelId, IRichMessage message, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(channelId);
+        ArgumentNullException.ThrowIfNull(message);
+        cancellationToken.ThrowIfCancellationRequested();
+        return SendMessagesAsync(isGroupMessage: true, identityId: channelId, plainText: string.Empty, richMessage: message);
+    }
+
     private async Task<string> SendMessagesAsync(bool isGroupMessage, string identityId, string plainText,
         IRichMessage? richMessage)
     {
@@ -188,19 +210,30 @@ public class MockMessageApi : IMessageApi
     }
 
     /// <summary>
-    ///     发送群聊消息
+    ///     异步发送主动群聊文本消息。
     /// </summary>
-    public void SendGroupMessage(string groupId, string message)
+    public Task<string> SendGroupMessageAsync(string groupId, string content, CancellationToken cancellationToken = default)
     {
-        AddSentMessage(CreateTextMessage(isGroupMessage: true, groupId, message));
+        return SendChannelMessageAsync(groupId, content, cancellationToken);
     }
 
     /// <summary>
-    ///     发送私聊消息
+    ///     异步发送主动群聊富文本消息。
     /// </summary>
-    public void SendPrivateMessage(string userId, string message)
+    public Task<string> SendGroupMessageAsync(string groupId, IRichMessage message, CancellationToken cancellationToken = default)
     {
-        AddSentMessage(CreateTextMessage(isGroupMessage: false, userId, message));
+        return SendChannelMessageAsync(groupId, message, cancellationToken);
+    }
+
+    /// <summary>
+    ///     异步发送主动私聊文本消息。
+    /// </summary>
+    public Task<string> SendPrivateMessageAsync(string userId, string content, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(content);
+        cancellationToken.ThrowIfCancellationRequested();
+        return SendMessagesAsync(isGroupMessage: false, identityId: userId, plainText: content, richMessage: null);
     }
 
     /// <summary>
