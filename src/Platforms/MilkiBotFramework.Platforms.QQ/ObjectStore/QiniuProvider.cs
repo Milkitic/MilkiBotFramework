@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using MilkiBotFramework.Imaging;
 using Qiniu.Storage;
 using Qiniu.Util;
@@ -61,7 +61,7 @@ public class QiniuProvider : IObjectStorageProvider
                     FileFormat = options.PreferLossless ? WebpFileFormatType.Lossless : WebpFileFormatType.Lossy,
                     NearLossless = !options.PreferLossless,
                     Quality = options.PreferLossless ? 100 : options.LossyQuality,
-                    TransparentColorMode = WebpTransparentColorMode.Preserve
+                    TransparentColorMode = TransparentColorMode.Preserve
                 }
             }
         };

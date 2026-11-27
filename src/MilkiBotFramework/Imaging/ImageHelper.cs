@@ -1,7 +1,8 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -191,10 +192,10 @@ public static class ImageHelper
         gif.Mutate(k => k.Quantize());
         var encoder = new GifEncoder
         {
-            ColorTableMode = palettes == null ? GifColorTableMode.Global : GifColorTableMode.Local,
+            ColorTableMode = palettes == null ? FrameColorTableMode.Global : FrameColorTableMode.Local,
             PixelSamplingStrategy = new ExtensivePixelSamplingStrategy(),
             Quantizer = palettes == null
-                ? new OctreeQuantizer(new QuantizerOptions
+                ? new WuQuantizer(new QuantizerOptions
                 {
                     DitherScale = QuantizerConstants.MinDitherScale
                 })
@@ -293,7 +294,7 @@ public static class ImageHelper
                 // Using row.Length helps JIT to eliminate bounds checks when accessing row[x].
                 foreach (var color in row)
                 {
-                    arr[k++] = color;
+                    arr[k++] = Color.FromPixel(color);
                 }
             }
         });

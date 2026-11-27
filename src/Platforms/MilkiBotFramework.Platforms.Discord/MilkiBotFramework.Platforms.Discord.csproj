@@ -14,8 +14,4 @@
     <ProjectReference Include="..\..\MilkiBotFramework\MilkiBotFramework.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Update="MinVer" Version="7.0.0" />
-  </ItemGroup>
-
 </Project>
