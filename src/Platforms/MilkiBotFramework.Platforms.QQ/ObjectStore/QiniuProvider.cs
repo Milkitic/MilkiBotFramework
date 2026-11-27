@@ -61,7 +61,7 @@ public class QiniuProvider : IObjectStorageProvider
                     FileFormat = options.PreferLossless ? WebpFileFormatType.Lossless : WebpFileFormatType.Lossy,
                     NearLossless = !options.PreferLossless,
                     Quality = options.PreferLossless ? 100 : options.LossyQuality,
-                    TransparentColorMode = TransparentColorMode.Preserve
+                    TransparentColorMode = WebpTransparentColorMode.Preserve
                 }
             }
         };

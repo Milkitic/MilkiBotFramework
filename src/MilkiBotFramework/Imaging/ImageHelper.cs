@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
@@ -192,7 +191,7 @@ public static class ImageHelper
         gif.Mutate(k => k.Quantize());
         var encoder = new GifEncoder
         {
-            ColorTableMode = palettes == null ? FrameColorTableMode.Global : FrameColorTableMode.Local,
+            ColorTableMode = palettes == null ? GifColorTableMode.Global : GifColorTableMode.Local,
             PixelSamplingStrategy = new ExtensivePixelSamplingStrategy(),
             Quantizer = palettes == null
                 ? new WuQuantizer(new QuantizerOptions
