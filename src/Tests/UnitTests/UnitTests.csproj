@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\MilkiBotFramework\MilkiBotFramework.csproj" />
     <ProjectReference Include="..\..\Platforms\MilkiBotFramework.Platforms.Mock\MilkiBotFramework.Platforms.Mock.csproj" />
     <ProjectReference Include="..\..\Platforms\MilkiBotFramework.Platforms.OneBot\MilkiBotFramework.Platforms.Onebot.csproj" />
+    <ProjectReference Include="..\..\Platforms\MilkiBotFramework.Platforms.QQ\MilkiBotFramework.Platforms.QQ.csproj" />
   </ItemGroup>
 
   <ItemGroup>

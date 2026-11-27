@@ -98,7 +98,7 @@ public sealed class MessageContextEnricher : IMessageContextEnricher
 
         return memberInfo.MemberRole switch
         {
-            MemberRole.Admin => MessageAuthority.Admin,
+            MemberRole.Owner or MemberRole.Admin => MessageAuthority.Admin,
             MemberRole.SubAdmin => MessageAuthority.SubAdmin,
             _ => MessageAuthority.Public
         };

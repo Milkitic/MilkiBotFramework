@@ -141,6 +141,21 @@ public class LightHttpClient
     }
 
     /// <summary>
+    /// 发送一次 GET 请求并返回状态码和响应正文。
+    /// </summary>
+    public async Task<(HttpStatusCode StatusCode, string Body)> HttpGetOnceAsync(string url,
+        IReadOnlyDictionary<string, string>? queries = null,
+        IReadOnlyDictionary<string, string>? headers = null,
+        CancellationToken cancellationToken = default)
+    {
+        var requestUrl = url + BuildQueries(queries);
+        using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+        AddHeaders(request, headers);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        return (response.StatusCode, await response.Content.ReadAsStringAsync(cancellationToken));
+    }
+
+    /// <summary>
     /// 发送一次 JSON POST 并返回状态码和响应正文，供发消息等非幂等操作使用。
     /// </summary>
     public async Task<(HttpStatusCode StatusCode, string Body)> HttpPostOnceAsync(string url, object? body,

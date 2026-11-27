@@ -227,7 +227,8 @@ public abstract class ContactsManagerBase : IPlatformContactsManager, IContextua
             members.AddOrUpdate(userId, new MemberInfo(updateInfo.Id, userId, updateInfo.SubId)
             {
                 Nickname = updateInfo.Name,
-                Card = updateInfo.Remark
+                Card = updateInfo.Remark,
+                MemberRole = updateInfo.MemberRole ?? MemberRole.Member
             }, (_, v) =>
             {
                 if (updateInfo.Name != null) v.Nickname = updateInfo.Name;

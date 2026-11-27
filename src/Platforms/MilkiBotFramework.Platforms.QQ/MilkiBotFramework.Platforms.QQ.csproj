@@ -12,6 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Minio" Version="7.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="NSec.Cryptography" Version="26.4.0" />

@@ -1,17 +1,19 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using MilkiBotFramework.Connecting;
 using MilkiBotFramework.Messaging;
 using MilkiBotFramework.Messaging.RichMessages;
+using MilkiBotFramework.Platforms.QQ.Connecting.Models;
 using MilkiBotFramework.Platforms.QQ.Messaging;
 using MilkiBotFramework.Platforms.QQ.Messaging.RichMessages;
 using MilkiBotFramework.Platforms.QQ.ObjectStore;
 
 namespace MilkiBotFramework.Platforms.QQ.Connecting;
 
-public class QApi : IPlatformMessageApi
+public class QApi : IPlatformMessageApi, IQGroupMemberApi
 {
     private readonly LightHttpClient _lightHttpClient;
     private readonly IObjectStorageProvider _objectStorageProvider;
@@ -82,6 +84,105 @@ public class QApi : IPlatformMessageApi
     {
         ArgumentNullException.ThrowIfNull(message);
         return SendMessageCoreAsync("groups", groupOpenId, null, message, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// 获取指定 QQ 群成员的信息（包括 <c>member_role</c>）。该接口通常需要开放平台白名单权限。
+    /// </summary>
+    public async Task<QGroupMember> GetGroupMemberAsync(string groupOpenId, string memberOpenId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(groupOpenId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(memberOpenId);
+
+        var url = $"https://{Connector.Host}/v2/groups/{Uri.EscapeDataString(groupOpenId)}/members/{Uri.EscapeDataString(memberOpenId)}";
+        var result = await GetAsync(url, null, cancellationToken);
+        var member = QMemberRoleParser.ParseGroupMember(result);
+        if (member == null)
+        {
+            throw new QApiException("QQ 群成员响应格式无效", null);
+        }
+
+        if (string.IsNullOrWhiteSpace(member.MemberOpenId))
+        {
+            return new QGroupMember
+            {
+                MemberOpenId = memberOpenId,
+                Username = member.Username,
+                MemberNickname = member.MemberNickname,
+                MemberRoleRaw = member.MemberRoleRaw,
+                Role = member.Role,
+                IsBot = member.IsBot,
+                JoinedAt = member.JoinedAt,
+                UnionOpenId = member.UnionOpenId
+            };
+        }
+
+        return member;
+    }
+
+    /// <summary>
+    /// 分页获取指定 QQ 群的成员列表（每页最多 30 条）。该接口通常需要开放平台白名单权限。
+    /// </summary>
+    public async Task<QGroupMembersPage> GetGroupMembersPageAsync(string groupOpenId, string? cursor = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(groupOpenId);
+
+        var url = $"https://{Connector.Host}/v2/groups/{Uri.EscapeDataString(groupOpenId)}/members";
+        var queries = string.IsNullOrEmpty(cursor)
+            ? null
+            : new Dictionary<string, string> { ["cursor"] = cursor };
+        var result = await GetAsync(url, queries, cancellationToken);
+
+        var members = new List<QGroupMember>();
+        if (result["members"] is JsonArray membersArray)
+        {
+            foreach (var item in membersArray)
+            {
+                var parsed = QMemberRoleParser.ParseGroupMember(item);
+                if (parsed != null && !string.IsNullOrWhiteSpace(parsed.MemberOpenId))
+                {
+                    members.Add(parsed);
+                }
+            }
+        }
+
+        var nextCursor = QMemberRoleParser.GetOptionalString(result["next_cursor"]);
+        return new QGroupMembersPage
+        {
+            Members = members,
+            NextCursor = string.IsNullOrEmpty(nextCursor) ? null : nextCursor
+        };
+    }
+
+    /// <summary>
+    /// 拉取指定 QQ 群的全部成员列表（自动分页）。该接口通常需要开放平台白名单权限。
+    /// </summary>
+    public async Task<IReadOnlyList<QGroupMember>> GetGroupMembersAsync(string groupOpenId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(groupOpenId);
+
+        var membersById = new Dictionary<string, QGroupMember>(StringComparer.Ordinal);
+        var seenCursors = new HashSet<string>(StringComparer.Ordinal);
+        string? cursor = null;
+
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var page = await GetGroupMembersPageAsync(groupOpenId, cursor, cancellationToken);
+            foreach (var member in page.Members)
+            {
+                membersById[member.MemberOpenId] = member;
+            }
+
+            if (string.IsNullOrEmpty(page.NextCursor) || !seenCursors.Add(page.NextCursor))
+            {
+                break;
+            }
+
+            cursor = page.NextCursor;
+        }
+
+        return membersById.Values.ToList();
     }
 
     private async Task<string> SendMessageCoreAsync(string entityType, string entityId, string? message,
@@ -163,11 +264,24 @@ public class QApi : IPlatformMessageApi
         request["msg_seq"] = Interlocked.Increment(ref sequence.Value);
     }
 
+    private async Task<JsonObject> GetAsync(string url, IReadOnlyDictionary<string, string>? queries, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var headers = new Dictionary<string, string> { ["Authorization"] = await Connector.GetAuthorizationAsync(cancellationToken) };
+        var (statusCode, body) = await _lightHttpClient.HttpGetOnceAsync(url, queries, headers, cancellationToken);
+        return ParseResponse(statusCode, body);
+    }
+
     private async Task<JsonObject> PostAsync(string url, object request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var headers = new Dictionary<string, string> { ["Authorization"] = await Connector.GetAuthorizationAsync(cancellationToken) };
         var (statusCode, body) = await _lightHttpClient.HttpPostOnceAsync(url, request, headers, cancellationToken);
+        return ParseResponse(statusCode, body);
+    }
+
+    private static JsonObject ParseResponse(HttpStatusCode statusCode, string body)
+    {
         var success = (int)statusCode is >= 200 and < 300;
 
         JsonObject? result;
